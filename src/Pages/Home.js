@@ -11,34 +11,9 @@ import CalorieCalculator from './Homepagesecond_section'
 // Carousel Component
 
 
-import { Parallax } from "react-parallax";
 
-const ParallaxExample = ({ImageCarousel}) => (
-  <div>
-   <Parallax
-  bgImage="/example.jpg"
-  strength={200}
-  renderLayer={(percentage) => (
-    <div
-      style={{
-        position: "absolute",
-        background: `rgba(255, 125, 0, ${percentage})`,
-        left: "50%",
-        top: "50%",
-        borderRadius: "50%",
-        transform: "translate(-50%, -50%)",
-        width: `${percentage * 200}px`,
-        height: `${percentage * 200}px`,
-      }}
-    />
-  )}
->
-  <div style={{ height: 400 }}>Custom Layer</div>
-  <ImageCarousel/>
-</Parallax>
 
-  </div>
-);
+
 
 
 const ImageCarousel = () => {
