@@ -1,10 +1,6 @@
 import React from "react";
-import { useEffect,useState } from "react";
-import { Polygon } from '@html-polygon/react'
-/* slick-carousel styles */
-import Slider from 'react-slick';
-import Carousel from "./imagecourosal";
-import CalorieCalculator from './Homepagesecond_section'
+
+import CalorieCalculator from './Homepagesecondsection'
 
 // Header Component
 
@@ -13,45 +9,6 @@ import CalorieCalculator from './Homepagesecond_section'
 
 
 
-
-
-
-const ImageCarousel = () => {
-    const images = [
-      "assets/image1.png", 
-      "assets/image1.png",
-      "assets/image3.jpg",
-      "assets/image4.jpg",
-    ];
-  
-    const settings = {
-      dots: false, // Show navigation dots
-      infinite: true, // Infinite loop
-      speed: 500, // Transition speed in ms
-      slidesToShow: 1, // Show one image at a time
-      autoplay: true, // Enable autoplay
-      autoplaySpeed: 3000, // Change image every 3 seconds
-      vertical:true,
-      arrows: false, // Disable previous/next arrows
-    };
-  
-    return (
-      <div className="relative w-full h-64 md:h-80 slick-track flex flex-col transition-all">
-        <Slider {...settings}>
-          {images.map((image, index) => (
-            <div key={index}>
-              <img
-                src={image}
-                alt={`carousel-image-${index}`}
-                className="w-full h-full object-cover rounded-lg shadow-lg"
-              />
-            </div>
-          ))}
-        </Slider>
-      </div>
-    );
-  };
-  
 
 
 
