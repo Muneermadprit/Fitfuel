@@ -6,14 +6,16 @@
     "@html-polygon/react": "^0.1.4",
     "@tailwindcss/forms": "^0.5.9",
     "@tailwindcss/typography": "^0.5.15",
+    "aos": "^2.3.4",
     "cra-template": "1.2.0",
+    "firebase": "^11.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.4.0",
     "react-router-dom": "^6.28.1",
     "react-scripts": "^5.0.1",
     "react-slick": "^0.30.3",
-   
+    "slick-carousel": "^1.8.1",
     "swiper": "^11.1.15"
   },
   "scripts": {

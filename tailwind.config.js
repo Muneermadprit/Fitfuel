@@ -64,6 +64,17 @@ module.exports = {
   plugins: [
     require('@tailwindcss/forms'), // Plugin for styling forms
     require('@tailwindcss/typography'), // Plugin for typography utilities
+    function ({ addUtilities }) {
+      addUtilities({
+        '.scrollbar-hide': {
+          '-ms-overflow-style': 'none', /* Internet Explorer 10+ */
+          'scrollbar-width': 'none', /* Firefox */
+        },
+        '.scrollbar-hide::-webkit-scrollbar': {
+          'display': 'none', /* Webkit browsers (Chrome, Safari) */
+        },
+      })
+    },
   ],
 };
 
