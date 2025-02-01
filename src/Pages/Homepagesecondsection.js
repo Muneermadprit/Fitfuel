@@ -18,10 +18,10 @@ const CalorieCalculator = () => {
   const [activeCategory, setActiveCategory] = useState('category1');
 
   const products = {
-    category1: [{ name: "Product 1", calories: 200 }, { name: "Product 2", calories: 300 }, { name: "Product 3", calories: 300 }],
-    category2: [{ name: "Product A", calories: 150 }, { name: "Product B", calories: 250 }],
-    category3: [{ name: "Item X", calories: 100 }, { name: "Item Y", calories: 120 }],
-    category4: [{ name: "High-Protein Food", calories: 400 }, { name: "Protein Shake", calories: 350 }]
+    category1: [{ name: "Product 1", calories: 200, image: 'https://thumbs.dreamstime.com/b/diet-healthy-food-lifestyle-health-concept-sport-exercise-equipment-workout-and-gym-background-nutrition-detox-salad-f-179855057.jpg?w=768' }, { name: "Product 2", calories: 300, image: 'https://thumbs.dreamstime.com/b/diet-healthy-food-lifestyle-health-concept-sport-exercise-equipment-workout-and-gym-background-nutrition-detox-salad-f-179855057.jpg?w=768' }, { name: "Product 3", calories: 300 }],
+    category2: [{ name: "Product A", calories: 150, image: 'https://thumbs.dreamstime.com/b/diet-healthy-food-lifestyle-health-concept-sport-exercise-equipment-workout-and-gym-background-nutrition-detox-salad-f-179855057.jpg?w=768' }, { name: "Product B", calories: 250, image: 'https://thumbs.dreamstime.com/b/diet-healthy-food-lifestyle-health-concept-sport-exercise-equipment-workout-and-gym-background-nutrition-detox-salad-f-179855057.jpg?w=768' }],
+    category3: [{ name: "Item X", calories: 100, image: 'https://thumbs.dreamstime.com/b/diet-healthy-food-lifestyle-health-concept-sport-exercise-equipment-workout-and-gym-background-nutrition-detox-salad-f-179855057.jpg?w=768' }, { name: "Item Y", calories: 120, image: 'https://thumbs.dreamstime.com/b/diet-healthy-food-lifestyle-health-concept-sport-exercise-equipment-workout-and-gym-background-nutrition-detox-salad-f-179855057.jpg?w=768' }],
+    category4: [{ name: "High-Protein Food", calories: 400, image: 'https://thumbs.dreamstime.com/b/diet-healthy-food-lifestyle-health-concept-sport-exercise-equipment-workout-and-gym-background-nutrition-detox-salad-f-179855057.jpg?w=768' }, { name: "Protein Shake", calories: 350, image: 'https://thumbs.dreamstime.com/b/diet-healthy-food-lifestyle-health-concept-sport-exercise-equipment-workout-and-gym-background-nutrition-detox-salad-f-179855057.jpg?w=768' }]
   };
 
   const categories = [
@@ -159,10 +159,17 @@ const CalorieCalculator = () => {
 
             {/* Horizontally Scrollable List */}
             <Slider {...settings}>
-              <div className="mt-4">
+              <div className="mt-4 overflow-x-auto scrollbar-none">
                 <div className="flex space-x-4">
                   {products[activeCategory]?.map((product, index) => (
                     <div key={index} className="bg-gray-200 p-4 rounded-lg shadow flex-shrink-0" style={{ minWidth: '150px' }}>
+                      {product.image && (
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-32 object-cover rounded-lg mb-2"
+                        />
+                      )}
                       <h4 className="text-gray-700 text-sm font-semibold">{product.name}</h4>
                       <p className="text-gray-500 text-xs mt-1">{product.calories} kcal</p>
                     </div>
@@ -170,6 +177,27 @@ const CalorieCalculator = () => {
                 </div>
               </div>
             </Slider>
+
+
+            {/* <Slider {...settings}>
+              <div className="mt-4">
+                <div className="flex space-x-4">
+                  {products[activeCategory]?.map((product, index) => (
+                    <div key={index} className="bg-gray-200 p-4 rounded-lg shadow flex-shrink-0" style={{ minWidth: '150px' }}>
+                      {product.image && (
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-32 object-cover rounded-lg mb-2"
+                        />
+                      )}
+                      <h4 className="text-gray-700 text-sm font-semibold">{product.name}</h4>
+                      <p className="text-gray-500 text-xs mt-1">{product.calories} kcal</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Slider> */}
 
             {/* Close Button */}
             <button

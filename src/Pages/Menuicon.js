@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const ChatbotIcon = () => {
   const [offset, setOffset] = useState(0);
+  const navigate = useNavigate(); // Initialize the useNavigate hook
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,10 +22,10 @@ const ChatbotIcon = () => {
     <div
       className="fixed bottom-5 right-5 w-16 h-16 z-50 bg-blue-500 text-white rounded-full shadow-lg flex flex-col items-center justify-center cursor-pointer transition-transform duration-300 ease-in-out"
       style={{ transform: `translateY(${offset}px)` }}
-      onClick={() => alert("Chatbot clicked!")}
+      onClick={() => navigate('/OrderRedirection')} // Corrected navigation
     >
-      <span className="text-2xl ">🛒 </span>
-      <span className="text-[12px] font-nunito ">Order</span>
+      <span className="text-2xl">🛒</span>
+      <span className="text-[12px] font-nunito">Order</span>
     </div>
   );
 };
