@@ -36,3 +36,11 @@
     transform: rotate(360deg);
   }
 }
+/* Add this to your CSS file */
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
+.scrollbar-none {
+  -ms-overflow-style: none !important;  /* Internet Explorer 10+ */
+  scrollbar-width: none !important;  /* Firefox */
+}
