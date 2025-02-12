@@ -12,6 +12,8 @@ import CartPage from './Pages/CartPage';
 import ProductDetailPage from './Pages/ProductDetailPage';
 import ProfilePage from './Pages/ProfilePage';
 import ProductSummary from './Pages/ProductSummary';
+import AdminDashboardPage from './AdminPages/AdminDashboardPage';
+import AdminLogin from './AdminPages/AdminLoginPage'
 const App = () => {
   return (
     <div>
@@ -29,7 +31,8 @@ const App = () => {
         <Route path="/select-plan" element={<ProductDetailPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/summary" element={<ProductSummary />} />
-
+        <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
 
         {/* <Route path="  "element={<ProductListPage />} /> */}
 
