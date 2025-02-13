@@ -3,29 +3,25 @@ import { Pencil, Trash2, Eye, Plus, Search, X } from 'lucide-react';
 import DataTable from 'react-data-table-component';
 import axios from "../axiosConfig";
 
+const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
-const initialMealPackages = [
-  { id: 1, name: 'Breakfast Delight', description: 'Hearty morning meal with eggs and toast', image: null },
-  { id: 2, name: 'Dinner Special', description: 'Protein-packed evening meal', image: null },
-  { id: 3, name: 'Vegan Brunch', description: 'Plant-based breakfast package', image: null }
-];
-
-export default function MealPackageCrudPage() {
-  const [mealPackages, setMealPackages] = useState(initialMealPackages);
+export default function MealPlanPage() {
+  const [mealPackages, setMealPackages] = useState([]);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [selectedMealType, setSelectedMealType] = useState('');
+
   const fetchProducts = async () => {
     try {
-      const token = sessionStorage.getItem("token"); // Retrieve token
+      const token = sessionStorage.getItem("token");
       const response = await axios.get("/admin/category", {
         headers: {
-          Authorization: `Bearer ${token}`  // Pass token in headers
+          Authorization: `Bearer ${token}`
         }
       });
-
-      setMealPackages(response.data.categories); // Set only the categories array
+      setMealPackages(response.data.categories);
     } catch (error) {
       console.error("Error fetching products:", error);
     }
@@ -35,16 +31,17 @@ export default function MealPackageCrudPage() {
     fetchProducts();
   }, []);
 
-
   const handleAdd = () => {
     setSelectedPackage(null);
     setImagePreview(null);
+    setSelectedMealType('');
     setIsCanvasOpen(true);
   };
 
   const handleEdit = (mealPackage) => {
     setSelectedPackage(mealPackage);
     setImagePreview(mealPackage.image);
+    setSelectedMealType(mealPackage.type || '');
     setIsCanvasOpen(true);
   };
 
@@ -67,10 +64,16 @@ export default function MealPackageCrudPage() {
     e.preventDefault();
     const formData = new FormData(e.target);
 
+    if (!selectedMealType) {
+      alert('Please select a meal type.');
+      return;
+    }
+
     const newPackage = {
       name: formData.get('name'),
       description: formData.get('description'),
-      image: imagePreview, // Assuming imagePreview is a base64 string
+      type: selectedMealType,
+      image: imagePreview
     };
 
     const token = sessionStorage.getItem("token");
@@ -79,7 +82,6 @@ export default function MealPackageCrudPage() {
     try {
       let response;
       if (selectedPackage) {
-        // Update existing meal package
         response = await axios.put(
           `admin/addcategory/${selectedPackage.id}`,
           newPackage,
@@ -87,12 +89,7 @@ export default function MealPackageCrudPage() {
         );
         setMealPackages(mealPackages.map(p => p.id === selectedPackage.id ? response.data : p));
       } else {
-        // Add new meal package
-        response = await axios.post(
-          `/admin/addcategory`,
-          newPackage,
-          { headers }
-        );
+        response = await axios.post(`/admin/addcategory`, newPackage, { headers });
         setMealPackages([...mealPackages, response.data]);
       }
       fetchProducts();
@@ -110,18 +107,9 @@ export default function MealPackageCrudPage() {
     );
   }, [mealPackages, searchTerm]);
 
-
   const columns = [
-    {
-      name: 'Name',
-      selector: row => row.name,
-      sortable: true,
-    },
-    {
-      name: 'Description',
-      selector: row => row.description,
-      sortable: true,
-    },
+    { name: 'Name', selector: row => row.name, sortable: true },
+    { name: 'Description', selector: row => row.description, sortable: true },
     {
       name: 'Actions',
       cell: (row) => (
@@ -133,8 +121,8 @@ export default function MealPackageCrudPage() {
             <Trash2 size={16} />
           </button>
         </div>
-      ),
-    },
+      )
+    }
   ];
 
   return (
@@ -145,7 +133,7 @@ export default function MealPackageCrudPage() {
           className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
         >
           <Plus size={16} />
-          <span>Add Meal Package</span>
+          <span>Add Meal Plan</span>
         </button>
       </div>
 
@@ -181,7 +169,7 @@ export default function MealPackageCrudPage() {
           <div className="bg-white w-1/3 p-6 h-full overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">
-                {selectedPackage ? 'Edit Meal Package' : 'Add Meal Package'}
+                {selectedPackage ? 'Edit Meal Plan' : 'Add Meal Plan'}
               </h2>
               <button
                 onClick={() => setIsCanvasOpen(false)}
@@ -196,6 +184,7 @@ export default function MealPackageCrudPage() {
                 <input
                   name="name"
                   defaultValue={selectedPackage?.name}
+                  placeholder="Enter meal package name"
                   className="w-full border p-2 rounded"
                   required
                 />
@@ -205,9 +194,24 @@ export default function MealPackageCrudPage() {
                 <textarea
                   name="description"
                   defaultValue={selectedPackage?.description}
+                  placeholder="Enter meal package description"
                   className="w-full border p-2 rounded"
                   required
                 />
+              </div>
+              <div className="mb-4">
+                <label className="block mb-1">Meal Type:</label>
+                <select
+                  value={selectedMealType}
+                  onChange={(e) => setSelectedMealType(e.target.value)}
+                  className="w-full border p-2 rounded"
+                  required
+                >
+                  <option value="" disabled>Select meal type</option>
+                  {mealTypes.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
               </div>
               <div className="mb-4">
                 <label className="block mb-1">Image:</label>
@@ -228,14 +232,14 @@ export default function MealPackageCrudPage() {
               <div className="flex justify-end space-x-4 p-4 bg-white shadow-inner rounded-b-lg">
                 <button
                   type="submit"
-                  className="w-32 py-3 bg-purple-500 text-white rounded-xl hover:bg-purple-600 backdrop-blur-md shadow-md transition duration-300 text-lg"
+                  className="w-32 py-3 bg-purple-500 text-white rounded-xl hover:bg-purple-600"
                 >
                   {selectedPackage ? 'Update' : 'Save'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsCanvasOpen(false)}
-                  className="w-32 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 backdrop-blur-md shadow-md transition duration-300 text-lg"
+                  className="w-32 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600"
                 >
                   Cancel
                 </button>
