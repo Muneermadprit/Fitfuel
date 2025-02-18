@@ -1,263 +1,71 @@
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Users, Clock, Utensils } from 'lucide-react';
 
-import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useNavigate } from 'react-router-dom';
-import { TiThMenuOutline } from 'react-icons/ti';
-import FooterPage from './FooterPage';
-const CombinedPage = () => {
-  const [selectedStep, setSelectedStep] = useState(1);
-
-  const navigate = useNavigate();
-  const [selectedOptions, setSelectedOptions] = useState({
-    fullPackage: "",
-    mainMealsWithBreakfast: "",
-    mainMealsWithSnacks: "",
-    mainMealsOnly: "",
-  });
-
-  const handleDateClick = (date, monthIndex) => {
-    if (selectedPlan === "MONTHLY (6 days per week)") {
-      // Clear previous selections
-      setSelectedDates([]);
-
-      // Get the clicked date information
-      const [month, day] = date.split('-').map(Number);
-
-      // Generate the next 6 consecutive dates
-      const consecutiveDates = [];
-      let currentMonth = month;
-      let currentDay = day;
-
-      for (let i = 0; i < 6; i++) {
-        // Check if we need to move to next month
-        if (currentMonth === 0 && currentDay > 31) {
-          currentMonth = 1;
-          currentDay = 1;
-        } else if (currentMonth === 1 && currentDay > 28) {
-          break; // Stop if we exceed February's days
-        }
-
-        // Only add the date if it's selectable
-        if (isDateSelectable(currentDay, currentMonth)) {
-          consecutiveDates.push(`${currentMonth}-${currentDay}`);
-        }
-
-        currentDay++;
-      }
-
-      setSelectedDates(consecutiveDates);
-    } else {
-      // Original single date selection logic
-      if (selectedDates.includes(date)) {
-        setSelectedDates(selectedDates.filter((d) => d !== date));
-      } else {
-        setSelectedDates([...selectedDates, date]);
-      }
-    }
-  };
-
-  const isDateSelectable = (date, month) => {
-    if (month === 0) return date >= 22;
-    return date <= 18;
-  };
-
-  // const handleSelection = (section, option) => {
-  //   setSelectedOptions((prev) => ({
-  //     ...prev,
-  //     [section]: option,
-  //   }));
-  // };
-
-  const handleSelection = (packageType, option) => {
-    setSelectedPackage({
-      type: packageType,
-      option: option
-    });
-  };
-  const mealData = {
-    'Mo 27/01': {
-      breakfast: [
-        {
-          name: 'Tiramisu Oats (LC)',
-          weight: '98.3g',
-          image: '/api/placeholder/320/180',
-          nutrition: {
-            energy: '1,397.8 kcal',
-            protein: '-',
-            fat: '-',
-            carbohydrates: '-'
-          }
-        },
-        {
-          name: 'Spinach & Feta Egg Muffins (LC)',
-          weight: '52.8g',
-          image: '/api/placeholder/320/180',
-          nutrition: {
-            energy: '-',
-            protein: '-',
-            fat: '-',
-            carbohydrates: '-'
-          }
-        }
-      ]
-    },
-    'Tu 28/01': {
-      breakfast: [
-        {
-          name: 'Pesto Eggs (LC)',
-          weight: '132.5g',
-          image: '/api/placeholder/320/180',
-          nutrition: {
-            energy: '-',
-            protein: '-',
-            fat: '-',
-            carbohydrates: '-'
-          }
-        },
-        {
-          name: 'Pear Crumble Bowl (LC)',
-          weight: '-',
-          image: '/api/placeholder/320/180',
-          nutrition: {
-            energy: '-',
-            protein: '-',
-            fat: '-',
-            carbohydrates: '-'
-          }
-        }
-      ]
-    },
-    'We 29/01': {
-      breakfast: [
-        {
-          name: 'New Breakfast Option 1',
-          weight: '100g',
-          image: '/api/placeholder/320/180',
-          nutrition: {
-            energy: '800 kcal',
-            protein: '20g',
-            fat: '10g',
-            carbohydrates: '30g'
-          }
-        },
-        {
-          name: 'New Breakfast Option 2',
-          weight: '80g',
-          image: '/api/placeholder/320/180',
-          nutrition: {
-            energy: '600 kcal',
-            protein: '15g',
-            fat: '8g',
-            carbohydrates: '25g'
-          }
-        }
-      ]
-    }
-  };
-  const [selectedDate, setSelectedDate] = useState('Mo 27/01');
-  const dates = Object.keys(mealData);
-
-  const handleDateSelect = (date) => {
-    setSelectedDate(date);
-  };
-
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    whatsappNumber: '',
-    addressType: 'residential',
-    houseNumber: '',
-    buildingName: '',
-    streetAddress: '',
-    areaName: '',
-    emirate: 'dubai'
-  });
-
-  // ... (keep all the existing state and functions)
-
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-
-    // Basic validation
-    const requiredFields = ['firstName', 'lastName', 'email', 'whatsappNumber', 'houseNumber', 'areaName', 'emirate'];
-    const isValid = requiredFields.every(field => formData[field].trim() !== '');
-
-    if (isValid) {
-      // Here you would typically send the data to your backend
-      console.log('Form submitted:', formData);
-
-      // Redirect to profile page
-      navigate('/profile');
-    } else {
-      alert('Please fill in all required fields');
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  // Navigation links
-  const navLinks = [
-    { label: "Home", href: "/" },
-    { label: "About", href: "/about" },
-    { label: "Menu", href: "/menu" },
-    { label: "Contact", href: "/contact" }
-  ];
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+const MealPlanner = () => {
+  const [activeStep, setActiveStep] = useState(1);
+  const [selectedOptions, setSelectedOptions] = useState({});
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedDates, setSelectedDates] = useState([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [selectedDate, setSelectedDate] = useState(null);
 
+  // Set the first selected date as the active date when moving to step 2
+  useEffect(() => {
+    if (activeStep === 2 && selectedDates.length > 0 && !selectedDate) {
+      setSelectedDate(selectedDates[0]);
+    }
+  }, [activeStep, selectedDates, selectedDate]);
+  const [selectedMeals, setSelectedMeals] = useState({});
+
+  useEffect(() => {
+    if (selectedDate) {
+      const initialSelections = {};
+      ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+        const defaultMeal = mealData[selectedDate]?.[mealType]?.find(meal => meal.default);
+        if (defaultMeal) {
+          initialSelections[`${selectedDate}-${mealType}`] = defaultMeal.id;
+        }
+      });
+      setSelectedMeals(prev => ({ ...prev, ...initialSelections }));
+    }
+  }, [selectedDate]);
 
   const packages = [
     {
-      title: 'Full Package',
       id: 'fullPackage',
+      title: 'Full Package',
+      icon: <Users className="w-6 h-6" />,
+      subtitle: 'Perfect for families',
+      description: 'Complete daily nutrition with all meals included',
       options: [
         '⭐ 2 Main Meals with Breakfast & FITT Snack',
         '1 Main Meal with Breakfast & FITT Snack'
       ]
     },
     {
+      id: 'mainMealsWithBreakfast',
       title: 'Main Meals with Breakfast',
-      id: 'mainBreakfast',
+      icon: <Clock className="w-6 h-6" />,
+      subtitle: 'Start your day right',
+      description: 'Essential meals to power your morning and afternoon',
       options: [
         '⭐ 2 Main Meals with Breakfast',
         '1 Main Meal with Breakfast'
       ]
     },
     {
+      id: 'mainMealsWithSnacks',
       title: 'Main Meals with FITT Snacks',
-      id: 'mainSnacks',
+      icon: <Utensils className="w-6 h-6" />,
+      subtitle: 'Balanced nutrition',
+      description: 'Perfect combination of main meals and healthy snacks',
       options: [
-        '⭐ 2 Main Meals with FITT Snack',
-        '1 Main Meal with FITT Snack'
-      ]
-    },
-    {
-      title: 'Main Meals Only',
-      id: 'mainOnly',
-      options: [
-        '⭐ 2 Main Meals',
-        '1 Main Meal'
+        '2 Main Meals & FITT Snack',
+        '1 Main Meal & FITT Snack'
       ]
     }
   ];
-  const [selectedPackage, setSelectedPackage] = useState({
-    type: null,  // 'fullPackage', 'mainBreakfast', 'mainSnacks', 'mainOnly'
-    option: null // 'option1' or 'option2'
-  });
-
-  const isSelected = (packageType, option) => {
-    return selectedPackage.type === packageType && selectedPackage.option === option;
-  };
 
   const plans = [
     "MONTHLY (6 days per week)",
@@ -266,22 +74,15 @@ const CombinedPage = () => {
     "WEEKLY (5 days)"
   ];
 
-  const handlePreviousMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(prev => prev - 1);
-    } else {
-      setCurrentMonth(prev => prev - 1);
-    }
+  const handleSelection = (packageId, option) => {
+    // Clear other selections
+    setSelectedOptions({
+      [packageId]: option
+    });
   };
 
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(prev => prev + 1);
-    } else {
-      setCurrentMonth(prev => prev + 1);
-    }
+  const isSelected = (packageId, option) => {
+    return selectedOptions[packageId] === option;
   };
 
   const isDateDisabled = (date) => {
@@ -304,7 +105,7 @@ const CombinedPage = () => {
     if (isDateDisabled(date)) return;
 
     if (selectedPlan?.includes("MONTHLY")) {
-      const daysToSelect = selectedPlan.includes("5 days") ? 20 : 24; // Either 20 or 24 days
+      const daysToSelect = selectedPlan.includes("5 days") ? 20 : 24;
       const validDates = [];
       let currentDate = new Date(date);
       let daysAdded = 0;
@@ -324,7 +125,7 @@ const CombinedPage = () => {
       let currentDate = new Date(date);
 
       while (validDates.length < daysToSelect) {
-        if (!isDateDisabled(currentDate)) {
+        if (!isDateDisabled(new Date(currentDate))) {
           validDates.push(new Date(currentDate));
         }
         currentDate.setDate(currentDate.getDate() + 1);
@@ -349,7 +150,7 @@ const CombinedPage = () => {
       const date = new Date(month.getFullYear(), month.getMonth(), day);
       const dateStr = date.toISOString().split('T')[0];
       const isDisabled = isDateDisabled(date);
-      const isSelected = selectedDates.some(d => d === dateStr);
+      const isSelected = selectedDates.includes(dateStr);
 
       calendarDays.push(
         <button
@@ -385,531 +186,661 @@ const CombinedPage = () => {
         </div>
       </div>
     );
-  }
+  };
 
-  return (
-    <>
-      <header className="flex items-center justify-between px-6 py-4 bg-white shadow-md rounded-lg relative z-50">
-        {/* Logo */}
-        <div className="flex items-center space-x-4">
-          <img
-            src="/api/placeholder/60/60"
-            alt="Logo"
-            className="w-12 h-12 rounded-full shadow-sm" />
-          <h1 className="text-xl font-semibold text-[#464194]">Daily Fit</h1>
-        </div>
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex space-x-6">
-          {navLinks.map((link) => (
-            <span
-              key={link.label}
-              className="text-lg text-purple-600 hover:text-green-500 font-medium transition-colors cursor-pointer px-2"
-            >
-              {link.label}
-            </span>
-          ))}
-        </nav>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden text-[#464194] focus:outline-none"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          <TiThMenuOutline className="w-8 h-8" />
-        </button>
-
-        {/* Mobile Menu */}
-        <div
-          className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${menuOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
-          onClick={() => setMenuOpen(false)} />
-        <div
-          className={`fixed top-0 right-0 h-full w-3/4 max-w-sm bg-white shadow-xl z-50 transition-transform duration-500 ${menuOpen ? "translate-x-0" : "translate-x-full"}`}
-        >
-          <div className="flex items-center justify-between px-4 py-4 border-b">
-            <h2 className="text-lg font-semibold text-gray-700">Menu</h2>
-            <button
-              className="text-gray-500 hover:text-gray-700 focus:outline-none"
-              onClick={() => setMenuOpen(false)}
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          <ul className="p-6 space-y-4">
-            {navLinks.map((link) => (
-              <li key={link.label}>
-                <span
-                  className="block text-lg text-purple-600 hover:text-green-500 font-medium transition-colors cursor-pointer"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {link.label}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </header>
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
 
 
-      <div className="max-w-6xl mx-auto p-4 lg:p-6 space-y-8 lg:space-y-12 border-4 border-purple-100 shadow-lg mt-5">
-        {/* Steps Navigation */}
-        <div className="flex items-center justify-center mb-8 lg:mb-12 overflow-x-auto px-4">
-          {[1, 2, 3, 4].map((step, index) => (
-            <React.Fragment key={step}>
-              <div
-                className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0 
-                ${selectedStep === step ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-600"}`}
-                onClick={() => setSelectedStep(step)}
-              >
-                {step}
-              </div>
-              {index < 3 && <div className="h-[2px] w-8 md:w-16 bg-gray-200 flex-shrink-0" />}
-            </React.Fragment>
-          ))}
-        </div>
+  const mealData = {
+    "2024-02-17": {
+      breakfast: [
+        {
+          id: 'b1',
+          name: "Classic Oatmeal Bowl",
+          weight: "350g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "320 kcal",
+            protein: "12g",
+            fat: "8g",
+            carbohydrates: "54g"
+          },
+          default: true
+        },
+        {
+          id: 'b2',
+          name: "Greek Yogurt Parfait",
+          weight: "300g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "280 kcal",
+            protein: "15g",
+            fat: "6g",
+            carbohydrates: "42g"
+          }
+        },
+        {
+          id: 'b3',
+          name: "Protein Pancakes",
+          weight: "320g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "350 kcal",
+            protein: "18g",
+            fat: "9g",
+            carbohydrates: "48g"
+          }
+        },
+        {
+          id: 'b4',
+          name: "Avocado Toast",
+          weight: "280g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "310 kcal",
+            protein: "14g",
+            fat: "16g",
+            carbohydrates: "32g"
+          }
+        }
+      ],
+      lunch: [
+        {
+          id: 'l1',
+          name: "Grilled Chicken Salad",
+          weight: "400g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "420 kcal",
+            protein: "35g",
+            fat: "22g",
+            carbohydrates: "28g"
+          },
+          default: true
+        },
+        {
+          id: 'l2',
+          name: "Quinoa Buddha Bowl",
+          weight: "380g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "380 kcal",
+            protein: "16g",
+            fat: "18g",
+            carbohydrates: "46g"
+          }
+        },
+        {
+          id: 'l3',
+          name: "Salmon Poke Bowl",
+          weight: "420g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "450 kcal",
+            protein: "32g",
+            fat: "24g",
+            carbohydrates: "38g"
+          }
+        },
+        {
+          id: 'l4',
+          name: "Mediterranean Wrap",
+          weight: "350g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "390 kcal",
+            protein: "18g",
+            fat: "16g",
+            carbohydrates: "48g"
+          }
+        }
+      ],
+      dinner: [
+        {
+          id: 'd1',
+          name: "Grilled Salmon",
+          weight: "380g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "460 kcal",
+            protein: "38g",
+            fat: "26g",
+            carbohydrates: "24g"
+          },
+          default: true
+        },
+        {
+          id: 'd2',
+          name: "Vegetarian Stir-Fry",
+          weight: "400g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "380 kcal",
+            protein: "16g",
+            fat: "14g",
+            carbohydrates: "52g"
+          }
+        },
+        {
+          id: 'd3',
+          name: "Lean Beef Bowl",
+          weight: "420g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "480 kcal",
+            protein: "42g",
+            fat: "22g",
+            carbohydrates: "36g"
+          }
+        },
+        {
+          id: 'd4',
+          name: "Turkey Meatballs",
+          weight: "380g",
+          image: "/api/placeholder/400/300",
+          nutrition: {
+            energy: "420 kcal",
+            protein: "36g",
+            fat: "18g",
+            carbohydrates: "42g"
+          }
+        }
+      ]
+    }
+  };
 
-        {/* Dynamic Content Based on Selected Step */}
-        <div className="w-full">
-          {selectedStep === 1 && (
-            <div className="max-w-6xl mx-auto space-y-8">
-              <div className="p-4 md:p-8">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8">
-                  <h2 className="text-xl md:text-2xl font-semibold">Select meal package</h2>
-                  <span className="bg-yellow-50 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-1">
-                    ⭐ MOST POPULAR!
-                  </span>
-                </div>
-                <div className="space-y-8">
-                  {packages.map((pkg) => (
-                    <div key={pkg.id} className="space-y-4">
-                      <h3 className="text-lg md:text-xl font-medium">{pkg.title}</h3>
-                      <div className="flex flex-col md:flex-row gap-4">
-                        {pkg.options.map((optionText, index) => (
-                          <button
-                            key={`${pkg.id}-option${index + 1}`}
-                            onClick={() => handleSelection(pkg.id, `option${index + 1}`)}
-                            className={`flex-1 px-6 py-3 rounded-full font-medium transition-colors duration-200 ${isSelected(pkg.id, `option${index + 1}`)
-                              ? "bg-purple-600 text-white hover:bg-[#3a3575]"
-                              : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-                              }`}
-                          >
-                            {optionText}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {/* <div className="space-y-8">
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-medium">Full Package</h3>
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() => handleSelection("fullPackage", "option1")}
-                        className={`flex-1 px-6 py-3 rounded-full font-medium ${selectedOptions.fullPackage === "option1"
-                          ? "bg-purple-600 text-white hover:bg-[#3a3575]"
-                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
-                      >
-                        ⭐ 2 Main Meals with Breakfast & FITT Snack
-                      </button>
-                      <button
-                        onClick={() => handleSelection("fullPackage", "option2")}
-                        className={`flex-1 px-6 py-3 rounded-full font-medium ${selectedOptions.fullPackage === "option2"
-                          ? "bg-purple-600 text-white hover:bg-[#3a3575]"
-                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
-                      >
-                        1 Main Meal with Breakfast & FITT Snack
-                      </button>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="space-y-8 mt-8">
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-medium">Main Meals with Breakfast</h3>
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() => handleSelection("mainMealsWithBreakfast", "option1")}
-                        className={`flex-1 px-6 py-3 rounded-full font-medium ${selectedOptions.mainMealsWithBreakfast === "option1"
-                          ? "bg-purple-600 text-white hover:bg-[#3a3575]"
-                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
-                      >
-                        ⭐ 2 Main Meals with Breakfast & FITT Snack
-                      </button>
-                      <button
-                        onClick={() => handleSelection("mainMealsWithBreakfast", "option2")}
-                        className={`flex-1 px-6 py-3 rounded-full font-medium ${selectedOptions.mainMealsWithBreakfast === "option2"
-                          ? "bg-purple-600 text-white hover:bg-[#3a3575]"
-                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
-                      >
-                        1 Main Meal with Breakfast & FITT Snack
-                      </button>
-                    </div>
-                  </div>
-                </div>
+  const handleMealSelection = (date, mealType, mealId) => {
+    setSelectedMeals(prev => ({
+      ...prev,
+      [`${date}-${mealType}`]: mealId
+    }));
+  };
 
-                <div className="space-y-8 mt-8">
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-medium">Main Meals with FITT Snacks</h3>
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() => handleSelection("mainMealsWithSnacks", "option1")}
-                        className={`flex-1 px-6 py-3 rounded-full font-medium ${selectedOptions.mainMealsWithSnacks === "option1"
-                          ? "bg-purple-600 text-white hover:bg-[#3a3575]"
-                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
-                      >
-                        ⭐ 2 Main Meals with Breakfast & FITT Snack
-                      </button>
-                      <button
-                        onClick={() => handleSelection("mainMealsWithSnacks", "option2")}
-                        className={`flex-1 px-6 py-3 rounded-full font-medium ${selectedOptions.mainMealsWithSnacks === "option2"
-                          ? "bg-purple-600 text-white hover:bg-[#3a3575]"
-                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
-                      >
-
-
-                        1 Main Meal with Breakfast & FITT Snack
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-8 mt-8">
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-medium">Main Meals Only</h3>
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() => handleSelection("mainMealsOnly", "option1")}
-                        className={`flex-1 px-6 py-3 rounded-full font-medium ${selectedOptions.mainMealsOnly === "option1"
-                          ? "bg-purple-600 text-white hover:bg-[#3a3575]"
-                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
-                      >
-                        ⭐ 2 Main Meals with Breakfast & FITT Snack
-                      </button>
-                      <button
-                        onClick={() => handleSelection("mainMealsOnly", "option2")}
-                        className={`flex-1 px-6 py-3 rounded-full font-medium ${selectedOptions.mainMealsOnly === "option2"
-                          ? "bg-purple-600 text-white hover:bg-[#3a3575]"
-                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
-                      >
-                        1 Main Meal with Breakfast & FITT Snack
-                      </button>
-                    </div>
-                  </div>
-                </div> */}
-
-                {/* Plan Selection */}
-                <div className="mt-8">
-                  <h2 className="text-xl md:text-2xl font-semibold mb-6">Select your plan duration and start date</h2>
-                  <div className="flex flex-wrap gap-3 mb-6">
-                    {plans.map((plan) => (
-                      <button
-                        key={plan}
-                        onClick={() => {
-                          setSelectedPlan(plan);
-                          setSelectedDates([]);
-                        }}
-                        className={`px-6 py-3 rounded-full text-sm font-medium transition-colors ${selectedPlan === plan
-                          ? "bg-purple-600 text-white"
-                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-                          }`}
-                      >
-                        {plan}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Calendar Section */}
-                  <div className="border rounded-lg p-4 md:p-6">
-                    <div className="flex justify-between items-center mb-6">
-                      <button className="p-2 rounded-full hover:bg-gray-100">
-                        <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
-                      </button>
-                      <div className="flex flex-col md:flex-row gap-4 md:gap-8 overflow-x-auto">
-                        {renderCalendar(0)}
-                        {renderCalendar(1)}
-                      </div>
-                      <button className="p-2 rounded-full hover:bg-gray-100">
-                        <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Navigation */}
-                <div className="mt-6 flex justify-between items-center">
-                  <button className="px-4 md:px-6 py-2 border border-purple-600 text-purple-600 rounded-full hover:bg-purple-600 hover:text-white text-sm md:text-base">
-                    CLEAR
-                  </button>
-                  <button className="px-4 md:px-6 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 text-sm md:text-base">
-                    Build Menu
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {selectedStep === 2 && (
-            <div className="p-4 md:p-6 max-w-4xl mx-auto">
-              <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
-                <h2 className="text-xl md:text-2xl font-semibold">Meal selection</h2>
-                <p className="text-sm font-medium text-gray-600">
-                  Swap pre-selected favourites by choosing yours
+  const renderStepContent = () => {
+    switch (activeStep) {
+      case 1:
+        return (
+          <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-4">
+            <div className="max-w-7xl mx-auto">
+              {/* Header Section */}
+              <div className="text-center mb-12 space-y-4">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+                  Customize Your Meal Plan
+                </h1>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  Choose from our carefully crafted meal packages designed to meet your nutritional needs
                 </p>
               </div>
 
-              <div className="flex gap-3 overflow-x-auto mb-6 pb-2">
-                {dates.map((date) => (
-                  <button
-                    key={date}
-                    onClick={() => handleDateSelect(date)}
-                    className={`px-6 py-3 rounded-full font-medium ${selectedDate === date
-                      ? "bg-purple-600 text-white"
-                      : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
-                  >
-                    {date}
-                  </button>
+              {/* Package Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                {packages.map((pkg) => (
+                  <div key={pkg.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        {pkg.icon}
+                      </div>
+                      <span className="text-sm font-medium text-purple-600">{pkg.subtitle}</span>
+                    </div>
+
+                    <h3 className="text-xl font-semibold mb-2">{pkg.title}</h3>
+                    <p className="text-gray-600 text-sm mb-6">{pkg.description}</p>
+
+                    <div className="space-y-3">
+                      {pkg.options.map((optionText, index) => (
+                        <button
+                          key={`${pkg.id}-option${index + 1}`}
+                          onClick={() => handleSelection(pkg.id, `option${index + 1}`)}
+                          className={`w-full p-4 rounded-lg text-left text-sm font-medium transition-all
+                          ${isSelected(pkg.id, `option${index + 1}`)
+                              ? "bg-purple-600 text-white shadow-md"
+                              : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                            }`}
+                        >
+                          {optionText}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
 
-              <div className="space-y-8">
-                <div>
-                  <h3 className="text-lg md:text-xl font-medium mb-4">Breakfast</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                    {mealData[selectedDate].breakfast.map((meal, index) => (
-                      <div key={index} className="bg-white rounded-lg shadow-sm p-4">
-                        <img src={meal.image} alt={meal.name} className="w-full h-48 object-cover rounded-lg" />
-                        <div className="mt-4">
-                          <h4 className="text-base md:text-lg font-medium">{meal.name}</h4>
-                          <p className="text-sm font-medium text-gray-600">{meal.weight}</p>
-                        </div>
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mt-2 gap-4">
-                          <div className="text-sm font-medium space-y-1">
-                            <p>Energy: {meal.nutrition.energy}</p>
-                            <p>Protein: {meal.nutrition.protein}</p>
-                            <p>Fat: {meal.nutrition.fat}</p>
-                            <p>Carbohydrates: {meal.nutrition.carbohydrates}</p>
-                          </div>
-                          <button className="w-full md:w-auto px-4 py-2 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700">
-                            SELECT
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {/* Duration Selection */}
+              <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <h2 className="text-xl font-semibold mb-6">Select Duration</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {plans.map((plan) => (
+                    <button
+                      key={plan}
+                      onClick={() => setSelectedPlan(plan)}
+                      className={`p-6 rounded-lg border-2 transition-all
+                      ${selectedPlan === plan
+                          ? "border-purple-600 bg-purple-50"
+                          : "border-gray-200 hover:border-purple-200"
+                        }`}
+                    >
+                      <div className="text-lg font-semibold">{plan}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
-          )}
 
-          {selectedStep === 3 && (
-            <div className="p-4 md:p-8">
-              <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
-                <h2 className="text-xl md:text-2xl font-semibold">Enhance your plan</h2>
-                <button className="px-4 md:px-6 py-2 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 flex items-center gap-2">
-                  SKIP
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                    <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.243 7.032a.75.75 0 010 1.06l-3.5 3.5a.75.75 0 01-1.06 0l-3.5-3.5a.75.75 0 011.06-1.06l2.47 2.47 2.47-2.47a.75.75 0 011.06 0z" clipRule="evenodd" />
-                  </svg>
+              {/* Calendar Section */}
+              <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold">Start Date</h2>
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={handlePrevMonth}
+                      className="p-2 hover:bg-gray-100 rounded-lg"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <span className="font-medium">
+                      {new Date(currentYear, currentMonth).toLocaleDateString('default', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button
+                      onClick={handleNextMonth}
+                      className="p-2 hover:bg-gray-100 rounded-lg"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-8 overflow-x-auto">
+                  {renderCalendar(0)}
+                  {renderCalendar(1)}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col md:flex-row justify-between gap-4 md:items-center">
+                <button
+                  onClick={() => {
+                    setSelectedOptions({});
+                    setSelectedPlan(null);
+                    setSelectedDates([]);
+                  }}
+                  className="px-8 py-3 border-2 border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 font-medium"
+                >
+                  Reset Selections
+                </button>
+                <button
+                  className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
+                >
+                  Continue to Menu Selection
                 </button>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                {/* Enhancement Items */}
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
-                  <div key={item} className="bg-white rounded-lg shadow-sm p-4">
-                    <div className="flex items-center gap-4">
-                      <img src="/api/placeholder/80/80" alt="Item" className="w-12 h-12 md:w-16 md:h-16 rounded-full" />
-                      <div className="flex-grow">
-                        <h3 className="text-base md:text-lg font-medium">Enhancement Item {item}</h3>
-                        <p className="text-sm font-medium text-gray-600">AED{item * 5}.00 / day</p>
-                      </div>
-                      <input type="checkbox" className="w-5 h-5 text-purple-600 rounded" />
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
-          )}
+          </div>
+        );
 
-          {selectedStep === 4 && (
-            <div className="flex justify-center p-4">
-              <form onSubmit={handleFormSubmit} className="w-full max-w-4xl bg-white rounded-lg shadow-lg p-4 md:p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  {/* Form fields remain the same, just adding responsive padding and spacing */}
-                  {/* Example of a responsive form field */}
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">First name*</label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      id="firstName"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Last name*</label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      id="lastName"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Email*</label>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Whatsapp Number*</label>
-                    <div className="flex">
-                      <div className="relative flex-grow focus-within:z-10">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                          <img src="/api/placeholder/24/24" alt="United Arab Emirates" className="w-6 h-6" />
-                        </div>
-                        <select
-                          id="countryCode"
-                          name="countryCode"
-                          value={formData.countryCode}
-                          onChange={handleInputChange}
-                          className="block w-full pl-10 pr-12 py-2 text-sm rounded-l-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+
+      case 2:
+        if (!selectedDate && selectedDates.length > 0) {
+          setSelectedDate(selectedDates[0]);
+        }
+
+        return (
+          <div className="p-4 md:p-6 max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
+              <h2 className="text-xl md:text-2xl font-semibold">Meal selection</h2>
+              <p className="text-sm font-medium text-gray-600">
+                Swap pre-selected favourites by choosing yours
+              </p>
+            </div>
+
+            <div className="flex gap-3 overflow-x-auto mb-6 pb-2">
+              {selectedDates.map((date) => (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDate(date)}
+                  className={`px-6 py-3 rounded-full font-medium whitespace-nowrap
+                      ${date === selectedDate
+                      ? "bg-purple-600 text-white"
+                      : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+                >
+                  {new Date(date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-12">
+              {['breakfast', 'lunch', 'dinner'].map((mealType) => (
+                <div key={mealType}>
+                  <h3 className="text-xl font-semibold mb-6 capitalize">{mealType}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {mealData[selectedDate]?.[mealType]?.map((meal) => {
+                      const isSelected = selectedMeals[`${selectedDate}-${mealType}`] === meal.id;
+
+                      return (
+                        <div
+                          key={meal.id}
+                          className={`bg-white rounded-xl shadow-sm transition-all ${isSelected ? 'ring-2 ring-purple-600' : 'hover:shadow-md'
+                            }`}
                         >
-                          <option value="+971">+971</option>
-                        </select>
-                      </div>
-                      <input
-                        type="tel"
-                        name="whatsappNumber"
-                        id="whatsappNumber"
-                        value={formData.whatsappNumber}
-                        onChange={handleInputChange}
-                        className="block w-full rounded-r-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
-                        placeholder="5XXXXXXXX"
-                        required />
-                    </div>
-                  </div>
-                  {/* <p className="mt-4 text-sm text-gray-600">
-                    Please select the correct number prefix and remove the first 0 when inputting your WhatsApp number.
-                  </p> */}
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Address Type*</label>
-                    <select
-                      id="addressType"
-                      name="addressType"
-                      value={formData.addressType}
-                      onChange={handleInputChange}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
-                    >
-                      <option value="residential">Residential</option>
-                      <option value="commercial">Commercial</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">House Number*</label>
-                    <input
-                      type="text"
-                      name="houseNumber"
-                      id="houseNumber"
-                      value={formData.houseNumber}
-                      onChange={handleInputChange}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Building Name*</label>
-                    <input
-                      type="text"
-                      name="buildingName"
-                      id="buildingName"
-                      value={formData.buildingName}
-                      onChange={handleInputChange}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Area Name*</label>
-                    <input
-                      type="text"
-                      name="areaName"
-                      id="areaName"
-                      value={formData.areaName}
-                      onChange={handleInputChange}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Street Address*</label>
-                    <input
-                      type="text"
-                      name="streetAddress"
-                      id="streetAddress"
-                      value={formData.streetAddress}
-                      onChange={handleInputChange}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Emirates*</label>
-                    <select
-                      id="emirate"
-                      name="emirate"
-                      value={formData.emirate}
-                      onChange={handleInputChange}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
-                    >
-                      <option value="abu-dhabi">Abu Dhabi</option>
-                      <option value="dubai">Dubai</option>
-                      <option value="sharjah">Sharjah</option>
-                      <option value="ajman">Ajman</option>
-                      <option value="umm-al-quwain">Umm Al Quwain</option>
-                      <option value="ras-al-khaimah">Ras Al Khaimah</option>
-                      <option value="fujairah">Fujairah</option>
-                    </select>
-                  </div>
-                  {/* Add other form fields similarly */}
-                </div>
+                          <img
+                            src={meal.image}
+                            alt={meal.name}
+                            className="w-full h-48 object-cover rounded-t-xl"
+                          />
+                          <div className="p-4">
+                            <h4 className="font-medium mb-1">{meal.name}</h4>
+                            <p className="text-sm text-gray-600 mb-3">{meal.weight}</p>
 
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-8">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedStep(3)}
-                    className="px-6 py-2 border border-[#464194] text-[#464194] rounded-full font-medium hover:bg-[#3b377a] hover:text-white"
-                  >
-                    BACK
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-[#3b377a]"
-                  >
-                    COMPLETE ORDER
-                  </button>
+                            <div className="text-sm space-y-1 mb-4">
+                              <p>Energy: {meal.nutrition.energy}</p>
+                              <p>Protein: {meal.nutrition.protein}</p>
+                              <p>Fat: {meal.nutrition.fat}</p>
+                              <p>Carbs: {meal.nutrition.carbohydrates}</p>
+                            </div>
+
+                            <button
+                              onClick={() => handleMealSelection(selectedDate, mealType, meal.id)}
+                              className={`w-full py-2 rounded-lg font-medium transition-colors ${isSelected
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                              {isSelected ? 'SELECTED' : 'SELECT'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </form>
+              ))}
             </div>
-          )}
+          </div>
+        );
+
+
+      case 3:
+        return (
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-8 text-center">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-4">Welcome to the Final Steps!</h3>
+              <p className="text-gray-600">
+                We're excited to prepare your personalized meal plan. Please review your contact information
+                below to ensure we can reach you with updates about your delivery.
+              </p>
+            </div>
+            <form className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <input
+                    type="tel"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-8 text-center">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-4">Delivery Details</h3>
+              <p className="text-gray-600">
+                Please provide your delivery address to ensure your meals reach you at the right location.
+              </p>
+            </div>
+            <form className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                    placeholder="Enter your street address"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Apartment/Unit (Optional)</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                    placeholder="Apt, Suite, Unit, etc."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Instructions (Optional)</label>
+                  <textarea
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                    rows={3}
+                    placeholder="Add any special instructions for delivery"
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+        );
+
+        // case 3:
+        return (
+          <div className="max-w-2xl mx-auto">
+            <form className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
+                  <textarea
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+        );
+    }
+  };
+
+  return (
+
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Progress Steps */}
+        <div className="flex justify-between items-center mb-12">
+          {[1, 2, 3, 4].map((step) => (
+            <div key={step} className="flex items-center">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-semibold
+              ${activeStep >= step ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                {step}
+              </div>
+              {step < 4 && (
+                <div className={`w-24 h-1 mx-2 
+                ${activeStep > step ? 'bg-purple-600' : 'bg-gray-200'}`}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Step Content */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-2">
+            {activeStep === 1 ? 'Choose Your Plan' :
+              activeStep === 2 ? 'Select Your Meals' :
+                activeStep === 3 ? 'Contact Information' :
+                  'Delivery Details'}
+          </h2>
+          <p className="text-gray-600">
+            {activeStep === 1 ? 'Select a meal plan that fits your lifestyle' :
+              activeStep === 2 ? 'Customize your weekly menu' :
+                activeStep === 3 ? 'Tell us how to reach you' :
+                  'Where should we deliver your meals?'}
+          </p>
+        </div>
+
+        {renderStepContent()}
+
+        {/* Navigation */}
+        <div className="flex justify-between mt-12">
+          <button
+            onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
+            className="px-6 py-2 rounded-xl border-2 border-purple-600 text-purple-600 hover:bg-purple-50"
+          >
+            Back
+          </button>
+          <button
+            onClick={() => setActiveStep(Math.min(4, activeStep + 1))}
+            className="px-6 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700"
+          >
+            {activeStep === 4 ? 'Complete Order' : 'Continue'}
+          </button>
         </div>
       </div>
-      <FooterPage />
-    </>
+    </div>
+
+    // <div className="min-h-screen bg-gray-50 p-6">
+    //   <div className="max-w-6xl mx-auto">
+    //     {/* Progress Steps */}
+    //     <div className="flex justify-between items-center mb-12">
+    //       {[1, 2, 3].map((step) => (
+    //         <div key={step} className="flex items-center">
+    //           <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-semibold
+    //             ${activeStep >= step ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+    //             {step}
+    //           </div>
+    //           {step < 3 && (
+    //             <div className={`w-24 h-1 mx-2 
+    //               ${activeStep > step ? 'bg-purple-600' : 'bg-gray-200'}`}
+    //             />
+    //           )}
+    //         </div>
+    //       ))}
+    //     </div>
+
+    //     {/* Step Content */}
+    //     <div className="mb-8">
+    //       <h2 className="text-2xl font-bold mb-2">
+    //         {activeStep === 1 ? 'Choose Your Plan' :
+    //           activeStep === 2 ? 'Select Your Meals' :
+    //             'Delivery Details'}
+    //       </h2>
+    //       <p className="text-gray-600">
+    //         {activeStep === 1 ? 'Select a meal plan that fits your lifestyle' :
+    //           activeStep === 2 ? 'Customize your weekly menu' :
+    //             'Tell us where to deliver your meals'}
+    //       </p>
+    //     </div>
+
+    //     {renderStepContent()}
+
+    //     {/* Navigation */}
+    //     <div className="flex justify-between mt-12">
+    //       <button
+    //         onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
+    //         className="px-6 py-2 rounded-xl border-2 border-purple-600 text-purple-600 hover:bg-purple-50"
+    //       >
+    //         Back
+    //       </button>
+    //       <button
+    //         onClick={() => setActiveStep(Math.min(3, activeStep + 1))}
+    //         className="px-6 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700"
+    //       >
+    //         {activeStep === 3 ? 'Complete Order' : 'Continue'}
+    //       </button>
+    //     </div>
+    //   </div>
+    // </div>
   );
 };
 
-export default CombinedPage;
+export default MealPlanner;

@@ -87,3 +87,12 @@ const AdminLogin = () => {
 };
 
 export default AdminLogin;
+
+
+// {
+//   "username":"admin@dailyfitt",
+//   "password":"admin@dailyfitt123!@#"
+// }
+
+//  https://daily-fit-api.onrender.com/helloworld
+// api/admin/login
