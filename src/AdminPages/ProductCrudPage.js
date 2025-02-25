@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Pencil, Trash2, Eye, Plus, Search, X } from 'lucide-react';  // Add X for close icon
 import DataTable from 'react-data-table-component';
-import axios from "../axiosConfig";
+import axios from "axios";
 
 
 const initialProducts = [
@@ -80,62 +80,61 @@ export default function ProductCrudPage() {
         }
     };
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-        const token = sessionStorage.getItem("token"); // Retrieve token from sessionStorage
+        // Get form data
+        const mealName = e.target.name.value.trim();
+        const price = parseFloat(e.target.price.value);
+        const description = e.target.description.value.trim();
+        const category = e.target.category.value;
+        const mealType = e.target.specialOccasion.value;
+        const calories = parseFloat(e.target.calories.value) || 0;
+        const protein = parseFloat(e.target.protein.value) || 0;
+        const fat = parseFloat(e.target.fat.value) || 0;
+        const carbs = parseFloat(e.target.carbs.value) || 0;
+        const allergies = e.target.allergies.value ? e.target.allergies.value.split(',').map(a => a.trim()) : [];
 
-        if (!token) {
-            alert("No authentication token found. Please log in again.");
+        // Handle image upload (assuming `imageBase64` contains the uploaded image URL)
+        if (!mealName || !description || !imageBase64 || !price) {
+            // setFormErrors({ name: "All fields are required!" });
             return;
         }
 
-        const formData = new FormData(event.target);
-        const productData = {
-            name: formData.get("name"),
-            price: formData.get("price"),
-            description: formData.get("description"),
-            category: formData.get("category"),
-            calories: formData.get("calories"),
-            protein: formData.get("protein"),
-            fat: formData.get("fat"),
-            carbs: formData.get("carbs"),
-            allergies: formData.get("allergies"),
-            specialOccasion: formData.get("specialOccasion"),
-            image: imageBase64 || null,
+        const mealData = {
+            mealName,
+            image: [imageBase64], // Assuming a single image uploaded
+            description,
+            category,
+            package: ["Small", "Medium", "Large"], // Static packages as per the given model
+            mealType,
+            fareDetails: {
+                totalFare: price,
+                strikeOff: price + 1.5, // For demo, adding a static strike-off price
+                discount: 1.5
+            },
+            moreDetails: {
+                energy: calories,
+                protein,
+                fat,
+                carbohydrates: carbs,
+                allergens: allergies
+            }
         };
 
         try {
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            };
+            // Send POST request to the API
+            const response = await axios.post('https://2733-2401-4900-6865-fc96-3074-5c65-9dbc-c80b.ngrok-free.app/api/admin/add-meal', mealData);
+            console.log('Meal added successfully:', response.data);
 
-            if (selectedProduct) {
-                console.log(selectedProduct._id, 'id')
-                // Update existing product
-                const updatedProduct = { ...selectedProduct, ...productData };
-                await axios.put(`/updateproduct/:${selectedProduct._id}`, updatedProduct, config);
-
-                setProducts(products.map(p => (p.id === selectedProduct.id ? updatedProduct : p)));
-                alert("Product updated successfully!");
-            } else {
-                // Create new product
-                const response = await axios.post("/admin/addproduct", productData, config);
-                const newProduct = { ...productData, id: response.data.id };
-
-                setProducts([...products, newProduct]);
-                alert("Product added successfully!");
-            }
-
+            // Optionally, handle success (close canvas, show a success message, etc.)
             setIsCanvasOpen(false);
         } catch (error) {
-            console.error("Error saving product:", error);
-            alert("Failed to save product. Please try again.");
+            console.error('Failed to add meal:', error);
+            // Optionally handle error (show an error message)
         }
     };
+
     const filteredProducts = useMemo(() => {
         return products
             .filter(product => {
@@ -354,24 +353,6 @@ export default function ProductCrudPage() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
                     <div className="bg-white w-1/3 p-6 rounded-lg shadow-xl relative">
                         <div className="flex justify-between items-center mb-4">
-                            {/* <div className="flex items-center space-x-4">
-                                <button
-                                    onClick={handlePrevProduct}
-                                    className="bg-gray-200 p-2 rounded-full hover:bg-gray-300"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                                <button
-                                    onClick={handleNextProduct}
-                                    className="bg-gray-200 p-2 rounded-full hover:bg-gray-300"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                            </div> */}
                             <h2 className="text-xl font-bold">Product Detail View</h2>
                             <button
                                 onClick={() => setIsModalOpen(false)}

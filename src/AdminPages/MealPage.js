@@ -1,126 +1,801 @@
+// import React, { useState, useMemo, useEffect } from 'react';
+// import { Pencil, Trash2, Eye, Plus, Search, X } from 'lucide-react';
+// import DataTable from 'react-data-table-component';
+// import axios from "axios";
+
+// const initialFormData = {
+//     mealName: '',
+//     description: '',
+//     category: '',
+//     categoryId: '', // Store the category ID
+//     mealType: '',
+//     mealTypeId: '', // Store the meal type ID
+//     package: [],
+//     image: [],
+//     fareDetails: {
+//         totalFare: '',
+//         strikeOff: '',
+//         discount: ''
+//     },
+//     moreDetails: {
+//         energy: '',
+//         protein: '',
+//         fat: '',
+//         carbohydrates: '',
+//         allergens: [] // Initialize as an empty array
+//     }
+// };
+
+// export default function MealPage() {
+//     const [mealPackages, setMealPackages] = useState([]);
+//     const [categoryPackage, setCategoryPackage] = useState([]);
+//     const [mealType, setMealType] = useState([]);
+//     const [isCanvasOpen, setIsCanvasOpen] = useState(false);
+//     const [searchTerm, setSearchTerm] = useState('');
+//     const [formData, setFormData] = useState(initialFormData);
+//     const [selectedMealId, setSelectedMealId] = useState(null);
+//     const [imageFiles, setImageFiles] = useState([]);
+
+//     const fetchMeals = async () => {
+//         try {
+//             const response = await axios.get("http://13.127.31.239:3000/api/admin/get-meals", {
+//                 // headers: { Authorization: `Bearer ${token}` }
+//             });
+//             setMealPackages(response.data.data);
+//         } catch (error) {
+//             console.error("Error fetching meals:", error);
+//         }
+//     };
+
+//     const fetchCategories = async () => {
+//         try {
+//             const response = await axios.get("http://13.127.31.239:3000/api/admin/get-categories");
+//             setCategoryPackage(response.data.data);
+//         } catch (error) {
+//             console.error("Error fetching categories:", error);
+//         }
+//     };
+
+//     const fetchMealTypes = async () => {
+//         try {
+//             const token = sessionStorage.getItem("token");
+//             const response = await axios.get("http://13.127.31.239:3000/api/admin/get-mealtype", {
+//                 // headers: { Authorization: `Bearer ${token}` }
+//             });
+//             setMealType(response.data.data);
+//         } catch (error) {
+//             console.error("Error fetching meal types:", error);
+//         }
+//     };
+
+//     useEffect(() => {
+//         fetchMeals();
+//         fetchCategories();
+//         fetchMealTypes();
+//     }, []);
+
+//     const handleChange = (e) => {
+//         const { name, value } = e.target;
+//         setFormData(prev => ({
+//             ...prev,
+//             [name]: value
+//         }));
+//     };
+
+//     const handleCategoryChange = (e) => {
+//         const selectedIndex = e.target.selectedIndex;
+//         const selectedOption = e.target.options[selectedIndex];
+//         const categoryId = selectedOption.getAttribute('data-id') || '';
+//         const categoryName = e.target.value;
+
+//         setFormData(prev => ({
+//             ...prev,
+//             category: categoryName,
+//             categoryId: categoryId
+//         }));
+//     };
+
+//     const handleMealTypeChange = (e) => {
+//         const selectedIndex = e.target.selectedIndex;
+//         const selectedOption = e.target.options[selectedIndex];
+//         const mealTypeId = selectedOption.getAttribute('data-id') || '';
+//         const mealTypeName = e.target.value;
+
+//         setFormData(prev => ({
+//             ...prev,
+//             mealType: mealTypeName,
+//             mealTypeId: mealTypeId
+//         }));
+//     };
+
+//     const handleFareChange = (e) => {
+//         const { name, value } = e.target;
+//         setFormData(prev => ({
+//             ...prev,
+//             fareDetails: {
+//                 ...prev.fareDetails,
+//                 [name]: value
+//             }
+//         }));
+//     };
+
+//     const handleMoreDetailsChange = (e) => {
+//         const { name, value } = e.target;
+//         if (name === 'allergens') {
+//             // Convert comma-separated string to array
+//             const allergensArray = value.split(',').map(item => item.trim());
+//             setFormData(prev => ({
+//                 ...prev,
+//                 moreDetails: {
+//                     ...prev.moreDetails,
+//                     [name]: allergensArray
+//                 }
+//             }));
+//         } else {
+//             setFormData(prev => ({
+//                 ...prev,
+//                 moreDetails: {
+//                     ...prev.moreDetails,
+//                     [name]: value
+//                 }
+//             }));
+//         }
+//     };
+
+//     const handlePackageSizeChange = (e) => {
+//         const sizes = e.target.value.split(',').map(size => size.trim());
+//         setFormData(prev => ({
+//             ...prev,
+//             package: sizes
+//         }));
+//     };
+
+//     const handleImageChange = (e) => {
+//         const files = Array.from(e.target.files);
+//         setImageFiles(files);
+
+//         // Convert files to Base64
+//         const promises = files.map(file => {
+//             return new Promise((resolve, reject) => {
+//                 const reader = new FileReader();
+//                 reader.readAsDataURL(file);
+//                 reader.onload = () => resolve(reader.result);
+//                 reader.onerror = error => reject(error);
+//             });
+//         });
+
+//         Promise.all(promises)
+//             .then(base64Images => {
+//                 setFormData(prev => ({
+//                     ...prev,
+//                     image: base64Images  // Store images as Base64 array
+//                 }));
+//             })
+//             .catch(error => console.error("Error converting images:", error));
+//     };
+
+//     const handleAdd = () => {
+//         setFormData(initialFormData);
+//         setSelectedMealId(null);
+//         setImageFiles([]);
+//         setIsCanvasOpen(true);
+//     };
+
+//     const handleEdit = (meal) => {
+//         // Find the matching category and meal type objects
+//         const categoryObj = categoryPackage.find(cat => cat.categoryName === meal.category);
+//         const mealTypeObj = mealType.find(type => type.mealType === meal.mealType);
+
+//         setSelectedMealId(meal._id);
+//         setFormData({
+//             mealName: meal.mealName,
+//             description: meal.description,
+//             category: meal.category,
+//             categoryId: categoryObj ? categoryObj._id : '',
+//             mealType: meal.mealType,
+//             mealTypeId: mealTypeObj ? mealTypeObj._id : '',
+//             package: meal.package,
+//             image: meal.image,
+//             fareDetails: {
+//                 totalFare: meal.fareDetails.totalFare,
+//                 strikeOff: meal.fareDetails.strikeOff,
+//                 discount: meal.fareDetails.discount
+//             },
+//             moreDetails: {
+//                 energy: meal.moreDetails.energy,
+//                 protein: meal.moreDetails.protein,
+//                 fat: meal.moreDetails.fat,
+//                 carbohydrates: meal.moreDetails.carbohydrates,
+//                 allergens: Array.isArray(meal.moreDetails.allergens)
+//                     ? meal.moreDetails.allergens
+//                     : meal.moreDetails.allergens ? meal.moreDetails.allergens.split(',').map(item => item.trim()) : []
+//             }
+//         });
+//         setIsCanvasOpen(true);
+//     };
+
+//     const handleDelete = async (id) => {
+//         try {
+//             const token = sessionStorage.getItem("token");
+//             await axios.delete(`http://13.127.31.239:3000/delete-meal/${id}`, {
+//                 headers: { Authorization: `Bearer ${token}` }
+//             });
+//             await fetchMeals();
+//         } catch (error) {
+//             console.error('Error deleting meal:', error);
+//         }
+//     };
+
+//     const handleSubmit = async (e) => {
+//         e.preventDefault();
+//         const token = sessionStorage.getItem("token");
+
+//         // Create an object with the correct structure
+//         const mealData = {
+//             mealName: formData.mealName,
+//             image: formData.image,
+//             description: formData.description,
+//             // Use the ID values as numbers for category and mealType
+//             category: parseInt(formData.categoryId) || 0,
+//             mealType: parseInt(formData.mealTypeId) || 0,
+//             package: formData.package,
+//             fareDetails: {
+//                 totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
+//                 strikeOff: parseFloat(formData.fareDetails.strikeOff) || 0,
+//                 discount: parseFloat(formData.fareDetails.discount) || 0
+//             },
+//             moreDetails: {
+//                 energy: parseInt(formData.moreDetails.energy) || 0,
+//                 protein: parseInt(formData.moreDetails.protein) || 0,
+//                 fat: parseInt(formData.moreDetails.fat) || 0,
+//                 carbohydrates: parseInt(formData.moreDetails.carbohydrates) || 0,
+//                 allergens: formData.moreDetails.allergens
+//             }
+//         };
+
+//         const submitFormData = new FormData();
+
+//         // Append image files if new images are uploaded
+//         if (imageFiles.length > 0) {
+//             imageFiles.forEach(file => {
+//                 submitFormData.append('images', file);
+//             });
+//         }
+
+//         // Append the data object as JSON string
+//         submitFormData.append('data', JSON.stringify(mealData));
+
+//         try {
+//             const url = selectedMealId
+//                 ? `http://13.127.31.239:3000/api/admin/update-meal/${selectedMealId}`
+//                 : 'https://46ab-2401-4900-907b-c0aa-6c85-72f-ceeb-6e7c.ngrok-free.app/api/admin/add-meal';
+
+//             await axios({
+//                 method: selectedMealId ? 'patch' : 'post',
+//                 url,
+//                 data: submitFormData,
+//                 headers: {
+//                     Authorization: `Bearer ${token}`,
+//                     'Content-Type': 'multipart/form-data'
+//                 }
+//             });
+
+//             await fetchMeals();
+//             setIsCanvasOpen(false);
+//             setFormData(initialFormData);
+//             setImageFiles([]);
+//             setSelectedMealId(null);
+//         } catch (error) {
+//             console.error('Error saving meal:', error);
+//         }
+//     };
+
+//     const columns = [
+//         { name: 'Name', selector: row => row.mealName, sortable: true },
+//         { name: 'Description', selector: row => row.description, sortable: true },
+//         { name: 'Category', selector: row => row.category, sortable: true },
+//         { name: 'Type', selector: row => row.mealType, sortable: true },
+//         { name: 'Price', selector: row => `$${row.fareDetails.totalFare.toFixed(2)}`, sortable: true },
+//         {
+//             name: 'Actions',
+//             cell: (row) => (
+//                 <div className="flex justify-center space-x-2">
+//                     <button onClick={() => handleEdit(row)} className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600">
+//                         <Pencil size={16} />
+//                     </button>
+//                     <button onClick={() => handleDelete(row._id)} className="bg-red-500 text-white p-2 rounded hover:bg-red-600">
+//                         <Trash2 size={16} />
+//                     </button>
+//                 </div>
+//             ),
+//         },
+//     ];
+//     const filteredPackages = useMemo(() => {
+//         return Array.isArray(mealPackages) ? mealPackages.filter(pkg =>
+//             (pkg.mealName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+//             (pkg.description?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+//         ) : [];
+//     }, [mealPackages, searchTerm]);
+
+//     return (
+//         <div className="p-4">
+//             <div className="flex justify-end mb-4">
+//                 <button onClick={handleAdd} className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+//                     <Plus size={16} />
+//                     <span>Add Meal</span>
+//                 </button>
+//             </div>
+
+//             <div className="bg-white rounded-lg shadow-md">
+//                 <div className="p-4 border-b">
+//                     <div className="flex justify-end items-center space-x-4">
+//                         <div className="relative w-64">
+//                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+//                             <input
+//                                 type="text"
+//                                 placeholder="Search meal..."
+//                                 className="pl-8 pr-4 py-2 w-full border rounded-md"
+//                                 value={searchTerm}
+//                                 onChange={(e) => setSearchTerm(e.target.value)}
+//                             />
+//                         </div>
+//                     </div>
+//                 </div>
+
+//                 <div className="p-4">
+//                     <DataTable columns={columns} data={filteredPackages} pagination responsive highlightOnHover />
+//                 </div>
+//             </div>
+
+//             {isCanvasOpen && (
+//                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-end z-50">
+//                     <div className="bg-white w-1/3 p-6 h-full overflow-y-auto">
+//                         <div className="flex justify-between items-center mb-4">
+//                             <h2 className="text-xl font-bold">{selectedMealId ? 'Edit Meal' : 'Add Meal'}</h2>
+//                             <button onClick={() => setIsCanvasOpen(false)} className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600">
+//                                 <X size={16} />
+//                             </button>
+//                         </div>
+//                         <form onSubmit={handleSubmit}>
+//                             <input type="text" name="mealName" placeholder="Meal Name" value={formData.mealName} onChange={handleChange} className="border p-2 w-full rounded mb-2" />
+//                             <textarea name="description" placeholder="Description" value={formData.description} onChange={handleChange} className="border p-2 w-full rounded mb-2"></textarea>
+
+//                             {/* Category Dropdown */}
+//                             <select
+//                                 name="category"
+//                                 value={formData.category}
+//                                 onChange={handleCategoryChange}
+//                                 className="border p-2 w-full rounded mb-2"
+//                             >
+//                                 <option value="">Select Category</option>
+//                                 {categoryPackage.map((category) => (
+//                                     <option
+//                                         key={category.identifier || category._id}
+//                                         value={category.categoryName}
+//                                         data-id={category._id || category.identifier}
+//                                     >
+//                                         {category.categoryName}
+//                                     </option>
+//                                 ))}
+//                             </select>
+
+//                             {/* Meal Type Dropdown */}
+//                             <select
+//                                 name="mealType"
+//                                 value={formData.mealType}
+//                                 onChange={handleMealTypeChange}
+//                                 className="border p-2 w-full rounded mb-2"
+//                             >
+//                                 <option value="">Select Meal Type</option>
+//                                 {mealType.map((type) => (
+//                                     <option
+//                                         key={type._id}
+//                                         value={type.mealType}
+//                                         data-id={type._id}
+//                                     >
+//                                         {type.mealType}
+//                                     </option>
+//                                 ))}
+//                             </select>
+
+//                             <input
+//                                 type="text"
+//                                 name="package"
+//                                 placeholder="Package Sizes (comma-separated)"
+//                                 value={formData.package.join(', ')}
+//                                 onChange={handlePackageSizeChange}
+//                                 className="border p-2 w-full rounded mb-2"
+//                             />
+
+//                             <div className="mb-4">
+//                                 <label className="block text-sm font-medium text-gray-700">Images</label>
+//                                 <input
+//                                     type="file"
+//                                     multiple
+//                                     accept="image/*"
+//                                     onChange={handleImageChange}
+//                                     className="mt-1 block w-full"
+//                                 />
+//                                 <div className="mt-2 flex gap-2">
+//                                     {formData.image.map((img, index) => (
+//                                         <img
+//                                             key={index}
+//                                             src={img}
+//                                             alt={`Preview ${index + 1}`}
+//                                             className="h-20 w-20 object-cover rounded"
+//                                         />
+//                                     ))}
+//                                 </div>
+//                             </div>
+
+//                             <h3 className="font-bold">Fare Details</h3>
+//                             <input type="number" name="totalFare" placeholder="Total Fare" value={formData.fareDetails.totalFare} onChange={handleFareChange} className="border p-2 w-full rounded mb-2" />
+//                             <input type="number" name="strikeOff" placeholder="Strike Off Price" value={formData.fareDetails.strikeOff} onChange={handleFareChange} className="border p-2 w-full rounded mb-2" />
+//                             <input type="number" name="discount" placeholder="Discount" value={formData.fareDetails.discount} onChange={handleFareChange} className="border p-2 w-full rounded mb-2" />
+
+//                             <h3 className="font-bold">More Details</h3>
+//                             <input type="number" name="energy" placeholder="Energy" value={formData.moreDetails.energy} onChange={handleMoreDetailsChange} className="border p-2 w-full rounded mb-2" />
+//                             <input type="number" name="protein" placeholder="Protein" value={formData.moreDetails.protein} onChange={handleMoreDetailsChange} className="border p-2 w-full rounded mb-2" />
+//                             <input type="number" name="fat" placeholder="Fat" value={formData.moreDetails.fat} onChange={handleMoreDetailsChange} className="border p-2 w-full rounded mb-2" />
+//                             <input type="number" name="carbohydrates" placeholder="Carbohydrates" value={formData.moreDetails.carbohydrates} onChange={handleMoreDetailsChange} className="border p-2 w-full rounded mb-2" />
+//                             <input
+//                                 type="text"
+//                                 name="allergens"
+//                                 placeholder="Allergens (comma-separated)"
+//                                 value={Array.isArray(formData.moreDetails.allergens) ? formData.moreDetails.allergens.join(', ') : ''}
+//                                 onChange={handleMoreDetailsChange}
+//                                 className="border p-2 w-full rounded mb-2"
+//                             />
+
+//                             <div className="flex space-x-2">
+//                                 <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+//                                     {selectedMealId ? 'Update' : 'Save'}
+//                                 </button>
+//                                 <button type="button" onClick={() => setIsCanvasOpen(false)} className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Cancel</button>
+//                             </div>
+//                         </form>
+//                     </div>
+//                 </div>
+//             )}
+//         </div>
+//     );
+// }
+
+
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Pencil, Trash2, Eye, Plus, Search, X } from 'lucide-react';
 import DataTable from 'react-data-table-component';
-import axios from "../axiosConfig";
+import axios from "axios";
 
-const initialMealPackages = [
-    { id: 1, name: 'Breakfast Delight', description: 'Hearty morning meal with eggs and toast', image: null, category: 'Breakfast', type: 'Vegetarian', price: 10.5, otherDetails: 'Served with coffee' },
-    { id: 2, name: 'Dinner Special', description: 'Protein-packed evening meal', image: null, category: 'Dinner', type: 'Non-Vegetarian', price: 15.0, otherDetails: 'With dessert' },
-];
+const initialFormData = {
+    mealName: '',
+    description: '',
+    category: '',
+    categoryId: '', // Store the category ID
+    mealType: '',
+    mealTypeId: '', // Store the meal type ID
+    package: [],
+    image: [], // Will store image URLs instead of base64
+    fareDetails: {
+        totalFare: '',
+        strikeOff: '',
+        discount: ''
+    },
+    moreDetails: {
+        energy: '',
+        protein: '',
+        fat: '',
+        carbohydrates: '',
+        allergens: [] // Initialize as an empty array
+    }
+};
 
 export default function MealPage() {
-    const [mealPackages, setMealPackages] = useState(initialMealPackages);
+    const [mealPackages, setMealPackages] = useState([]);
+    const [categoryPackage, setCategoryPackage] = useState([]);
+    const [mealType, setMealType] = useState([]);
     const [isCanvasOpen, setIsCanvasOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedPackage, setSelectedPackage] = useState(null);
-    const [imagePreview, setImagePreview] = useState(null);
-    const [formErrors, setFormErrors] = useState({});
+    const [formData, setFormData] = useState(initialFormData);
+    const [selectedMealId, setSelectedMealId] = useState(null);
+    const [imageFiles, setImageFiles] = useState([]);
+    const [imagePreviewUrls, setImagePreviewUrls] = useState([]); // For preview only
 
-    const fetchProducts = async () => {
+    const fetchMeals = async () => {
+        try {
+            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-meals", {
+                // headers: { Authorization: `Bearer ${token}` }
+            });
+            setMealPackages(response.data.data);
+        } catch (error) {
+            console.error("Error fetching meals:", error);
+        }
+    };
+
+    const fetchCategories = async () => {
+        try {
+            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-categories");
+            setCategoryPackage(response.data.data);
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+        }
+    };
+
+    const fetchMealTypes = async () => {
         try {
             const token = sessionStorage.getItem("token");
-            const response = await axios.get("/admin/category", {
-                headers: { Authorization: `Bearer ${token}` }
+            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-mealtype", {
+                // headers: { Authorization: `Bearer ${token}` }
             });
-            setMealPackages(response.data.categories);
+            setMealType(response.data.data);
         } catch (error) {
-            console.error("Error fetching products:", error);
+            console.error("Error fetching meal types:", error);
         }
     };
 
     useEffect(() => {
-        fetchProducts();
+        fetchMeals();
+        fetchCategories();
+        fetchMealTypes();
     }, []);
 
-    const handleAdd = () => {
-        setSelectedPackage(null);
-        setImagePreview(null);
-        setIsCanvasOpen(true);
-        setFormErrors({});
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
     };
 
-    const handleEdit = (mealPackage) => {
-        setSelectedPackage(mealPackage);
-        setImagePreview(mealPackage.image);
-        setIsCanvasOpen(true);
-        setFormErrors({});
+    const handleCategoryChange = (e) => {
+        const selectedIndex = e.target.selectedIndex;
+        const selectedOption = e.target.options[selectedIndex];
+        const categoryId = selectedOption.getAttribute('data-id') || '';
+        const categoryName = e.target.value;
+
+        setFormData(prev => ({
+            ...prev,
+            category: categoryName,
+            categoryId: categoryId
+        }));
     };
 
-    const handleDelete = (id) => {
-        setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
+    const handleMealTypeChange = (e) => {
+        const selectedIndex = e.target.selectedIndex;
+        const selectedOption = e.target.options[selectedIndex];
+        const mealTypeId = selectedOption.getAttribute('data-id') || '';
+        const mealTypeName = e.target.value;
+
+        setFormData(prev => ({
+            ...prev,
+            mealType: mealTypeName,
+            mealTypeId: mealTypeId
+        }));
     };
 
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => setImagePreview(reader.result);
-            reader.readAsDataURL(file);
+    const handleFareChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            fareDetails: {
+                ...prev.fareDetails,
+                [name]: value
+            }
+        }));
+    };
+
+    const handleMoreDetailsChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'allergens') {
+            // Convert comma-separated string to array
+            const allergensArray = value.split(',').map(item => item.trim());
+            setFormData(prev => ({
+                ...prev,
+                moreDetails: {
+                    ...prev.moreDetails,
+                    [name]: allergensArray
+                }
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                moreDetails: {
+                    ...prev.moreDetails,
+                    [name]: value
+                }
+            }));
         }
     };
 
-    const validateForm = (formData) => {
-        const errors = {};
-        if (!formData.get('name')) errors.name = "Name is required.";
-        if (!formData.get('description')) errors.description = "Description is required.";
-        if (!formData.get('category')) errors.category = "Category is required.";
-        if (!formData.get('type')) errors.type = "Type is required.";
-        if (!formData.get('price') || isNaN(formData.get('price'))) errors.price = "Valid price is required.";
-        return errors;
+    const handlePackageSizeChange = (e) => {
+        const sizes = e.target.value.split(',').map(size => size.trim());
+        setFormData(prev => ({
+            ...prev,
+            package: sizes
+        }));
+    };
+
+    const handleImageChange = (e) => {
+        const files = Array.from(e.target.files);
+        setImageFiles(files);
+
+        // Create temporary preview URLs for display in the form
+        const previewUrls = files.map(file => URL.createObjectURL(file));
+        setImagePreviewUrls(previewUrls);
+
+        // When editing, keep existing URLs and add new files for upload
+        // The actual image URLs will be set by the server after upload
+        if (selectedMealId) {
+            // Keep existing image URLs when editing
+            // New files will be uploaded separately
+        } else {
+            // For new entries, clear existing URLs
+            setFormData(prev => ({
+                ...prev,
+                image: [] // The actual URLs will be set by the server after upload
+            }));
+        }
+    };
+
+    const handleRemoveImage = (index) => {
+        // Remove image from preview and from files to upload
+        setImagePreviewUrls(prev => prev.filter((_, i) => i !== index));
+        setImageFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleRemoveExistingImage = (index) => {
+        // Remove existing image from formData
+        setFormData(prev => ({
+            ...prev,
+            image: prev.image.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleAdd = () => {
+        setFormData(initialFormData);
+        setSelectedMealId(null);
+        setImageFiles([]);
+        setImagePreviewUrls([]);
+        setIsCanvasOpen(true);
+    };
+
+    const handleEdit = (meal) => {
+        // Find the matching category and meal type objects
+        const categoryObj = categoryPackage.find(cat => cat.categoryName === meal.category);
+        const mealTypeObj = mealType.find(type => type.mealType === meal.mealType);
+
+        setSelectedMealId(meal._id);
+        setFormData({
+            mealName: meal.mealName,
+            description: meal.description,
+            category: meal.category,
+            categoryId: categoryObj ? categoryObj._id : '',
+            mealType: meal.mealType,
+            mealTypeId: mealTypeObj ? mealTypeObj._id : '',
+            package: meal.package,
+            image: meal.image, // These are the URLs of existing images
+            fareDetails: {
+                totalFare: meal.fareDetails.totalFare,
+                strikeOff: meal.fareDetails.strikeOff,
+                discount: meal.fareDetails.discount
+            },
+            moreDetails: {
+                energy: meal.moreDetails.energy,
+                protein: meal.moreDetails.protein,
+                fat: meal.moreDetails.fat,
+                carbohydrates: meal.moreDetails.carbohydrates,
+                allergens: Array.isArray(meal.moreDetails.allergens)
+                    ? meal.moreDetails.allergens
+                    : meal.moreDetails.allergens ? meal.moreDetails.allergens.split(',').map(item => item.trim()) : []
+            }
+        });
+        setImageFiles([]);
+        setImagePreviewUrls([]);
+        setIsCanvasOpen(true);
+    };
+
+    const handleDelete = async (id) => {
+        try {
+            const token = sessionStorage.getItem("token");
+            await axios.delete(`http://13.127.31.239:3000/delete-meal/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            await fetchMeals();
+        } catch (error) {
+            console.error('Error deleting meal:', error);
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const formData = new FormData(e.target);
-        const errors = validateForm(formData);
-        if (Object.keys(errors).length > 0) {
-            setFormErrors(errors);
-            return;
-        }
+        const token = sessionStorage.getItem("token");
 
-        const newPackage = {
-            name: formData.get('name'),
-            description: formData.get('description'),
-            category: formData.get('category'),
-            type: formData.get('type'),
-            price: parseFloat(formData.get('price')),
-            otherDetails: formData.get('otherDetails'),
-            image: imagePreview,
+        // Create an object with the correct structure
+        const mealData = {
+            mealName: formData.mealName,
+            image: formData.image, // Keep existing image URLs
+            description: formData.description,
+            // Use the ID values as numbers for category and mealType
+            category: parseInt(formData.categoryId) || 0,
+            mealType: parseInt(formData.mealTypeId) || 0,
+            package: formData.package,
+            fareDetails: {
+                totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
+                strikeOff: parseFloat(formData.fareDetails.strikeOff) || 0,
+                discount: parseFloat(formData.fareDetails.discount) || 0
+            },
+            moreDetails: {
+                energy: parseInt(formData.moreDetails.energy) || 0,
+                protein: parseInt(formData.moreDetails.protein) || 0,
+                fat: parseInt(formData.moreDetails.fat) || 0,
+                carbohydrates: parseInt(formData.moreDetails.carbohydrates) || 0,
+                allergens: formData.moreDetails.allergens
+            }
         };
 
-        const token = sessionStorage.getItem("token");
-        const headers = { Authorization: `Bearer ${token}` };
+        const submitFormData = new FormData();
+
+        // Append image files if new images are uploaded
+        if (imageFiles.length > 0) {
+            imageFiles.forEach(file => {
+                submitFormData.append('images', file);
+            });
+        }
+
+        // Append the data object as JSON string
+        submitFormData.append('data', JSON.stringify(mealData));
 
         try {
-            let response;
-            if (selectedPackage) {
-                response = await axios.put(`admin/addcategory/${selectedPackage.id}`, newPackage, { headers });
-                setMealPackages(mealPackages.map(p => p.id === selectedPackage.id ? response.data : p));
-            } else {
-                response = await axios.post(`/admin/addcategory`, newPackage, { headers });
-                setMealPackages([...mealPackages, response.data]);
-            }
-            fetchProducts();
+            const url = selectedMealId
+                ? `http://13.127.31.239:3000/api/admin/update-meal/${selectedMealId}`
+                : 'https://46ab-2401-4900-907b-c0aa-6c85-72f-ceeb-6e7c.ngrok-free.app/api/admin/add-meal';
+
+            const response = await axios({
+                method: selectedMealId ? 'patch' : 'post',
+                url,
+                data: submitFormData,
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            await fetchMeals();
             setIsCanvasOpen(false);
-            setImagePreview(null);
+            setFormData(initialFormData);
+            setImageFiles([]);
+            setImagePreviewUrls([]);
+            setSelectedMealId(null);
         } catch (error) {
-            console.error('Error saving meal package:', error);
+            console.error('Error saving meal:', error);
         }
     };
 
-    const filteredPackages = useMemo(() => {
-        return mealPackages.filter(pkg =>
-            (pkg.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-            (pkg.description?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-        );
-    }, [mealPackages, searchTerm]);
-
     const columns = [
-        { name: 'Name', selector: row => row.name, sortable: true },
+        { name: 'Name', selector: row => row.mealName, sortable: true },
         { name: 'Description', selector: row => row.description, sortable: true },
         { name: 'Category', selector: row => row.category, sortable: true },
-        { name: 'Type', selector: row => row.type, sortable: true },
-        { name: 'Price', selector: row => `$${row.price.toFixed(2)}`, sortable: true },
+        { name: 'Type', selector: row => row.mealType, sortable: true },
+        { name: 'Price', selector: row => `$${row.fareDetails.totalFare.toFixed(2)}`, sortable: true },
+        {
+            name: 'Image',
+            cell: (row) => (
+                <div className="flex justify-center">
+                    {row.image && row.image.length > 0 && (
+                        <img
+                            src={row.image[0]}
+                            alt={row.mealName}
+                            className="h-10 w-10 object-cover rounded"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "/placeholder-image.jpg"; // Fallback image
+                            }}
+                        />
+                    )}
+                </div>
+            ),
+        },
         {
             name: 'Actions',
             cell: (row) => (
@@ -128,13 +803,20 @@ export default function MealPage() {
                     <button onClick={() => handleEdit(row)} className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600">
                         <Pencil size={16} />
                     </button>
-                    <button onClick={() => handleDelete(row.id)} className="bg-red-500 text-white p-2 rounded hover:bg-red-600">
+                    <button onClick={() => handleDelete(row._id)} className="bg-red-500 text-white p-2 rounded hover:bg-red-600">
                         <Trash2 size={16} />
                     </button>
                 </div>
             ),
         },
     ];
+
+    const filteredPackages = useMemo(() => {
+        return Array.isArray(mealPackages) ? mealPackages.filter(pkg =>
+            (pkg.mealName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+            (pkg.description?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+        ) : [];
+    }, [mealPackages, searchTerm]);
 
     return (
         <div className="p-4">
@@ -170,65 +852,272 @@ export default function MealPage() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-end z-50">
                     <div className="bg-white w-1/3 p-6 h-full overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">{selectedPackage ? 'Edit Meal' : 'Add Meal'}</h2>
+                            <h2 className="text-xl font-bold">{selectedMealId ? 'Edit Meal' : 'Add Meal'}</h2>
                             <button onClick={() => setIsCanvasOpen(false)} className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600">
                                 <X size={16} />
                             </button>
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="mb-4">
-                                <label className="block mb-1">Name:</label>
-                                <input name="name" defaultValue={selectedPackage?.name} className="w-full border p-2 rounded" placeholder='Enter your meal name' required />
-                                {formErrors.name && <p className="text-red-500 text-sm">{formErrors.name}</p>}
+                                <label className="block text-sm font-medium text-gray-700">Meal Name</label>
+                                <input
+                                    type="text"
+                                    name="mealName"
+                                    placeholder="Meal Name"
+                                    value={formData.mealName}
+                                    onChange={handleChange}
+                                    className="border p-2 w-full rounded mt-1"
+                                    required
+                                />
                             </div>
 
                             <div className="mb-4">
-                                <label className="block mb-1">Description:</label>
-                                <textarea name="description" defaultValue={selectedPackage?.description} className="w-full border p-2 rounded" placeholder='Description' required />
-                                {formErrors.description && <p className="text-red-500 text-sm">{formErrors.description}</p>}
+                                <label className="block text-sm font-medium text-gray-700">Description</label>
+                                <textarea
+                                    name="description"
+                                    placeholder="Description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    className="border p-2 w-full rounded mt-1 min-h-20"
+                                    required
+                                ></textarea>
                             </div>
 
                             <div className="mb-4">
-                                <label className="block mb-1">Category:</label>
-                                <input name="category" defaultValue={selectedPackage?.category} className="w-full border p-2 rounded" placeholder='Category' required />
-                                {formErrors.category && <p className="text-red-500 text-sm">{formErrors.category}</p>}
-                            </div>
-
-                            <div className="mb-4">
-                                <label className="block mb-1">Type:</label>
-                                <select name="type" defaultValue={selectedPackage?.type || ""} className="w-full border p-2 rounded" required>
-                                    <option value="">Select Type</option>
-                                    <option value="Vegetarian">Vegetarian</option>
-                                    <option value="Non-Vegetarian">Non-Vegetarian</option>
-                                    <option value="Vegan">Vegan</option>
+                                <label className="block text-sm font-medium text-gray-700">Category</label>
+                                <select
+                                    name="category"
+                                    value={formData.category}
+                                    onChange={handleCategoryChange}
+                                    className="border p-2 w-full rounded mt-1"
+                                    required
+                                >
+                                    <option value="">Select Category</option>
+                                    {categoryPackage.map((category) => (
+                                        <option
+                                            key={category.identifier || category._id}
+                                            value={category.categoryName}
+                                            data-id={category._id || category.identifier}
+                                        >
+                                            {category.categoryName}
+                                        </option>
+                                    ))}
                                 </select>
-                                {formErrors.type && <p className="text-red-500 text-sm">{formErrors.type}</p>}
                             </div>
 
                             <div className="mb-4">
-                                <label className="block mb-1">Price:</label>
-                                <input name="price" type="number" step="0.01" defaultValue={selectedPackage?.price} className="w-full border p-2 rounded" placeholder='Price' required />
-                                {formErrors.price && <p className="text-red-500 text-sm">{formErrors.price}</p>}
+                                <label className="block text-sm font-medium text-gray-700">Meal Type</label>
+                                <select
+                                    name="mealType"
+                                    value={formData.mealType}
+                                    onChange={handleMealTypeChange}
+                                    className="border p-2 w-full rounded mt-1"
+                                    required
+                                >
+                                    <option value="">Select Meal Type</option>
+                                    {mealType.map((type) => (
+                                        <option
+                                            key={type._id}
+                                            value={type.mealType}
+                                            data-id={type._id}
+                                        >
+                                            {type.mealType}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="mb-4">
-                                <label className="block mb-1">Other Details:</label>
-                                <textarea name="otherDetails" defaultValue={selectedPackage?.otherDetails} className="w-full border p-2 rounded" placeholder='Other details' />
+                                <label className="block text-sm font-medium text-gray-700">Package Sizes</label>
+                                <input
+                                    type="text"
+                                    name="package"
+                                    placeholder="Package Sizes (comma-separated)"
+                                    value={formData.package.join(', ')}
+                                    onChange={handlePackageSizeChange}
+                                    className="border p-2 w-full rounded mt-1"
+                                />
                             </div>
 
                             <div className="mb-4">
-                                <label className="block mb-1">Image:</label>
-                                <input type="file" accept="image/*" onChange={handleImageChange} className="w-full border p-2 rounded" />
-                                {imagePreview && (
-                                    <img src={imagePreview} alt="Preview" className="mt-2 h-32 w-32 object-cover rounded" />
+                                <label className="block text-sm font-medium text-gray-700">Images</label>
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    className="mt-1 block w-full"
+                                />
+
+                                {/* Existing images */}
+                                {formData.image && formData.image.length > 0 && (
+                                    <div className="mt-2">
+                                        <p className="text-sm text-gray-500 mb-1">Existing Images:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {formData.image.map((img, index) => (
+                                                <div key={`existing-${index}`} className="relative">
+                                                    <img
+                                                        src={img}
+                                                        alt={`Image ${index + 1}`}
+                                                        className="h-20 w-20 object-cover rounded"
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.src = "/placeholder-image.jpg";
+                                                        }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveExistingImage(index)}
+                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* New image previews */}
+                                {imagePreviewUrls.length > 0 && (
+                                    <div className="mt-2">
+                                        <p className="text-sm text-gray-500 mb-1">New Images:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {imagePreviewUrls.map((preview, index) => (
+                                                <div key={`preview-${index}`} className="relative">
+                                                    <img
+                                                        src={preview}
+                                                        alt={`Preview ${index + 1}`}
+                                                        className="h-20 w-20 object-cover rounded"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveImage(index)}
+                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
 
-                            <div className="flex justify-end space-x-4 p-4 bg-white shadow-inner rounded-b-lg">
-                                <button type="submit" className="w-32 py-3 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition duration-300 text-lg">
-                                    {selectedPackage ? 'Update' : 'Save'}
+                            <div className="mb-4">
+                                <h3 className="font-bold mb-2">Fare Details</h3>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Total Fare</label>
+                                        <input
+                                            type="number"
+                                            name="totalFare"
+                                            placeholder="Total Fare"
+                                            value={formData.fareDetails.totalFare}
+                                            onChange={handleFareChange}
+                                            className="border p-2 w-full rounded mt-1"
+                                            required
+                                            step="0.01"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Strike Off</label>
+                                        <input
+                                            type="number"
+                                            name="strikeOff"
+                                            placeholder="Strike Off Price"
+                                            value={formData.fareDetails.strikeOff}
+                                            onChange={handleFareChange}
+                                            className="border p-2 w-full rounded mt-1"
+                                            step="0.01"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Discount</label>
+                                        <input
+                                            type="number"
+                                            name="discount"
+                                            placeholder="Discount"
+                                            value={formData.fareDetails.discount}
+                                            onChange={handleFareChange}
+                                            className="border p-2 w-full rounded mt-1"
+                                            step="0.01"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <h3 className="font-bold mb-2">Nutritional Details</h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Energy</label>
+                                        <input
+                                            type="number"
+                                            name="energy"
+                                            placeholder="Energy"
+                                            value={formData.moreDetails.energy}
+                                            onChange={handleMoreDetailsChange}
+                                            className="border p-2 w-full rounded mt-1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Protein</label>
+                                        <input
+                                            type="number"
+                                            name="protein"
+                                            placeholder="Protein"
+                                            value={formData.moreDetails.protein}
+                                            onChange={handleMoreDetailsChange}
+                                            className="border p-2 w-full rounded mt-1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Fat</label>
+                                        <input
+                                            type="number"
+                                            name="fat"
+                                            placeholder="Fat"
+                                            value={formData.moreDetails.fat}
+                                            onChange={handleMoreDetailsChange}
+                                            className="border p-2 w-full rounded mt-1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Carbohydrates</label>
+                                        <input
+                                            type="number"
+                                            name="carbohydrates"
+                                            placeholder="Carbohydrates"
+                                            value={formData.moreDetails.carbohydrates}
+                                            onChange={handleMoreDetailsChange}
+                                            className="border p-2 w-full rounded mt-1"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="mt-2">
+                                    <label className="block text-sm font-medium text-gray-700">Allergens</label>
+                                    <input
+                                        type="text"
+                                        name="allergens"
+                                        placeholder="Allergens (comma-separated)"
+                                        value={Array.isArray(formData.moreDetails.allergens) ? formData.moreDetails.allergens.join(', ') : ''}
+                                        onChange={handleMoreDetailsChange}
+                                        className="border p-2 w-full rounded mt-1"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex space-x-2 mt-6">
+                                <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                                    {selectedMealId ? 'Update' : 'Save'}
                                 </button>
-                                <button type="button" onClick={() => setIsCanvasOpen(false)} className="w-32 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition duration-300 text-lg">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCanvasOpen(false)}
+                                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                                >
                                     Cancel
                                 </button>
                             </div>

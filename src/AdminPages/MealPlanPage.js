@@ -31,6 +31,10 @@ export default function MealPlanPage() {
     fetchProducts();
   }, []);
 
+
+  // get-packages
+
+
   const handleAdd = () => {
     setSelectedPackage(null);
     setImagePreview(null);
@@ -200,7 +204,7 @@ export default function MealPlanPage() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block mb-1">Meal Type:</label>
+                <label className="block mb-1">Meal Package:</label>
                 <select
                   value={selectedMealType}
                   onChange={(e) => setSelectedMealType(e.target.value)}

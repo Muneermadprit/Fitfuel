@@ -205,6 +205,56 @@ const MealPlanner = () => {
       setCurrentMonth(currentMonth - 1);
     }
   };
+  const enhancements = [
+    {
+      id: 1,
+      name: "Premium Breakfast",
+      pricePerDay: 10.0,
+      image: "/api/placeholder/80/80",
+    },
+    {
+      id: 2,
+      name: "Gym Access",
+      pricePerDay: 15.0,
+      image: "/api/placeholder/80/80",
+    },
+    {
+      id: 3,
+      name: "Pool Access",
+      pricePerDay: 12.0,
+      image: "/api/placeholder/80/80",
+    },
+    {
+      id: 4,
+      name: "Spa Session",
+      pricePerDay: 20.0,
+      image: "/api/placeholder/80/80",
+    },
+    {
+      id: 5,
+      name: "Private Lounge",
+      pricePerDay: 25.0,
+      image: "/api/placeholder/80/80",
+    },
+    {
+      id: 6,
+      name: "Late Checkout",
+      pricePerDay: 8.0,
+      image: "/api/placeholder/80/80",
+    },
+    {
+      id: 7,
+      name: "Room Service",
+      pricePerDay: 18.0,
+      image: "/api/placeholder/80/80",
+    },
+    {
+      id: 8,
+      name: "Complimentary Drinks",
+      pricePerDay: 5.0,
+      image: "/api/placeholder/80/80",
+    },
+  ];
 
 
   const mealData = {
@@ -580,15 +630,54 @@ const MealPlanner = () => {
 
       case 3:
         return (
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="p-6 md:p-10 bg-gray-50 rounded-lg shadow-md">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Enhance Your Plan</h2>
+                <button className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all flex items-center gap-3 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  SKIP
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                    <path
+                      fillRule="evenodd"
+                      d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.243 7.032a.75.75 0 010 1.06l-3.5 3.5a.75.75 0 01-1.06 0l-3.5-3.5a.75.75 0 011.06-1.06l2.47 2.47 2.47-2.47a.75.75 0 011.06 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {enhancements.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-200"
+                  >
+                    <div className="flex items-center gap-6">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                      <div className="flex-grow">
+                        <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
+                        <p className="text-sm font-medium text-gray-600">AED {item.pricePerDay.toFixed(2)} / day</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        className="w-6 h-6 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
           <div className="max-w-2xl mx-auto">
             <div className="mb-8 text-center">
-              <h3 className="text-2xl font-semibold text-gray-800 mb-4">Welcome to the Final Steps!</h3>
-              <p className="text-gray-600">
-                We're excited to prepare your personalized meal plan. Please review your contact information
-                below to ensure we can reach you with updates about your delivery.
-              </p>
-            </div>
-            <form className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
@@ -619,18 +708,6 @@ const MealPlanner = () => {
                   />
                 </div>
               </div>
-            </form>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="max-w-2xl mx-auto">
-            <div className="mb-8 text-center">
-              <h3 className="text-2xl font-semibold text-gray-800 mb-4">Delivery Details</h3>
-              <p className="text-gray-600">
-                Please provide your delivery address to ensure your meals reach you at the right location.
-              </p>
             </div>
             <form className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
@@ -757,7 +834,7 @@ const MealPlanner = () => {
           <h2 className="text-2xl font-bold mb-2">
             {activeStep === 1 ? 'Choose Your Plan' :
               activeStep === 2 ? 'Select Your Meals' :
-                activeStep === 3 ? 'Contact Information' :
+                activeStep === 3 ? 'Enhancement Products' :
                   'Delivery Details'}
           </h2>
           <p className="text-gray-600">

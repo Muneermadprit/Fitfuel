@@ -8,9 +8,9 @@ const AdminLogin = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const validateEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  // const validateEmail = (email) => {
+  //   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  // };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -21,10 +21,11 @@ const AdminLogin = () => {
       return;
     }
 
-    if (!validateEmail(email)) {
-      setError("Invalid email format");
-      return;
-    }
+    // Uncomment if you want to validate the email format
+    // if (!validateEmail(email)) {
+    //   setError("Invalid email format");
+    //   return;
+    // }
 
     if (password.length < 6) {
       setError("Password must be at least 6 characters");
@@ -32,21 +33,24 @@ const AdminLogin = () => {
     }
 
     try {
-      const response = await axios.post("/admin/login", {
-        email,
+      const response = await axios.post("http://13.127.31.239:3000/api/admin/login", {
+        username: email, // Ensure it matches the API’s expected field
         password,
       });
 
-      if (response.data?.token) {
-        console.log("Login Successful:", response.data.token);
-        sessionStorage.setItem("token", response.data.token);
+      if (response.data?.status) {
+        console.log("Login Successful:", response.data.message); 
+        sessionStorage.setItem("token", response.data.token); // Ensure your API returns a token
         navigate("/admin-dashboard");
+      } else {
+        setError("Login Failed! Check your credentials.");
       }
     } catch (error) {
       console.error("Login Error:", error.response?.data || error.message);
       setError("Login Failed! Check your credentials.");
     }
   };
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -87,12 +91,3 @@ const AdminLogin = () => {
 };
 
 export default AdminLogin;
-
-
-// {
-//   "username":"admin@dailyfitt",
-//   "password":"admin@dailyfitt123!@#"
-// }
-
-//  https://daily-fit-api.onrender.com/helloworld
-// api/admin/login

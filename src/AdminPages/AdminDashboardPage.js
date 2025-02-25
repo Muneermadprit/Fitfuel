@@ -18,9 +18,9 @@ const Sidebar = ({ onSelect }) => {
                 <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('category')}>
                     <Folder className="mr-2" /> Category
                 </li>
-                <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('product')}>
+                {/* <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('product')}>
                     <Package className="mr-2" /> Product
-                </li>
+                </li> */}
                 {/* <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('mealSelect')}>
                     <Utensils className="mr-2" /> Meal Selection
                 </li> */}
@@ -35,6 +35,9 @@ const Sidebar = ({ onSelect }) => {
                 </li>
                 <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('mealPackage')}>
                     <Box className="mr-2" /> Meal Package
+                </li>
+                <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('users')}>
+                    <Users className="mr-2" /> Users Overview
                 </li>
                 {/* <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('users')}>
                     <Users className="mr-2" /> Users Overview
@@ -54,12 +57,10 @@ const Sidebar = ({ onSelect }) => {
 };
 
 const AdminDashboardPage = () => {
-    const [selectedMenu, setSelectedMenu] = useState('product');
+    const [selectedMenu, setSelectedMenu] = useState('meal');
 
     const renderContent = () => {
         switch (selectedMenu) {
-            case 'product':
-                return <ProductCrudPage />;
             case 'mealPlan':
                 return <MealPlanPage />;
             case 'users':
@@ -84,8 +85,6 @@ const AdminDashboardPage = () => {
 
     const getMenuTitle = () => {
         switch (selectedMenu) {
-            case 'product':
-                return 'Product List';
             case 'users':
                 return 'Users List';
             case 'mealPlan':

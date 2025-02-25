@@ -3,32 +3,20 @@ import { Pencil, Trash2, Plus, Search, X } from 'lucide-react';
 import DataTable from 'react-data-table-component';
 import axios from "../axiosConfig";
 
-const initialMealPackages = [
-    { id: 1, category_name: 'Breakfast Delight', description: 'Hearty morning meal with eggs and toast', image: null },
-    { id: 2, category_name: 'Dinner Special', description: 'Protein-packed evening meal', image: null },
-    { id: 3, category_name: 'Vegan Brunch', description: 'Plant-based breakfast package', image: null }
-];
-
 export default function CategoryPage() {
-    const [mealPackages, setMealPackages] = useState(initialMealPackages);
+    const [mealPackages, setMealPackages] = useState([]);
     const [isCanvasOpen, setIsCanvasOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedPackage, setSelectedPackage] = useState(null);
-    const [imagePreview, setImagePreview] = useState(null);
-    const [formErrors, setFormErrors] = useState({ name: '', image: '' });
+    const [formErrors, setFormErrors] = useState({ name: '' });
+    const [isEditing, setIsEditing] = useState(false);
 
     const fetchProducts = async () => {
         try {
-            const token = sessionStorage.getItem("token"); // Retrieve token
-            const response = await axios.get("/admin/category", {
-                headers: {
-                    Authorization: `Bearer ${token}`  // Pass token in headers
-                }
-            });
-
-            setMealPackages(response.data.categories); // Set only the categories array
+            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-categories");
+            setMealPackages(response.data.data);
         } catch (error) {
-            console.error("Error fetching products:", error);
+            console.error("Error fetching categories:", error);
         }
     };
 
@@ -37,111 +25,70 @@ export default function CategoryPage() {
     }, []);
 
     const handleAdd = () => {
-        setSelectedPackage(null);
-        setImagePreview(null);
-        setFormErrors({ name: '', image: '' });
+        setSelectedPackage({ categoryName: "" });
+        setFormErrors({ name: '' });
+        setIsEditing(false);
         setIsCanvasOpen(true);
     };
 
     const handleEdit = (mealPackage) => {
         setSelectedPackage(mealPackage);
-        setImagePreview(mealPackage.image);
-        setFormErrors({ name: '', image: '' });
+        setIsEditing(true);
         setIsCanvasOpen(true);
     };
 
-    const handleDelete = (id) => {
-        setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
-    };
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const allowedFormats = ['image/png', 'image/jpeg', 'application/pdf'];
-            if (!allowedFormats.includes(file.type)) {
-                setFormErrors(prev => ({ ...prev, image: 'Only PNG, JPG, or PDF files are allowed' }));
-                setImagePreview(null);
-                return;
-            }
-
-            if (file.size > 2 * 1024 * 1024) { // 2MB size limit
-                setFormErrors(prev => ({ ...prev, image: 'File size should be less than 2MB' }));
-                setImagePreview(null);
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result);
-                setFormErrors(prev => ({ ...prev, image: '' }));
-            };
-            reader.readAsDataURL(file);
+    const handleDelete = async (id) => {
+        try {
+            await axios.delete(`http://13.127.31.239:3000/api/admin/delete-category/${id}`);
+            setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
+        } catch (error) {
+            console.error("Error deleting category:", error);
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const formData = new FormData(e.target);
-        const categoryName = formData.get('category_name');
+        const categoryName = selectedPackage.categoryName.trim();
 
-        // Check if category name is empty
-        if (!categoryName.trim()) {
-            setFormErrors(prev => ({ ...prev, name: 'Category name is required' }));
+        if (!categoryName) {
+            setFormErrors((prevErrors) => ({
+                ...prevErrors,
+                name: "Category name is required",
+            }));
             return;
         }
 
-        const newPackage = {
-            name: categoryName,
-            description: formData.get('description'),
-            image: imagePreview,
-        };
-
-        const token = sessionStorage.getItem("token");
-        const headers = { Authorization: `Bearer ${token}` };
-
         try {
-            let response;
-            if (selectedPackage) {
-                // Update existing meal package
-                response = await axios.put(
-                    `admin/addcategory/${selectedPackage.id}`,
-                    newPackage,
-                    { headers }
-                );
-                setMealPackages(mealPackages.map(p => p.id === selectedPackage.id ? response.data : p));
+            if (isEditing) {
+                // Include the ID in the request for updating
+                const categoryData = {
+                    identifier: selectedPackage.identifier,
+                    categoryName: categoryName
+                };
+                await axios.patch(`http://13.127.31.239:3000/api/admin/updateCategory`, categoryData);
             } else {
-                // Add new meal package
-                response = await axios.post(
-                    `/admin/addcategory`,
-                    newPackage,
-                    { headers }
-                );
-                setMealPackages([...mealPackages, response.data]);
+                const categoryData = { categoryName };
+                await axios.post(`http://13.127.31.239:3000/api/admin/add-categories`, categoryData);
             }
-            fetchProducts();
             setIsCanvasOpen(false);
-            setImagePreview(null);
+            setIsEditing(false);
+            setSelectedPackage(null);
+            fetchProducts(); // Refresh the list after operation
         } catch (error) {
-            console.error('Error saving meal package:', error);
+            console.error('Failed to save category:', error);
         }
     };
 
     const filteredPackages = useMemo(() => {
-        return mealPackages.filter(pkg =>
-            (pkg.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-            (pkg.description?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+        return (mealPackages || []).filter(pkg =>
+            (pkg.categoryName?.toLowerCase() || "").includes(searchTerm.toLowerCase())
         );
     }, [mealPackages, searchTerm]);
 
     const columns = [
         {
             name: 'Category',
-            selector: row => row.category_name,
-            sortable: true,
-        },
-        {
-            name: 'Description',
-            selector: row => row.description,
+            selector: row => row.categoryName,
             sortable: true,
         },
         {
@@ -158,6 +105,13 @@ export default function CategoryPage() {
             ),
         },
     ];
+
+    const handleCanvasClose = () => {
+        setIsCanvasOpen(false);
+        setIsEditing(false);
+        setSelectedPackage(null);
+        setFormErrors({ name: '' });
+    };
 
     return (
         <div className="p-4">
@@ -197,15 +151,16 @@ export default function CategoryPage() {
                     />
                 </div>
             </div>
+
             {isCanvasOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-end z-50">
                     <div className="bg-white w-1/3 p-6 h-full overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold">
-                                {selectedPackage ? 'Edit Category' : 'Add Category'}
+                                {isEditing ? 'Update Category' : 'Add Category'}
                             </h2>
                             <button
-                                onClick={() => setIsCanvasOpen(false)}
+                                onClick={handleCanvasClose}
                                 className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
                             >
                                 <X size={16} />
@@ -213,45 +168,22 @@ export default function CategoryPage() {
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="mb-4">
-                                <label className="block mb-1">Category:</label>
+                                <label className="block mb-1">Category Name:</label>
                                 <input
                                     name="category_name"
-                                    defaultValue={selectedPackage?.category_name}
+                                    value={selectedPackage?.categoryName || ""}
+                                    onChange={(e) =>
+                                        setSelectedPackage((prev) => ({
+                                            ...prev,
+                                            categoryName: e.target.value,
+                                        }))
+                                    }
                                     className="w-full border p-2 rounded"
-                                    placeholder='Enter The Category Name'
+                                    placeholder="Enter The Category Name"
                                     required
                                 />
                                 {formErrors.name && (
                                     <span className="text-red-500 text-sm">{formErrors.name}</span>
-                                )}
-                            </div>
-                            <div className="mb-4">
-                                <label className="block mb-1">Description:</label>
-                                <textarea
-                                    name="description"
-                                    defaultValue={selectedPackage?.description}
-                                    className="w-full border p-2 rounded"
-                                    placeholder='Description'
-                                    required
-                                />
-                            </div>
-                            <div className="mb-4">
-                                <label className="block mb-1">Image:</label>
-                                <input
-                                    type="file"
-                                    accept="image/*,application/pdf"
-                                    onChange={handleImageChange}
-                                    className="w-full border p-2 rounded"
-                                />
-                                {formErrors.image && (
-                                    <span className="text-red-500 text-sm">{formErrors.image}</span>
-                                )}
-                                {imagePreview && (
-                                    <img
-                                        src={imagePreview}
-                                        alt="Preview"
-                                        className="mt-2 h-32 w-32 object-cover rounded"
-                                    />
                                 )}
                             </div>
                             <div className="flex justify-end space-x-4 p-4 bg-white shadow-inner rounded-b-lg">
@@ -259,11 +191,11 @@ export default function CategoryPage() {
                                     type="submit"
                                     className="w-32 py-3 bg-purple-500 text-white rounded-xl hover:bg-purple-600 backdrop-blur-md shadow-md transition duration-300 text-lg"
                                 >
-                                    {selectedPackage ? 'Update' : 'Save'}
+                                    {isEditing ? 'Update' : 'Save'}
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setIsCanvasOpen(false)}
+                                    onClick={handleCanvasClose}
                                     className="w-32 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 backdrop-blur-md shadow-md transition duration-300 text-lg"
                                 >
                                     Cancel
