@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Pencil, Trash2, Plus, Search, X } from 'lucide-react';
 import DataTable from 'react-data-table-component';
 import axios from "../axiosConfig";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function CategoryPage() {
     const [mealPackages, setMealPackages] = useState([]);
@@ -19,7 +21,6 @@ export default function CategoryPage() {
             console.error("Error fetching categories:", error);
         }
     };
-
     useEffect(() => {
         fetchProducts();
     }, []);
@@ -39,12 +40,18 @@ export default function CategoryPage() {
 
     const handleDelete = async (id) => {
         try {
-            await axios.delete(`http://13.127.31.239:3000/api/admin/delete-category/${id}`);
-            setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
+            await axios.delete(`http://13.127.31.239:3000/api/admin/delete`, {
+              identifier: id// 
+            });
+    
+            // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
+            toast.success("Category deleted successfully!");
         } catch (error) {
             console.error("Error deleting category:", error);
+            toast.error("Failed to delete category. Please try again.");
         }
     };
+    
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -66,9 +73,11 @@ export default function CategoryPage() {
                     categoryName: categoryName
                 };
                 await axios.patch(`http://13.127.31.239:3000/api/admin/updateCategory`, categoryData);
+                toast.success("Category updated successfully!");
             } else {
                 const categoryData = { categoryName };
                 await axios.post(`http://13.127.31.239:3000/api/admin/add-categories`, categoryData);
+                toast.success("Category added successfully!");
             }
             setIsCanvasOpen(false);
             setIsEditing(false);
@@ -203,6 +212,7 @@ export default function CategoryPage() {
                             </div>
                         </form>
                     </div>
+                    <ToastContainer position="top-right" />
                 </div>
             )}
         </div>

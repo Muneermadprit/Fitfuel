@@ -2,43 +2,54 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Pencil, Trash2, Eye, Plus, Search, X } from 'lucide-react';
 import DataTable from 'react-data-table-component';
 import axios from "../axiosConfig";
-
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
 export default function MealPlanPage() {
   const [mealPackages, setMealPackages] = useState([]);
+  const [mealPacks, setMealPacks] = useState([]);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedMealType, setSelectedMealType] = useState('');
+  const [selectedMealPackId, setSelectedMealPackId] = useState('');
 
   const fetchProducts = async () => {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.get("/admin/category", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      const response = await axios.get("http://13.127.31.239:3000/api/admin/get-meal-plans", {
+        // headers: {
+        //   Authorization: `Bearer ${token}`
+        // }
       });
-      setMealPackages(response.data.categories);
+      setMealPackages(response.data.data);
     } catch (error) {
       console.error("Error fetching products:", error);
     }
   };
 
+  const fetchMealPackages = async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      const response = await axios.get("http://13.127.31.239:3000/api/admin/get-packages");
+      setMealPacks(response.data.data || []);
+    } catch (error) {
+      console.error("Error fetching meal packages:", error);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
+    fetchMealPackages();
   }, []);
-
-
-  // get-packages
-
 
   const handleAdd = () => {
     setSelectedPackage(null);
     setImagePreview(null);
     setSelectedMealType('');
+    setSelectedMealPackId('');
     setIsCanvasOpen(true);
   };
 
@@ -46,12 +57,26 @@ export default function MealPlanPage() {
     setSelectedPackage(mealPackage);
     setImagePreview(mealPackage.image);
     setSelectedMealType(mealPackage.type || '');
+    setSelectedMealPackId(mealPackage.mealPackId || '');
     setIsCanvasOpen(true);
   };
 
-  const handleDelete = (id) => {
-    setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
-  };
+  const handleDelete = async (id) => {
+    try {
+        await axios.delete(`http://13.127.31.239:3000/api/admin/delete`, {
+            identifier: id// 
+        });
+
+        // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
+        toast.success("Category deleted successfully!");
+    } catch (error) {
+        console.error("Error deleting category:", error);
+        toast.error("Failed to delete category. Please try again.");
+    }
+};
+  // const handleDelete = (id) => {
+  //   setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
+  // };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -68,15 +93,18 @@ export default function MealPlanPage() {
     e.preventDefault();
     const formData = new FormData(e.target);
 
-    if (!selectedMealType) {
-      alert('Please select a meal type.');
+
+
+    if (!selectedMealPackId) {
+      alert('Please select a meal package.');
       return;
     }
 
     const newPackage = {
-      name: formData.get('name'),
+      mealPlanName: formData.get('name'),
       description: formData.get('description'),
-      type: selectedMealType,
+      // type: selectedMealType,
+      mealPackId: selectedMealPackId,
       image: imagePreview
     };
 
@@ -87,13 +115,13 @@ export default function MealPlanPage() {
       let response;
       if (selectedPackage) {
         response = await axios.put(
-          `admin/addcategory/${selectedPackage.id}`,
+          `http://13.127.31.239:3000/api/admin/updatecategory`,
           newPackage,
-          { headers }
+
         );
-        setMealPackages(mealPackages.map(p => p.id === selectedPackage.id ? response.data : p));
+        // setMealPackages(mealPackages.map(p => p.id === selectedPackage.id ? response.data : p));
       } else {
-        response = await axios.post(`/admin/addcategory`, newPackage, { headers });
+        response = await axios.post(`http://13.127.31.239:3000/api/admin/add-mealPlan`, newPackage,);
         setMealPackages([...mealPackages, response.data]);
       }
       fetchProducts();
@@ -111,8 +139,9 @@ export default function MealPlanPage() {
     );
   }, [mealPackages, searchTerm]);
 
+
   const columns = [
-    { name: 'Name', selector: row => row.name, sortable: true },
+    { name: 'Name', selector: row => row.mealPlanName, sortable: true },
     { name: 'Description', selector: row => row.description, sortable: true },
     {
       name: 'Actions',
@@ -206,14 +235,17 @@ export default function MealPlanPage() {
               <div className="mb-4">
                 <label className="block mb-1">Meal Package:</label>
                 <select
-                  value={selectedMealType}
-                  onChange={(e) => setSelectedMealType(e.target.value)}
+                  value={selectedMealPackId}
+                  onChange={(e) => setSelectedMealPackId(e.target.value)}
                   className="w-full border p-2 rounded"
                   required
                 >
-                  <option value="" disabled>Select meal type</option>
-                  {mealTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
+                  <option value="" disabled>Select meal package</option>
+                  {mealPacks.map((pack) => (
+                    <option key={pack._id} value={pack._id}>
+                      {pack.packageName}
+                      {/* ({pack.packageGroup}) */}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -250,6 +282,7 @@ export default function MealPlanPage() {
               </div>
             </form>
           </div>
+          <ToastContainer position="top-right" />
         </div>
       )}
     </div>

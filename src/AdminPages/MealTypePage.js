@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Pencil, Trash2, Search, Plus, X } from 'lucide-react';
 import DataTable from 'react-data-table-component';
 import axios from "axios";
-
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 export default function MealTypePage() {
     const [mealPackages, setMealPackages] = useState([]);
     const [isCanvasOpen, setIsCanvasOpen] = useState(false);
@@ -43,15 +44,29 @@ export default function MealTypePage() {
 
     const handleDelete = async (id) => {
         try {
-            const token = sessionStorage.getItem("token");
-            await axios.delete(`http://13.127.31.239:3000/api/admin/delete-mealtype`, {
-                // headers: { Authorization: `Bearer ${token}` }
+            await axios.delete(`http://13.127.31.239:3000/api/admin/delete`, {
+                identifier: id// 
             });
-            await fetchMealTypes();
+
+            // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
+            toast.success("Category deleted successfully!");
         } catch (error) {
-            console.error("Error deleting meal type:", error);
+            console.error("Error deleting category:", error);
+            toast.error("Failed to delete category. Please try again.");
         }
     };
+
+    // const handleDelete = async (id) => {
+    //     try {
+    //         const token = sessionStorage.getItem("token");
+    //         await axios.delete(`http://13.127.31.239:3000/api/admin/delete-mealtype`, {
+    //             // headers: { Authorization: `Bearer ${token}` }
+    //         });
+    //         await fetchMealTypes();
+    //     } catch (error) {
+    //         console.error("Error deleting meal type:", error);
+    //     }
+    // };
 
     const validateForm = (mealType) => {
         const errors = {};
@@ -172,6 +187,7 @@ export default function MealTypePage() {
 
             {isCanvasOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-end z-50">
+                    <ToastContainer position="top-right" />
                     <div className="bg-white w-1/3 p-6 h-full overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold">

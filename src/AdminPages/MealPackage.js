@@ -1,59 +1,89 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Pencil, Trash2, Eye, Plus, Search, X } from 'lucide-react';
 import DataTable from 'react-data-table-component';
 import axios from "../axiosConfig";
-
-const initialMealPackages = [
-    { id: 1, name: 'Breakfast Delight' },
-    { id: 2, name: 'Dinner Special' },
-];
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+const initialMealPackages = [];
 
 export default function MealPackage() {
     const [mealPackages, setMealPackages] = useState(initialMealPackages);
+    const [mealPlan, setMealPlan] = useState([]);
     const [isCanvasOpen, setIsCanvasOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedPackage, setSelectedPackage] = useState(null);
     const [formErrors, setFormErrors] = useState({});
-    
-    const mealPlans = ['Basic', 'Standard', 'Premium'];
-    const meals = ['Breakfast', 'Lunch', 'Dinner'];
+    const [isEditable, setIsEditable] = useState(false);
+    const [mealData, setMealsData] = useState([]);
+    const packageGroups = ['Weight Loss', 'Muscle Gain', 'Balanced Diet', 'Vegetarian', 'Vegan'];
+    const mealOptions = [
+        { id: '65f1a9d5c3e9b5a4f6d2e8c1', name: 'Breakfast' },
+        { id: '65f1a9d5c3e9b5a4f6d2e8c2', name: 'Lunch' },
+        { id: '65f1a9d5c3e9b5a4f6d2e8c3', name: 'Dinner' },
+        { id: '65f1a9d5c3e9b5a4f6d2e8c4', name: 'Snack' }
+    ];
     const statusOptions = ['Active', 'Inactive'];
 
     useEffect(() => {
+        fetchMealPackages();
+        fetchMeals();
         fetchProducts();
     }, []);
+
+    const fetchMealPackages = async () => {
+        try {
+            const token = sessionStorage.getItem("token");
+            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-packages", {
+                // headers: { Authorization: `Bearer ${token}` },
+            });
+            setMealPackages(response.data.data || []);
+        } catch (error) {
+            console.error("Error fetching meal packages:", error);
+        }
+    };
+
+    const fetchMeals = async () => {
+        try {
+            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-meals", {
+                // headers: { Authorization: `Bearer ${token}` }
+            });
+            setMealsData(response.data.data || []);
+        } catch (error) {
+            console.error("Error fetching meals:", error);
+        }
+    };
 
     const fetchProducts = async () => {
         try {
             const token = sessionStorage.getItem("token");
-            const response = await axios.get("/admin/category", {
-                headers: { Authorization: `Bearer ${token}` },
+            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-meal-plans", {
+                // headers: {
+                //   Authorization: `Bearer ${token}`
+                // }
             });
-            setMealPackages(response.data.categories);
+            setMealPlan(response.data.data || []);
         } catch (error) {
-            console.error("Error fetching products:", error);
+            console.error("Error fetching meal plans:", error);
         }
     };
 
     const handleAdd = () => {
         setSelectedPackage(null);
         setIsCanvasOpen(true);
+        setIsEditable(false);
         setFormErrors({});
     };
 
     const handleEdit = (mealPackage) => {
         setSelectedPackage(mealPackage);
         setIsCanvasOpen(true);
+        setIsEditable(true);
         setFormErrors({});
     };
 
     const validateForm = (formData) => {
         const errors = {};
-        if (!formData.get('name')) errors.name = "Name is required.";
-        if (!formData.get('mealPlan')) errors.mealPlan = "Meal plan is required.";
-        if (!formData.get('pricePerWeek')) errors.pricePerWeek = "Price per week is required.";
-        if (!formData.get('status')) errors.status = "Status is required.";
+        if (!formData.get('packageName')) errors.packageName = "Package name is required.";
         return errors;
     };
 
@@ -66,60 +96,79 @@ export default function MealPackage() {
             return;
         }
 
-        const newPackage = {
-            name: formData.get('name'),
-            mealPlan: formData.get('mealPlan'),
+        // Get selected meals from the form
+        const selectedMeals = Array.from(formData.getAll('meals'));
+
+        // Create the package data model
+        const packageData = {
+            packageName: formData.get('packageName'),
+            description: formData.get('description'),
+            packageGroup: formData.get('packageGroup'),
             startDate: formData.get('startDate'),
             endDate: formData.get('endDate'),
-            meals: formData.get('meals'),
-            pricePerWeek: formData.get('pricePerWeek'),
-            status: formData.get('status'),
+            meals: selectedMeals,
         };
 
         const token = sessionStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
 
         try {
-            let response;
-            if (selectedPackage) {
-                response = await axios.put(`/admin/addcategory/${selectedPackage.id}`, newPackage, { headers });
-                setMealPackages(mealPackages.map((p) => (p.id === selectedPackage.id ? response.data : p)));
+            if (isEditable && selectedPackage) {
+                // Update existing package
+                await axios.patch('http://13.127.31.239:3000/api/admin/update-package',packageData);
+                console.log("Package updated successfully");
             } else {
-                response = await axios.post(`/admin/addcategory`, newPackage, { headers });
-                setMealPackages([...mealPackages, response.data]);
+                // Add new package
+                await axios.post('http://13.127.31.239:3000/api/admin/add-package', packageData);
+                console.log("Package added successfully");
             }
-            fetchProducts();
+
+            // Fetch updated packages after add/update
+            fetchMealPackages();
             setIsCanvasOpen(false);
         } catch (error) {
             console.error('Error saving meal package:', error);
+            alert("Failed to save the meal package. Please try again.");
         }
     };
 
     const handleDelete = async (id) => {
-        const confirmDelete = window.confirm("Are you sure you want to delete this meal package?");
-        if (!confirmDelete) return;
-    
-        const token = sessionStorage.getItem("token");
-        const headers = { Authorization: `Bearer ${token}` };
-    
         try {
-            await axios.delete(`/admin/deletecategory/${id}`, { headers });
-            setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
-            alert("Meal package deleted successfully.");
+            await axios.delete(`http://13.127.31.239:3000/api/admin/delete`, {
+                identifier: id// 
+            });
+
+            // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
+            toast.success("Category deleted successfully!");
         } catch (error) {
-            console.error("Error deleting meal package:", error);
-            alert("Failed to delete the meal package")
-        }}
-    
+            console.error("Error deleting category:", error);
+            toast.error("Failed to delete category. Please try again.");
+        }
+    };
+    // Check if a meal is included in the selected package
+    const isMealSelected = (mealId) => {
+        if (!selectedPackage || !selectedPackage.meals) return false;
+
+        // If meals is an array of objects (like in the API response)
+        if (selectedPackage.meals.length > 0 && typeof selectedPackage.meals[0] === 'object') {
+            return selectedPackage.meals.some(meal => meal._id === mealId);
+        }
+
+        // If meals is an array of IDs
+        return selectedPackage.meals.includes(mealId);
+    };
 
     const filteredPackages = useMemo(() => {
         return mealPackages.filter((pkg) =>
-            (pkg.name?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+            (pkg.packageName?.toLowerCase() || "").includes(searchTerm.toLowerCase())
         );
     }, [mealPackages, searchTerm]);
 
     const columns = [
-        { name: 'Name', selector: (row) => row.name, sortable: true },
+        { name: 'Name', selector: (row) => row.packageName, sortable: true },
+        // { name: 'Group', selector: (row) => row.packageGroup, sortable: true },
+        { name: 'Start Date', selector: (row) => new Date(row.startDate).toLocaleDateString(), sortable: true },
+        { name: 'End Date', selector: (row) => new Date(row.endDate).toLocaleDateString(), sortable: true },
         {
             name: 'Actions',
             cell: (row) => (
@@ -151,7 +200,7 @@ export default function MealPackage() {
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
                             <input
                                 type="text"
-                                placeholder="Search meal Package..."
+                                placeholder="Search meal package..."
                                 className="pl-8 pr-4 py-2 w-full border rounded-md"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -161,7 +210,14 @@ export default function MealPackage() {
                 </div>
 
                 <div className="p-4">
-                    <DataTable columns={columns} data={filteredPackages} pagination responsive highlightOnHover />
+                    <DataTable
+                        columns={columns}
+                        data={filteredPackages}
+                        pagination
+                        responsive
+                        highlightOnHover
+                        noDataComponent="No meal packages found"
+                    />
                 </div>
             </div>
 
@@ -169,62 +225,97 @@ export default function MealPackage() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-end z-50">
                     <div className="bg-white w-1/3 p-6 h-full overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">{selectedPackage ? 'Edit Meal Package' : 'Add Meal Package'}</h2>
+                            <h2 className="text-xl font-bold">{isEditable ? 'Edit Meal Package' : 'Add Meal Package'}</h2>
                             <button onClick={() => setIsCanvasOpen(false)} className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600">
                                 <X size={16} />
                             </button>
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="mb-4">
-                                <label className="block mb-1">Name:</label>
-                                <input name="name" defaultValue={selectedPackage?.name} className="w-full border p-2 rounded" required />
-                                {formErrors.name && <p className="text-red-500 text-sm">{formErrors.name}</p>}
+                                <label className="block mb-1">Package Name:</label>
+                                <input
+                                    name="packageName"
+                                    defaultValue={selectedPackage?.packageName}
+                                    className="w-full border p-2 rounded"
+                                    required
+                                />
+                                {formErrors.packageName && <p className="text-red-500 text-sm">{formErrors.packageName}</p>}
                             </div>
+
                             <div className="mb-4">
-                                <label className="block mb-1">Meal Plan:</label>
-                                <select name="mealPlan" defaultValue={selectedPackage?.mealPlan} className="w-full border p-2 rounded" required>
-                                    <option value="">Select Meal Plan</option>
-                                    {mealPlans.map((plan) => (
-                                        <option key={plan} value={plan}>{plan}</option>
+                                <label className="block mb-1">Description:</label>
+                                <textarea
+                                    name="description"
+                                    defaultValue={selectedPackage?.description}
+                                    className="w-full border p-2 rounded h-24"
+                                />
+                            </div>
+
+                            {/* <div className="mb-4">
+                                <label className="block mb-1">Package Group:</label>
+                                <select
+                                    name="packageGroup"
+                                    defaultValue={selectedPackage?.packageGroup || ""}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="">Select Package Group</option>
+                                    {packageGroups.map((group) => (
+                                        <option key={group} value={group}>
+                                            {group}
+                                        </option>
                                     ))}
                                 </select>
-                                {formErrors.mealPlan && <p className="text-red-500 text-sm">{formErrors.mealPlan}</p>}
-                            </div>
+                            </div> */}
+
                             <div className="mb-4">
                                 <label className="block mb-1">Start Date:</label>
-                                <input name="startDate" type="date" defaultValue={selectedPackage?.startDate} className="w-full border p-2 rounded" />
+                                <input
+                                    name="startDate"
+                                    type="date"
+                                    defaultValue={selectedPackage?.startDate ? new Date(selectedPackage.startDate).toISOString().split('T')[0] : ""}
+                                    className="w-full border p-2 rounded"
+                                />
                             </div>
+
                             <div className="mb-4">
                                 <label className="block mb-1">End Date:</label>
-                                <input name="endDate" type="date" defaultValue={selectedPackage?.endDate} className="w-full border p-2 rounded" />
+                                <input
+                                    name="endDate"
+                                    type="date"
+                                    defaultValue={selectedPackage?.endDate ? new Date(selectedPackage.endDate).toISOString().split('T')[0] : ""}
+                                    className="w-full border p-2 rounded"
+                                />
                             </div>
+
                             <div className="mb-4">
-                                <label className="block mb-1">Meals:</label>
-                                <select name="meals" defaultValue={selectedPackage?.meals} className="w-full border p-2 rounded">
-                                    <option value="">Select Meals</option>
-                                    {meals.map((meal) => (
-                                        <option key={meal} value={meal}>{meal}</option>
-                                    ))}
-                                </select>
+                                <label className="block mb-1">Select Meals:</label>
+                                <div className="border p-2 rounded max-h-64 overflow-y-auto">
+                                    {mealData && mealData.length > 0 ? (
+                                        mealData.map((meal) => (
+                                            <div key={meal._id} className="flex items-center mb-2 p-2 hover:bg-gray-100 rounded">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`meal-${meal._id}`}
+                                                    name="meals"
+                                                    value={meal._id}
+                                                    defaultChecked={isMealSelected(meal._id)}
+                                                    className="mr-2 h-4 w-4"
+                                                />
+                                                <label htmlFor={`meal-${meal._id}`} className="flex flex-col">
+                                                    <span className="font-medium">{meal.mealName}</span>
+                                                    {/* <span className="text-sm text-gray-500">{meal.mealType}</span> */}
+                                                </label>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p>No meals available</p>
+                                    )}
+                                </div>
                             </div>
-                            <div className="mb-4">
-                                <label className="block mb-1">Price Per Week:</label>
-                                <input name="pricePerWeek" type="number" defaultValue={selectedPackage?.pricePerWeek} className="w-full border p-2 rounded" required />
-                                {formErrors.pricePerWeek && <p className="text-red-500 text-sm">{formErrors.pricePerWeek}</p>}
-                            </div>
-                            <div className="mb-4">
-                                <label className="block mb-1">Status:</label>
-                                <select name="status" defaultValue={selectedPackage?.status} className="w-full border p-2 rounded" required>
-                                    <option value="">Select Status</option>
-                                    {statusOptions.map((status) => (
-                                        <option key={status} value={status}>{status}</option>
-                                    ))}
-                                </select>
-                                {formErrors.status && <p className="text-red-500 text-sm">{formErrors.status}</p>}
-                            </div>
+
                             <div className="flex justify-end space-x-4 p-4 bg-white shadow-inner rounded-b-lg">
                                 <button type="submit" className="w-32 py-3 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition duration-300 text-lg">
-                                    {selectedPackage ? 'Update' : 'Save'}
+                                    {isEditable ? 'Update' : 'Save'}
                                 </button>
                                 <button type="button" onClick={() => setIsCanvasOpen(false)} className="w-32 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition duration-300 text-lg">
                                     Cancel
@@ -232,6 +323,7 @@ export default function MealPackage() {
                             </div>
                         </form>
                     </div>
+                    <ToastContainer position="top-right" />
                 </div>
             )}
         </div>
