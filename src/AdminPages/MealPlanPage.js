@@ -19,11 +19,7 @@ export default function MealPlanPage() {
   const fetchProducts = async () => {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.get("http://13.127.31.239:3000/api/admin/get-meal-plans", {
-        // headers: {
-        //   Authorization: `Bearer ${token}`
-        // }
-      });
+      const response = await axios.get("https://api.dailyfit.ae/api/admin/get-meal-plans", { withCredentials: true });
       setMealPackages(response.data.data);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -33,7 +29,7 @@ export default function MealPlanPage() {
   const fetchMealPackages = async () => {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.get("http://13.127.31.239:3000/api/admin/get-packages");
+      const response = await axios.get("https://api.dailyfit.ae/api/admin/get-packages", { withCredentials: true });
       setMealPacks(response.data.data || []);
     } catch (error) {
       console.error("Error fetching meal packages:", error);
@@ -63,17 +59,17 @@ export default function MealPlanPage() {
 
   const handleDelete = async (id) => {
     try {
-        await axios.delete(`http://13.127.31.239:3000/api/admin/delete`, {
-            identifier: id// 
-        });
+      await axios.delete(`https://api.dailyfit.ae/api/admin/delete`, {
+        identifier: id// 
+      }, { withCredentials: true });
 
-        // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
-        toast.success("Category deleted successfully!");
+      // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
+      toast.success("Category deleted successfully!");
     } catch (error) {
-        console.error("Error deleting category:", error);
-        toast.error("Failed to delete category. Please try again.");
+      console.error("Error deleting category:", error);
+      toast.error("Failed to delete category. Please try again.");
     }
-};
+  };
   // const handleDelete = (id) => {
   //   setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
   // };
@@ -115,13 +111,12 @@ export default function MealPlanPage() {
       let response;
       if (selectedPackage) {
         response = await axios.put(
-          `http://13.127.31.239:3000/api/admin/updatecategory`,
-          newPackage,
-
+          `https://api.dailyfit.ae/api/admin/updatecategory`,
+          newPackage, { withCredentials: true }
         );
         // setMealPackages(mealPackages.map(p => p.id === selectedPackage.id ? response.data : p));
       } else {
-        response = await axios.post(`http://13.127.31.239:3000/api/admin/add-mealPlan`, newPackage,);
+        response = await axios.post(`https://api.dailyfit.ae/api/admin/add-mealPlan`, newPackage, { withCredentials: true });
         setMealPackages([...mealPackages, response.data]);
       }
       fetchProducts();

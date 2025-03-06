@@ -33,9 +33,7 @@ export default function MealPackage() {
     const fetchMealPackages = async () => {
         try {
             const token = sessionStorage.getItem("token");
-            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-packages", {
-                // headers: { Authorization: `Bearer ${token}` },
-            });
+            const response = await axios.get("https://api.dailyfit.ae/api/admin/get-packages", { withCredentials: true });
             setMealPackages(response.data.data || []);
         } catch (error) {
             console.error("Error fetching meal packages:", error);
@@ -44,9 +42,7 @@ export default function MealPackage() {
 
     const fetchMeals = async () => {
         try {
-            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-meals", {
-                // headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await axios.get("https://api.dailyfit.ae/api/admin/get-meals", { withCredentials: true });
             setMealsData(response.data.data || []);
         } catch (error) {
             console.error("Error fetching meals:", error);
@@ -56,11 +52,7 @@ export default function MealPackage() {
     const fetchProducts = async () => {
         try {
             const token = sessionStorage.getItem("token");
-            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-meal-plans", {
-                // headers: {
-                //   Authorization: `Bearer ${token}`
-                // }
-            });
+            const response = await axios.get("https://api.dailyfit.ae/api/admin/get-meal-plans", { withCredentials: true });
             setMealPlan(response.data.data || []);
         } catch (error) {
             console.error("Error fetching meal plans:", error);
@@ -115,11 +107,11 @@ export default function MealPackage() {
         try {
             if (isEditable && selectedPackage) {
                 // Update existing package
-                await axios.patch('http://13.127.31.239:3000/api/admin/update-package',packageData);
+                await axios.patch('https://api.dailyfit.ae/api/admin/update-package', packageData, { withCredentials: true });
                 console.log("Package updated successfully");
             } else {
                 // Add new package
-                await axios.post('http://13.127.31.239:3000/api/admin/add-package', packageData);
+                await axios.post('https://api.dailyfit.ae/api/admin/add-package', packageData, { withCredentials: true });
                 console.log("Package added successfully");
             }
 
@@ -134,9 +126,9 @@ export default function MealPackage() {
 
     const handleDelete = async (id) => {
         try {
-            await axios.delete(`http://13.127.31.239:3000/api/admin/delete`, {
+            await axios.delete(`https://api.dailyfit.ae/api/admin/delete`, {
                 identifier: id// 
-            });
+            }, { withCredentials: true });
 
             // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
             toast.success("Category deleted successfully!");
@@ -250,22 +242,6 @@ export default function MealPackage() {
                                     className="w-full border p-2 rounded h-24"
                                 />
                             </div>
-
-                            {/* <div className="mb-4">
-                                <label className="block mb-1">Package Group:</label>
-                                <select
-                                    name="packageGroup"
-                                    defaultValue={selectedPackage?.packageGroup || ""}
-                                    className="w-full border p-2 rounded"
-                                >
-                                    <option value="">Select Package Group</option>
-                                    {packageGroups.map((group) => (
-                                        <option key={group} value={group}>
-                                            {group}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div> */}
 
                             <div className="mb-4">
                                 <label className="block mb-1">Start Date:</label>

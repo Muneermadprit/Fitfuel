@@ -33,13 +33,13 @@ const AdminLogin = () => {
     }
 
     try {
-      const response = await axios.post("http://13.127.31.239:3000/api/admin/login", {
-        username: email, // Ensure it matches the API’s expected field
+      const response = await axios.post("https://api.dailyfit.ae/api/admin/login", {
+        username: email,
         password,
-      });
+      }, { withCredentials: true });
 
       if (response.data?.status) {
-        console.log("Login Successful:", response.data.message); 
+        console.log("Login Successful:", response.data.message);
         sessionStorage.setItem("token", response.data.token); // Ensure your API returns a token
         navigate("/admin-dashboard");
       } else {

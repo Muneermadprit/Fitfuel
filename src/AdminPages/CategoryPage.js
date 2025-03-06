@@ -15,7 +15,7 @@ export default function CategoryPage() {
 
     const fetchProducts = async () => {
         try {
-            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-categories");
+            const response = await axios.get("https://api.dailyfit.ae/api/admin/get-categories", { withCredentials: true });
             setMealPackages(response.data.data);
         } catch (error) {
             console.error("Error fetching categories:", error);
@@ -40,10 +40,10 @@ export default function CategoryPage() {
 
     const handleDelete = async (id) => {
         try {
-            await axios.delete(`http://13.127.31.239:3000/api/admin/delete`, {
-              identifier: id// 
-            });
-    
+            await axios.delete(`https://api.dailyfit.ae/api/admin/delete`, {
+                identifier: id// 
+            }, { withCredentials: true });
+
             // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
             toast.success("Category deleted successfully!");
         } catch (error) {
@@ -51,7 +51,7 @@ export default function CategoryPage() {
             toast.error("Failed to delete category. Please try again.");
         }
     };
-    
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -72,11 +72,11 @@ export default function CategoryPage() {
                     identifier: selectedPackage.identifier,
                     categoryName: categoryName
                 };
-                await axios.patch(`http://13.127.31.239:3000/api/admin/updateCategory`, categoryData);
+                await axios.patch(`https://api.dailyfit.ae/api/admin/updateCategory`, categoryData, {withCredentials: true});
                 toast.success("Category updated successfully!");
             } else {
                 const categoryData = { categoryName };
-                await axios.post(`http://13.127.31.239:3000/api/admin/add-categories`, categoryData);
+                await axios.post(`https://api.dailyfit.ae/api/admin/add-categories`, categoryData, {withCredentials: true});
                 toast.success("Category added successfully!");
             }
             setIsCanvasOpen(false);

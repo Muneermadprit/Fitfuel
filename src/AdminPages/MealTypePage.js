@@ -15,9 +15,7 @@ export default function MealTypePage() {
     const fetchMealTypes = async () => {
         try {
             const token = sessionStorage.getItem("token");
-            const response = await axios.get("http://13.127.31.239:3000/api/admin/get-mealtype", {
-                // headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await axios.get("https://api.dailyfit.ae/api/admin/get-mealtype", { withCredentials: true });
             setMealPackages(response.data.data);
         } catch (error) {
             console.error("Error fetching meal types:", error);
@@ -44,9 +42,9 @@ export default function MealTypePage() {
 
     const handleDelete = async (id) => {
         try {
-            await axios.delete(`http://13.127.31.239:3000/api/admin/delete`, {
+            await axios.delete(`https://api.dailyfit.ae/api/admin/delete`, {
                 identifier: id// 
-            });
+            }, { withCredentials: true });
 
             // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
             toast.success("Category deleted successfully!");
@@ -55,18 +53,6 @@ export default function MealTypePage() {
             toast.error("Failed to delete category. Please try again.");
         }
     };
-
-    // const handleDelete = async (id) => {
-    //     try {
-    //         const token = sessionStorage.getItem("token");
-    //         await axios.delete(`http://13.127.31.239:3000/api/admin/delete-mealtype`, {
-    //             // headers: { Authorization: `Bearer ${token}` }
-    //         });
-    //         await fetchMealTypes();
-    //     } catch (error) {
-    //         console.error("Error deleting meal type:", error);
-    //     }
-    // };
 
     const validateForm = (mealType) => {
         const errors = {};
@@ -90,16 +76,16 @@ export default function MealTypePage() {
         try {
             if (isEditing && selectedPackage) {
                 // Update existing meal type
-                // await axios.patch(`http://13.127.31.239:3000/api/admin/update-category/${selectedPackage.id}`, categoryData);
-                await axios.patch('http://13.127.31.239:3000/api/admin/updateMealType', {
+                // await axios.patch(`https://api.dailyfit.ae/api/admin/update-category/${selectedPackage.id}`, categoryData);
+                await axios.patch('https://api.dailyfit.ae/api/admin/updateMealType', {
                     // id: selectedPackage.id,
                     mealType
-                },);
+                }, { withCredentials: true });
             } else {
                 // Add new meal type
-                await axios.post('http://13.127.31.239:3000/api/admin/add-mealtype', {
+                await axios.post('https://api.dailyfit.ae/api/admin/add-mealtype', {
                     mealType
-                });
+                }, { withCredentials: true });
             }
 
             await fetchMealTypes();

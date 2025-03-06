@@ -123,10 +123,11 @@ const CalorieCalculator = () => {
         </div>
         <button
           onClick={calculatePersonalCalories}
-          className="bg-[#464194] text-white px-4 py-2 rounded-lg shadow hover:bg-green-600 transition-all w-full font-Dosis"
+          className="bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition-all w-full font-Dosis"
         >
           Calculate
         </button>
+
       </div>
 
       {/* Modal for Summary */}
