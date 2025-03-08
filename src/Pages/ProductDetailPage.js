@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Users, Clock, Utensils } from 'lucide-react';
-
+import { useLocation } from 'react-router-dom';
 const MealPlanner = () => {
+  const location = useLocation();
+  const selectedPlans = location.state?.selectedPlan;
+  // Console log to verify the data was received
+  console.log('Received Plan Data:', selectedPlans);
   const [activeStep, setActiveStep] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -74,7 +78,8 @@ const MealPlanner = () => {
     "WEEKLY (5 days)"
   ];
 
-  const handleSelection = (packageId, option) => {
+  const handleSelection = (packageId, option, identifierPakage) => {
+    console.log(identifierPakage, 'tttt')
     // Clear other selections
     setSelectedOptions({
       [packageId]: option
@@ -160,7 +165,7 @@ const MealPlanner = () => {
           className={`w-10 h-10 rounded-full text-sm transition-colors ${isDisabled
             ? "text-gray-300 cursor-not-allowed"
             : isSelected
-              ? "bg-purple-600 text-white"
+              ? "bg-[#059033] text-white"
               : "hover:bg-gray-100"
             }`}
         >
@@ -415,6 +420,84 @@ const MealPlanner = () => {
     }
   };
 
+  // Add these functions to your component
+
+  // Check if selection is complete before enabling "Continue" button
+  const isSelectionComplete = () => {
+    // Check if at least one package is selected
+    const hasPackageSelection = Object.keys(selectedOptions).length > 0;
+
+    // Check if duration is selected
+    const hasDurationSelection = selectedPlan !== null;
+
+    // Check if start date is selected
+    const hasDateSelection = selectedDates.length > 0;
+
+    return hasPackageSelection && hasDurationSelection && hasDateSelection;
+  };
+
+  // Save selections to session storage
+  const saveSelectionsToSessionStorage = () => {
+    // Create an object with all the selections
+    const selections = {
+      packages: selectedOptions,
+      duration: selectedPlan,
+      // Save ALL selected dates, not just the first one
+      selectedDates: selectedDates,
+      selectedAt: new Date().toISOString(),
+      step: activeStep
+    };
+
+    // Save to session storage
+    sessionStorage.setItem('mealPlanSelections', JSON.stringify(selections));
+
+    // Log for debugging
+    console.log('Selections saved to session storage:', selections);
+  };
+
+
+  // Add this to your component's useEffect to load from session storage on initial render
+  useEffect(() => {
+    // Check if there are saved selections in session storage
+    const savedSelections = sessionStorage.getItem('mealPlanSelections');
+
+    if (savedSelections) {
+      try {
+        const parsedSelections = JSON.parse(savedSelections);
+
+        // Restore selections from session storage
+        if (parsedSelections.packages) {
+          setSelectedOptions(parsedSelections.packages);
+        }
+
+        if (parsedSelections.duration) {
+          setSelectedPlan(parsedSelections.duration);
+        }
+
+        // Restore ALL selected dates, not just the first one
+        if (parsedSelections.selectedDates && Array.isArray(parsedSelections.selectedDates)) {
+          setSelectedDates(parsedSelections.selectedDates);
+        }
+
+        // Restore step if available
+        if (parsedSelections.step) {
+          setActiveStep(parsedSelections.step);
+        }
+      } catch (error) {
+        console.error("Error parsing saved selections:", error);
+        // Clear corrupted data
+        sessionStorage.removeItem('mealPlanSelections');
+      }
+    }
+  }, []);
+
+  // You might want to add a reset function if needed
+  const resetSelections = () => {
+    setSelectedOptions({});
+    setSelectedPlan(null);
+    setSelectedDates([]);
+    sessionStorage.removeItem('mealPlanSelections');
+  };
 
   const handleMealSelection = (date, mealType, mealId) => {
     setSelectedMeals(prev => ({
@@ -444,33 +527,34 @@ const MealPlanner = () => {
                 {packages.map((pkg) => (
                   <div key={pkg.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
                     <div className="flex items-start justify-between mb-4">
-                      <div className="p-2 bg-purple-100 rounded-lg">
+                      <div className="p-2 bg-green-100 rounded-lg">
                         {pkg.icon}
                       </div>
-                      <span className="text-sm font-medium text-purple-600">{pkg.subtitle}</span>
+                      <span className="text-sm font-medium text-[#059033]">{pkg.subtitle}</span>
                     </div>
 
                     <h3 className="text-xl font-semibold mb-2">{pkg.title}</h3>
                     <p className="text-gray-600 text-sm mb-6">{pkg.description}</p>
 
                     <div className="space-y-3">
-                      {pkg.options.map((optionText, index) => (
+                      {selectedPlans.packages.map((packageItem) => (
                         <button
-                          key={`${pkg.id}-option${index + 1}`}
-                          onClick={() => handleSelection(pkg.id, `option${index + 1}`)}
+                          key={`${pkg.id}-${packageItem._id}`}
+                          onClick={() => handleSelection(pkg.id, packageItem._id, packageItem.identifier)}
                           className={`w-full p-4 rounded-lg text-left text-sm font-medium transition-all
-                          ${isSelected(pkg.id, `option${index + 1}`)
-                              ? "bg-purple-600 text-white shadow-md"
+              ${isSelected(pkg.id, packageItem._id)
+                              ? "bg-[#059033] text-white shadow-md"
                               : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                             }`}
                         >
-                          {optionText}
+                          {packageItem.packageName}
                         </button>
                       ))}
                     </div>
                   </div>
                 ))}
               </div>
+
 
               {/* Duration Selection */}
               <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
@@ -480,17 +564,18 @@ const MealPlanner = () => {
                     <button
                       key={plan}
                       onClick={() => setSelectedPlan(plan)}
-                      className={`p-6 rounded-lg border-2 transition-all
-                      ${selectedPlan === plan
-                          ? "border-purple-600 bg-purple-50"
-                          : "border-gray-200 hover:border-purple-200"
+                      className={`p-6 rounded-lg transition-all text-dark font-semibold
+        ${selectedPlan === plan
+                          ? "bg-[#059033] shadow-md"
+                          : "bg-gray-100 text-gray-700 hover:bg-[#059033] hover:text-white"
                         }`}
                     >
-                      <div className="text-lg font-semibold">{plan}</div>
+                      <div className="text-lg">{plan}</div>
                     </button>
                   ))}
                 </div>
               </div>
+
 
               {/* Calendar Section */}
               <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
@@ -499,16 +584,18 @@ const MealPlanner = () => {
                   <div className="flex items-center space-x-4">
                     <button
                       onClick={handlePrevMonth}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      className="p-2 hover:bg-[#059033] hover:text-white rounded-lg transition"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
+
                     <span className="font-medium">
                       {new Date(currentYear, currentMonth).toLocaleDateString('default', { month: 'long', year: 'numeric' })}
                     </span>
+
                     <button
                       onClick={handleNextMonth}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      className="p-2 hover:bg-[#059033] hover:text-white rounded-lg transition"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -519,25 +606,20 @@ const MealPlanner = () => {
                   {renderCalendar(0)}
                   {renderCalendar(1)}
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col md:flex-row justify-between gap-4 md:items-center">
-                <button
-                  onClick={() => {
-                    setSelectedOptions({});
-                    setSelectedPlan(null);
-                    setSelectedDates([]);
-                  }}
-                  className="px-8 py-3 border-2 border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 font-medium"
-                >
-                  Reset Selections
-                </button>
-                <button
-                  className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
-                >
-                  Continue to Menu Selection
-                </button>
+                {/* Reset Selections Button */}
+                <div className="flex justify-end mt-6">
+                  <button
+                    onClick={() => {
+                      setSelectedOptions({});
+                      setSelectedPlan(null);
+                      setSelectedDates([]);
+                    }}
+                    className="px-8 py-3 border-2 bg-[#059033] text-white rounded-lg hover:bg-[#059033] hover:text-white font-medium transition"
+                  >
+                    Reset Selections
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -564,8 +646,8 @@ const MealPlanner = () => {
                   key={date}
                   onClick={() => setSelectedDate(date)}
                   className={`px-6 py-3 rounded-full font-medium whitespace-nowrap
-                      ${date === selectedDate
-                      ? "bg-purple-600 text-white"
+                  ${date === selectedDate
+                      ? "bg-[#059033] text-white"
                       : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
                 >
                   {new Date(date).toLocaleDateString('en-US', {
@@ -588,8 +670,8 @@ const MealPlanner = () => {
                       return (
                         <div
                           key={meal.id}
-                          className={`bg-white rounded-xl shadow-sm transition-all ${isSelected ? 'ring-2 ring-purple-600' : 'hover:shadow-md'
-                            }`}
+                          className={`bg-white rounded-xl shadow-sm transition-all 
+                        ${isSelected ? 'ring-2 ring-[#059033]' : 'hover:shadow-md'}`}
                         >
                           <img
                             src={meal.image}
@@ -609,10 +691,10 @@ const MealPlanner = () => {
 
                             <button
                               onClick={() => handleMealSelection(selectedDate, mealType, meal.id)}
-                              className={`w-full py-2 rounded-lg font-medium transition-colors ${isSelected
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
+                              className={`w-full py-2 rounded-lg font-medium transition-colors 
+                            ${isSelected
+                                  ? 'bg-[#059033] text-white'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                             >
                               {isSelected ? 'SELECTED' : 'SELECT'}
                             </button>
@@ -625,48 +707,41 @@ const MealPlanner = () => {
               ))}
             </div>
           </div>
+
         );
 
 
       case 3:
         return (
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="p-6 md:p-10 bg-gray-50 rounded-lg shadow-md">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="p-8 bg-white rounded-2xl shadow-lg border border-gray-200">
               <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Enhance Your Plan</h2>
-                <button className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all flex items-center gap-3 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <h2 className="text-3xl font-bold text-gray-900">Enhance Your Plan</h2>
+                <button className="px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all flex items-center gap-3 shadow-md focus:outline-none focus:ring-2 focus:ring-green-500">
                   SKIP
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                    <path
-                      fillRule="evenodd"
-                      d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.243 7.032a.75.75 0 010 1.06l-3.5 3.5a.75.75 0 01-1.06 0l-3.5-3.5a.75.75 0 011.06-1.06l2.47 2.47 2.47-2.47a.75.75 0 011.06 0z"
-                      clipRule="evenodd"
-                    />
+                    <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.243 7.032a.75.75 0 010 1.06l-3.5 3.5a.75.75 0 01-1.06 0l-3.5-3.5a.75.75 0 011.06-1.06l2.47 2.47 2.47-2.47a.75.75 0 011.06 0z" clipRule="evenodd" />
                   </svg>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {enhancements.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-200"
+                    className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-shadow border border-gray-200 flex flex-col items-center text-center"
                   >
-                    <div className="flex items-center gap-6">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-16 h-16 rounded-full object-cover"
-                      />
-                      <div className="flex-grow">
-                        <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
-                        <p className="text-sm font-medium text-gray-600">AED {item.pricePerDay.toFixed(2)} / day</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        className="w-6 h-6 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 focus:outline-none"
-                      />
-                    </div>
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-20 h-20 rounded-full object-cover border-4 border-green-400"
+                    />
+                    <h3 className="mt-4 text-lg font-semibold text-gray-900">{item.name}</h3>
+                    <p className="text-sm text-gray-600 font-medium">AED {item.pricePerDay.toFixed(2)} / day</p>
+                    <input
+                      type="checkbox"
+                      className="mt-4 w-6 h-6 text-green-600 border-gray-300 rounded focus:ring-green-500 focus:outline-none"
+                    />
                   </div>
                 ))}
               </div>
@@ -817,17 +892,18 @@ const MealPlanner = () => {
           {[1, 2, 3, 4].map((step) => (
             <div key={step} className="flex items-center">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-semibold
-              ${activeStep >= step ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+      ${activeStep >= step ? 'bg-[#059033] text-white' : 'bg-gray-200 text-gray-600'}`}>
                 {step}
               </div>
               {step < 4 && (
                 <div className={`w-24 h-1 mx-2 
-                ${activeStep > step ? 'bg-purple-600' : 'bg-gray-200'}`}
+        ${activeStep > step ? 'bg-[#059033]' : 'bg-gray-200'}`}
                 />
               )}
             </div>
           ))}
         </div>
+
 
         {/* Step Content */}
         <div className="mb-8">
@@ -850,73 +926,27 @@ const MealPlanner = () => {
         {/* Navigation */}
         <div className="flex justify-between mt-12">
           <button
-            onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
-            className="px-6 py-2 rounded-xl border-2 border-purple-600 text-purple-600 hover:bg-purple-50"
+            onClick={() => {
+              // Save selections to session storage before proceeding
+              saveSelectionsToSessionStorage();
+              // Then navigate to next step
+              setActiveStep(Math.min(4, activeStep + 1));
+            }}
+            // onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
+            className="px-6 py-2 rounded-xl border-2 border-[#059033] text-[#059033] hover:bg-green-50"
           >
             Back
           </button>
           <button
             onClick={() => setActiveStep(Math.min(4, activeStep + 1))}
-            className="px-6 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700"
+            className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
           >
             {activeStep === 4 ? 'Complete Order' : 'Continue'}
           </button>
         </div>
+
       </div>
     </div>
-
-    // <div className="min-h-screen bg-gray-50 p-6">
-    //   <div className="max-w-6xl mx-auto">
-    //     {/* Progress Steps */}
-    //     <div className="flex justify-between items-center mb-12">
-    //       {[1, 2, 3].map((step) => (
-    //         <div key={step} className="flex items-center">
-    //           <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-semibold
-    //             ${activeStep >= step ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-    //             {step}
-    //           </div>
-    //           {step < 3 && (
-    //             <div className={`w-24 h-1 mx-2 
-    //               ${activeStep > step ? 'bg-purple-600' : 'bg-gray-200'}`}
-    //             />
-    //           )}
-    //         </div>
-    //       ))}
-    //     </div>
-
-    //     {/* Step Content */}
-    //     <div className="mb-8">
-    //       <h2 className="text-2xl font-bold mb-2">
-    //         {activeStep === 1 ? 'Choose Your Plan' :
-    //           activeStep === 2 ? 'Select Your Meals' :
-    //             'Delivery Details'}
-    //       </h2>
-    //       <p className="text-gray-600">
-    //         {activeStep === 1 ? 'Select a meal plan that fits your lifestyle' :
-    //           activeStep === 2 ? 'Customize your weekly menu' :
-    //             'Tell us where to deliver your meals'}
-    //       </p>
-    //     </div>
-
-    //     {renderStepContent()}
-
-    //     {/* Navigation */}
-    //     <div className="flex justify-between mt-12">
-    //       <button
-    //         onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
-    //         className="px-6 py-2 rounded-xl border-2 border-purple-600 text-purple-600 hover:bg-purple-50"
-    //       >
-    //         Back
-    //       </button>
-    //       <button
-    //         onClick={() => setActiveStep(Math.min(3, activeStep + 1))}
-    //         className="px-6 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700"
-    //       >
-    //         {activeStep === 3 ? 'Complete Order' : 'Continue'}
-    //       </button>
-    //     </div>
-    //   </div>
-    // </div>
   );
 };
 
