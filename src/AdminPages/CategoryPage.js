@@ -39,11 +39,13 @@ export default function CategoryPage() {
     };
 
     const handleDelete = async (id) => {
+        console.log(id, 'iii')
         try {
             await axios.delete(`https://api.dailyfit.ae/api/admin/delete`, {
-                identifier: id// 
-            }, { withCredentials: true });
-
+                data: { identifier: id },
+                withCredentials: true,
+            });
+            fetchProducts();
             // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
             toast.success("Category deleted successfully!");
         } catch (error) {
@@ -72,11 +74,11 @@ export default function CategoryPage() {
                     identifier: selectedPackage.identifier,
                     categoryName: categoryName
                 };
-                await axios.patch(`https://api.dailyfit.ae/api/admin/updateCategory`, categoryData, {withCredentials: true});
+                await axios.patch(`https://api.dailyfit.ae/api/admin/updateCategory`, categoryData, { withCredentials: true });
                 toast.success("Category updated successfully!");
             } else {
                 const categoryData = { categoryName };
-                await axios.post(`https://api.dailyfit.ae/api/admin/add-categories`, categoryData, {withCredentials: true});
+                await axios.post(`https://api.dailyfit.ae/api/admin/add-categories`, categoryData, { withCredentials: true });
                 toast.success("Category added successfully!");
             }
             setIsCanvasOpen(false);
@@ -107,7 +109,7 @@ export default function CategoryPage() {
                     <button onClick={() => handleEdit(row)} className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600">
                         <Pencil size={16} />
                     </button>
-                    <button onClick={() => handleDelete(row.id)} className="bg-red-500 text-white p-2 rounded hover:bg-red-600">
+                    <button onClick={() => handleDelete(row.identifier)} className="bg-red-500 text-white p-2 rounded hover:bg-red-600">
                         <Trash2 size={16} />
                     </button>
                 </div>

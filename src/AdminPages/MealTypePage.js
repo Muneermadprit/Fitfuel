@@ -43,8 +43,9 @@ export default function MealTypePage() {
     const handleDelete = async (id) => {
         try {
             await axios.delete(`https://api.dailyfit.ae/api/admin/delete`, {
-                identifier: id// 
-            }, { withCredentials: true });
+                data: { identifier: id },
+                withCredentials: true,
+            });
 
             // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
             toast.success("Category deleted successfully!");
@@ -70,8 +71,6 @@ export default function MealTypePage() {
             return;
         }
 
-        // const token = sessionStorage.getItem("token");
-        // const headers = { Authorization: `Bearer ${token}` };
 
         try {
             if (isEditing && selectedPackage) {
@@ -122,7 +121,7 @@ export default function MealTypePage() {
                         <Pencil size={16} />
                     </button>
                     <button
-                        onClick={() => handleDelete(row.id)}
+                        onClick={() => handleDelete(row.identifier)}
                         className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
                     >
                         <Trash2 size={16} />

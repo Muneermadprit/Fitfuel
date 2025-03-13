@@ -418,31 +418,10 @@ Message: ${formData.message}`;
         </div>
       </nav>
       {/* Hero Section */}
-
-      {/* <div className="bg-gradient-to-br from-green-900 to-lime-700 text-white py-16">
-        <div className="container mx-auto px-4 flex flex-col md:flex-row items-center">
-          <div className="md:w-1/2 mb-8 md:mb-0">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Transform Your Fitness Journey</h1>
-            <p className="text-xl mb-6">Premium fitness equipment and supplements for your home workout needs</p>
-            <div className="flex space-x-4">
-              <button className="bg-white text-green-700 px-6 py-3 rounded-lg font-bold hover:bg-green-100 transition duration-200">
-                Shop Now
-              </button>
-              <button className="border-2 border-white px-6 py-3 rounded-lg font-bold hover:bg-white hover:text-green-700 transition duration-200">
-                Learn More
-              </button>
-            </div>
-          </div>
-          <div className="md:w-1/2">
-            <img src="https://th.bing.com/th/id/OIP.OHv_QRoJDtQwoqYTrkKEmwHaE6?rs=1&pid=ImgDetMain" alt="Fitness Equipment" className="rounded-lg shadow-xl" />
-          </div>
-        </div>
-      </div> */}
-
       <div className="bg-gradient-to-br from-green-800 to-lime-600 text-white py-20">
-        <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
 
-          {/* Left Column: Text Section */}
+          {/* Text Content */}
           <div className="text-center md:text-left space-y-6">
             <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
               Elevate Your Fitness Game
@@ -451,10 +430,7 @@ Message: ${formData.message}`;
               High-quality fitness equipment and supplements to fuel your workout journey.
             </p>
             <div className="flex justify-center md:justify-start space-x-4">
-              <button
-                className="bg-white text-green-700 px-6 py-3 rounded-full font-bold shadow-md hover:bg-green-100 transition duration-300 transform hover:scale-105"
-                onClick={handleShopNowClick}
-              >
+              <button className="bg-white text-green-700 px-6 py-3 rounded-full font-bold shadow-md hover:bg-green-100 transition duration-300 transform hover:scale-105" onClick={handleShopNowClick}>
                 Shop Now
               </button>
               <button className="border-2 border-white px-6 py-3 rounded-full font-bold shadow-md hover:bg-white hover:text-green-700 transition duration-300 transform hover:scale-105">
@@ -463,88 +439,32 @@ Message: ${formData.message}`;
             </div>
           </div>
 
-          {/* Right Column: Video Section */}
+          {/* Image */}
           <div className="flex justify-center">
-            <video
-              src={fitnessVideo}
-              autoPlay
-              loop
-              muted
-              onClick={() => setModalIsOpen(true)}
-              className="cursor-pointer w-64 h-64 rounded-xl shadow-xl border-4 border-white transform hover:scale-110 transition duration-300"
+            <img
+              src="https://th.bing.com/th/id/OIP.OHv_QRoJDtQwoqYTrkKEmwHaE6?rs=1&pid=ImgDetMain"
+              alt="Fitness Equipment"
+              className="rounded-xl shadow-lg w-full max-w-md lg:max-w-lg transform hover:scale-105 transition duration-300"
             />
           </div>
         </div>
+      </div>
 
-        {/* Modal for Calorie Calculator */}
-        <Modal
-          isOpen={modalIsOpen}
-          onRequestClose={() => setModalIsOpen(false)}
-          contentLabel="Calorie Calculator"
-          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 mt-5"
+      {/* Fitness Progress Section */}
+      <div className="mt-16 bg-white text-gray-900 py-10 px-6 rounded-xl shadow-lg max-w-4xl mx-auto text-center mb-4">
+        <h2 className="text-3xl font-bold text-green-700 mb-4">Track Your Fitness Progress</h2>
+        <p className="text-lg text-gray-700 mb-6">
+          Use our advanced tools to calculate your calorie intake and track your fitness journey effectively.
+        </p>
+        <button
+          className="bg-green-700 text-white px-6 py-3 rounded-full font-bold shadow-md hover:bg-green-800 transition duration-300 transform hover:scale-105"
+          onClick={() => setModalIsOpen(true)}
         >
-          <div className="bg-white p-8 rounded-2xl shadow-2xl w-96 relative text-center">
-            {/* Close Button */}
-            <button
-              className="absolute top-4 right-4 text-2xl font-bold text-gray-600 hover:text-gray-800 transition duration-300"
-              onClick={() => setModalIsOpen(false)}
-            >
-              ✖
-            </button>
-
-            {/* Modal Content */}
-            <h2 className="text-2xl font-bold text-green-700 mb-4">Calorie Calculator</h2>
-            <CalorieCalculator />
-          </div>
-        </Modal>
+          Open Calorie Calculator
+        </button>
       </div>
 
-
-      {/* <div className="bg-gradient-to-br from-green-800 to-lime-600 text-white py-20">
-      <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10 items-center">
-        
-      
-        <div className="text-center md:text-left space-y-6">
-          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
-            Elevate Your Fitness Game
-          </h1>
-          <p className="text-lg text-gray-200">
-            High-quality fitness equipment and supplements to fuel your workout journey.
-          </p>
-          <div className="flex justify-center md:justify-start space-x-4">
-            <button className="bg-white text-green-700 px-6 py-3 rounded-full font-bold shadow-md hover:bg-green-100 transition duration-300 transform hover:scale-105">
-              Shop Now
-            </button>
-            <button className="border-2 border-white px-6 py-3 rounded-full font-bold shadow-md hover:bg-white hover:text-green-700 transition duration-300 transform hover:scale-105">
-              Learn More
-            </button>
-          </div>
-        </div>
-
-       
-        <div className="flex justify-center">
-          <img
-            src="https://th.bing.com/th/id/OIP.OHv_QRoJDtQwoqYTrkKEmwHaE6?rs=1&pid=ImgDetMain"
-            alt="Fitness Equipment"
-            className="rounded-xl shadow-lg w-full max-w-xs transform hover:scale-105 transition duration-300"
-          />
-        </div>
-
-      
-        <div className="flex justify-end relative">
-          <video
-            src={fitnessVideo}
-            autoPlay
-            loop
-            muted
-            onClick={() => setModalIsOpen(true)}
-            className="cursor-pointer w-64 h-64 rounded-xl shadow-xl border-4 border-white transform hover:scale-110 transition duration-300"
-          />
-          Glow Effect
-          <div className="absolute top-0 left-0 w-full h-full rounded-xl bg-white opacity-10 transition duration-500 hover:opacity-20"></div>
-        </div>
-      </div>
-
+      {/* Modal */}
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={() => setModalIsOpen(false)}
@@ -552,20 +472,16 @@ Message: ${formData.message}`;
         className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60"
       >
         <div className="bg-white p-8 rounded-2xl shadow-2xl w-96 relative text-center">
-         
           <button
             className="absolute top-4 right-4 text-2xl font-bold text-gray-600 hover:text-gray-800 transition duration-300"
             onClick={() => setModalIsOpen(false)}
           >
             ✖
           </button>
-
-         
           <h2 className="text-2xl font-bold text-green-700 mb-4">Calorie Calculator</h2>
           <CalorieCalculator />
         </div>
       </Modal>
-    </div> */}
 
       {/* Featured Products Slider */}
       <div className="py-16 bg-white">

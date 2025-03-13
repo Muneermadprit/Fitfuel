@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Users, Clock, Utensils } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import axios from "axios";
 const MealPlanner = () => {
   const location = useLocation();
   const selectedPlans = location.state?.selectedPlan;
@@ -80,6 +81,12 @@ const MealPlanner = () => {
 
   const handleSelection = (packageId, option, identifierPakage) => {
     console.log(identifierPakage, 'tttt')
+    try {
+      const response = axios.post('https://api.dailyfit.ae/api/user/get-package-details', { packageId, identifierPakage });
+      console.log('API Response:', response.data);
+    } catch (error) {
+      console.error('API Error:', error);
+    }
     // Clear other selections
     setSelectedOptions({
       [packageId]: option
@@ -442,6 +449,8 @@ const MealPlanner = () => {
     const selections = {
       packages: selectedOptions,
       duration: selectedPlan,
+      startDate: selectedDates.length > 0 ? selectedDates[0] : null, // First date as start date
+      endDate: selectedDates.length > 0 ? selectedDates[selectedDates.length - 1] : null,
       // Save ALL selected dates, not just the first one
       selectedDates: selectedDates,
       selectedAt: new Date().toISOString(),
@@ -462,6 +471,7 @@ const MealPlanner = () => {
     const savedSelections = sessionStorage.getItem('mealPlanSelections');
 
     if (savedSelections) {
+      console.log(savedSelections, 'uuuu')
       try {
         const parsedSelections = JSON.parse(savedSelections);
 
@@ -474,7 +484,7 @@ const MealPlanner = () => {
           setSelectedPlan(parsedSelections.duration);
         }
 
-        // Restore ALL selected dates, not just the first one
+        // Restore ALL selected dates
         if (parsedSelections.selectedDates && Array.isArray(parsedSelections.selectedDates)) {
           setSelectedDates(parsedSelections.selectedDates);
         }
@@ -483,6 +493,9 @@ const MealPlanner = () => {
         if (parsedSelections.step) {
           setActiveStep(parsedSelections.step);
         }
+
+        // Log for debugging
+        console.log('Selections loaded from session storage:', parsedSelections);
       } catch (error) {
         console.error("Error parsing saved selections:", error);
         // Clear corrupted data
@@ -490,6 +503,39 @@ const MealPlanner = () => {
       }
     }
   }, []);
+  // useEffect(() => {
+  //   // Check if there are saved selections in session storage
+  //   const savedSelections = sessionStorage.getItem('mealPlanSelections');
+
+  //   if (savedSelections) {
+  //     try {
+  //       const parsedSelections = JSON.parse(savedSelections);
+
+  //       // Restore selections from session storage
+  //       if (parsedSelections.packages) {
+  //         setSelectedOptions(parsedSelections.packages);
+  //       }
+
+  //       if (parsedSelections.duration) {
+  //         setSelectedPlan(parsedSelections.duration);
+  //       }
+
+  //       // Restore ALL selected dates, not just the first one
+  //       if (parsedSelections.selectedDates && Array.isArray(parsedSelections.selectedDates)) {
+  //         setSelectedDates(parsedSelections.selectedDates);
+  //       }
+
+  //       // Restore step if available
+  //       if (parsedSelections.step) {
+  //         setActiveStep(parsedSelections.step);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error parsing saved selections:", error);
+  //       // Clear corrupted data
+  //       sessionStorage.removeItem('mealPlanSelections');
+  //     }
+  //   }
+  // }, []);
 
   // You might want to add a reset function if needed
   const resetSelections = () => {
@@ -707,7 +753,6 @@ const MealPlanner = () => {
               ))}
             </div>
           </div>
-
         );
 
 

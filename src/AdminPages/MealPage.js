@@ -259,8 +259,10 @@ export default function MealPage() {
     const handleDelete = async (id) => {
         try {
             await axios.delete(`https://api.dailyfit.ae/api/admin/delete`, {
-                identifier: id// 
-            }, { withCredentials: true });
+                data: { identifier: id },
+                withCredentials: true,
+            });
+            fetchMeals();
 
             // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
             toast.success("Category deleted successfully!");
@@ -273,45 +275,60 @@ export default function MealPage() {
         e.preventDefault();
         const token = sessionStorage.getItem("token");
 
-        // Construct the meal data object
-        const mealData = {
-            mealName: formData.mealName,
-            // image: formData.image, // Keep existing image URLs
-            description: formData.description,
-            category: formData.categoryId, // Use the ID instead of the name
-            mealTypes: selectedMealTypes, // Use the selected meal types array
-            package: formData.package,
-            fareDetails: {
-                totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
-                strikeOff: parseFloat(formData.fareDetails.strikeOff) || 0,
-                discount: parseFloat(formData.fareDetails.discount) || 0
-            },
-            moreDetails: {
-                energy: parseInt(formData.moreDetails.energy) || 0,
-                protein: parseInt(formData.moreDetails.protein) || 0,
-                fat: parseInt(formData.moreDetails.fat) || 0,
-                carbohydrates: parseInt(formData.moreDetails.carbohydrates) || 0,
-                allergens: formData.moreDetails.allergens
-            }
-        };
-
-        // Append new image files if uploaded
-        mealData.images = imageFiles.map((file) => file);
-
         try {
-            const url = selectedMealId
-                ? `https://api.dailyfit.ae/api/admin/update-meal`
-                : 'https://api.dailyfit.ae/api/admin/add-meal';
+            if (selectedMealId) {
+                // Update existing meal
+                await axios.patch('https://api.dailyfit.ae/api/admin/update-meal', {
+                    id: selectedMealId,
+                    mealName: formData.mealName,
+                    description: formData.description,
+                    category: formData.categoryId,
+                    mealTypes: selectedMealTypes.map(typeId => {
+                        const foundType = mealType.find(type => type._id === typeId);
+                        return foundType ? foundType.mealType : '';
+                    }).filter(name => name !== ''),
+                    package: formData.package,
+                    fareDetails: {
+                        totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
+                        strikeOff: parseFloat(formData.fareDetails.strikeOff) || 0,
+                        discount: parseFloat(formData.fareDetails.discount) || 0
+                    },
+                    moreDetails: {
+                        energy: parseInt(formData.moreDetails.energy) || 0,
+                        protein: parseInt(formData.moreDetails.protein) || 0,
+                        fat: parseInt(formData.moreDetails.fat) || 0,
+                        carbohydrates: parseInt(formData.moreDetails.carbohydrates) || 0,
+                        allergens: formData.moreDetails.allergens
+                    },
+                    images: imageFiles.map((file) => file)
+                }, { withCredentials: true });
 
-            const response = await axios({
-                method: selectedMealId ? 'patch' : 'post',
-                url,
-                data: mealData,
-                // headers: {
-                //     Authorization: `Bearer ${token}`,
-                //     'Content-Type': 'multipart/form-data'
-                // }
-            }, { withCredentials: true });
+            } else {
+                // Add new meal
+                await axios.post('https://api.dailyfit.ae/api/admin/add-meal', {
+                    mealName: formData.mealName,
+                    description: formData.description,
+                    category: formData.categoryId,
+                    mealTypes: selectedMealTypes.map(typeId => {
+                        const foundType = mealType.find(type => type._id === typeId);
+                        return foundType ? foundType.mealType : '';
+                    }).filter(name => name !== ''),
+                    package: formData.package,
+                    fareDetails: {
+                        totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
+                        strikeOff: parseFloat(formData.fareDetails.strikeOff) || 0,
+                        discount: parseFloat(formData.fareDetails.discount) || 0
+                    },
+                    moreDetails: {
+                        energy: parseInt(formData.moreDetails.energy) || 0,
+                        protein: parseInt(formData.moreDetails.protein) || 0,
+                        fat: parseInt(formData.moreDetails.fat) || 0,
+                        carbohydrates: parseInt(formData.moreDetails.carbohydrates) || 0,
+                        allergens: formData.moreDetails.allergens
+                    },
+                    images: imageFiles.map((file) => file)
+                }, { withCredentials: true });
+            }
 
             await fetchMeals();
             setIsCanvasOpen(false);
@@ -320,6 +337,7 @@ export default function MealPage() {
             setImagePreviewUrls([]);
             setSelectedMealId(null);
             setSelectedMealTypes([]);
+
         } catch (error) {
             console.error('Error saving meal:', error);
         }
@@ -440,31 +458,27 @@ export default function MealPage() {
                                     ))}
                                 </select>
                             </div>
-
-                            <div className="mb-4">
-                                <label className="block mb-1">Select Meal Types:</label>
-                                <div className="border p-2 rounded max-h-64 overflow-y-auto">
-                                    {mealType && mealType.length > 0 ? (
-                                        mealType.map((type) => (
-                                            <div key={type._id} className="flex items-center mb-2 p-2 hover:bg-gray-100 rounded">
-                                                <input
-                                                    type="checkbox"
-                                                    id={`type-${type._id}`}
-                                                    name="types"
-                                                    value={type._id}
-                                                    checked={isMealSelected(type._id)}
-                                                    onChange={handleMealTypeSelection}
-                                                    className="mr-2 h-4 w-4"
-                                                />
-                                                <label htmlFor={`type-${type._id}`} className="flex flex-col">
-                                                    <span className="font-medium">{type.mealType}</span>
-                                                </label>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p>No meal types available</p>
-                                    )}
-                                </div>
+                            <div className="border p-2 rounded max-h-64 overflow-y-auto">
+                                {mealType && mealType.length > 0 ? (
+                                    mealType.map((type) => (
+                                        <div key={type._id} className="flex items-center mb-2 p-2 hover:bg-gray-100 rounded">
+                                            <input
+                                                type="checkbox"
+                                                id={`type-${type._id}`}
+                                                name="types"
+                                                value={type._id}
+                                                checked={isMealSelected(type._id)}
+                                                onChange={handleMealTypeSelection}
+                                                className="mr-2 h-4 w-4"
+                                            />
+                                            <label htmlFor={`type-${type._id}`} className="flex flex-col">
+                                                <span className="font-medium">{type.mealType}</span>
+                                            </label>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p>No meal types available</p>
+                                )}
                             </div>
 
                             <div className="mb-4">
