@@ -6,7 +6,7 @@ const MealPlanner = () => {
   const location = useLocation();
   const selectedPlans = location.state?.selectedPlan;
   // Console log to verify the data was received
-  console.log('Received Plan Data:', selectedPlans);
+  console.log('Received Plan:', selectedPlans);
   const [activeStep, setActiveStep] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -14,63 +14,42 @@ const MealPlanner = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState(null);
-
-  // Set the first selected date as the active date when moving to step 2
-  useEffect(() => {
-    if (activeStep === 2 && selectedDates.length > 0 && !selectedDate) {
-      setSelectedDate(selectedDates[0]);
-    }
-  }, [activeStep, selectedDates, selectedDate]);
-  const [selectedMeals, setSelectedMeals] = useState({});
-
-  useEffect(() => {
-    if (selectedDate) {
-      const initialSelections = {};
-      ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
-        const defaultMeal = mealData[selectedDate]?.[mealType]?.find(meal => meal.default);
-        if (defaultMeal) {
-          initialSelections[`${selectedDate}-${mealType}`] = defaultMeal.id;
-        }
-      });
-      setSelectedMeals(prev => ({ ...prev, ...initialSelections }));
-    }
-  }, [selectedDate]);
-
-  const packages = [
-    {
-      id: 'fullPackage',
-      title: 'Full Package',
-      icon: <Users className="w-6 h-6" />,
-      subtitle: 'Perfect for families',
-      description: 'Complete daily nutrition with all meals included',
-      options: [
-        '⭐ 2 Main Meals with Breakfast & FITT Snack',
-        '1 Main Meal with Breakfast & FITT Snack'
-      ]
-    },
-    {
-      id: 'mainMealsWithBreakfast',
-      title: 'Main Meals with Breakfast',
-      icon: <Clock className="w-6 h-6" />,
-      subtitle: 'Start your day right',
-      description: 'Essential meals to power your morning and afternoon',
-      options: [
-        '⭐ 2 Main Meals with Breakfast',
-        '1 Main Meal with Breakfast'
-      ]
-    },
-    {
-      id: 'mainMealsWithSnacks',
-      title: 'Main Meals with FITT Snacks',
-      icon: <Utensils className="w-6 h-6" />,
-      subtitle: 'Balanced nutrition',
-      description: 'Perfect combination of main meals and healthy snacks',
-      options: [
-        '2 Main Meals & FITT Snack',
-        '1 Main Meal & FITT Snack'
-      ]
-    }
-  ];
+  const [mealData, setMealData] = useState([]);
+  // const packages = [
+  //   {
+  //     id: 'fullPackage',
+  //     title: 'Full Package',
+  //     icon: <Users className="w-6 h-6" />,
+  //     subtitle: 'Perfect for families',
+  //     description: 'Complete daily nutrition with all meals included',
+  //     options: [
+  //       '⭐ 2 Main Meals with Breakfast & FITT Snack',
+  //       '1 Main Meal with Breakfast & FITT Snack'
+  //     ]
+  //   },
+  //   {
+  //     id: 'mainMealsWithBreakfast',
+  //     title: 'Main Meals with Breakfast',
+  //     icon: <Clock className="w-6 h-6" />,
+  //     subtitle: 'Start your day right',
+  //     description: 'Essential meals to power your morning and afternoon',
+  //     options: [
+  //       '⭐ 2 Main Meals with Breakfast',
+  //       '1 Main Meal with Breakfast'
+  //     ]
+  //   },
+  //   {
+  //     id: 'mainMealsWithSnacks',
+  //     title: 'Main Meals with FITT Snacks',
+  //     icon: <Utensils className="w-6 h-6" />,
+  //     subtitle: 'Balanced nutrition',
+  //     description: 'Perfect combination of main meals and healthy snacks',
+  //     options: [
+  //       '2 Main Meals & FITT Snack',
+  //       '1 Main Meal & FITT Snack'
+  //     ]
+  //   }
+  // ];
 
   const plans = [
     "MONTHLY (6 days per week)",
@@ -79,24 +58,122 @@ const MealPlanner = () => {
     "WEEKLY (5 days)"
   ];
 
-  const handleSelection = (packageId, option, identifierPakage) => {
-    console.log(identifierPakage, 'tttt')
-    try {
-      const response = axios.post('https://api.dailyfit.ae/api/user/get-package-details', { packageId, identifierPakage });
-      console.log('API Response:', response.data);
-    } catch (error) {
-      console.error('API Error:', error);
+  const [selectedPackage, setSelectedPackage] = useState({
+    packageId: null,
+    planId: null
+  });
+
+  const isSelected = (packageId, planId) => {
+    return selectedPackage.packageId === packageId && selectedPackage.planId === planId;
+  };
+
+
+  const saveSelectionsToSessionStorage = () => {
+    // Get current form data (this would be your form state)
+    const formData = {
+      // Example data - replace with your actual form state
+      items: sessionStorage.getItem('cartItems') ? JSON.parse(sessionStorage.getItem('cartItems')) : [],
+      shippingAddress: sessionStorage.getItem('shippingAddress') ? JSON.parse(sessionStorage.getItem('shippingAddress')) : {},
+      paymentMethod: sessionStorage.getItem('paymentMethod') || ''
+    };
+
+    // Save to session storage
+    sessionStorage.setItem('checkoutData', JSON.stringify(formData));
+    console.log('Selections saved to session storage');
+  };
+
+  // Handle redirection to summary page when completing the order
+  useEffect(() => {
+    if (activeStep > 4) {
+      // Redirect to summary page
+      window.location.href = '/summary';
     }
-    // Clear other selections
-    setSelectedOptions({
-      [packageId]: option
-    });
-  };
+  }, [activeStep]);
 
-  const isSelected = (packageId, option) => {
-    return selectedOptions[packageId] === option;
-  };
 
+  const enhancements = [
+    {
+      id: 1,
+      name: "Premium Breakfast",
+      pricePerDay: 10.0,
+      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
+    },
+    {
+      id: 2,
+      name: "Gym Access",
+      pricePerDay: 15.0,
+      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
+    },
+    {
+      id: 3,
+      name: "Pool Access",
+      pricePerDay: 12.0,
+      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
+    },
+    {
+      id: 4,
+      name: "Spa Session",
+      pricePerDay: 20.0,
+      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
+    },
+    {
+      id: 5,
+      name: "Private Lounge",
+      pricePerDay: 25.0,
+      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
+    },
+    {
+      id: 6,
+      name: "Late Checkout",
+      pricePerDay: 8.0,
+      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
+    },
+    {
+      id: 7,
+      name: "Room Service",
+      pricePerDay: 18.0,
+      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
+    },
+    {
+      id: 8,
+      name: "Complimentary Drinks",
+      pricePerDay: 5.0,
+      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
+    },
+  ];
+
+
+  const handleSelection = async (packageId, identifierPackage) => { 
+    console.log(packageId);
+    try {
+      const response = await axios.post(
+        "https://api.dailyfit.ae/api/user/get-package-details",
+        { packageId, identifierPackage }
+      );
+
+      if (response.data && response.data.data) {
+        const packages = response.data.data;
+
+        // Extract all meals and structure them by date
+        const formattedMeals = {};
+        packages.forEach((pkg) => {
+          Object.entries(pkg.meals).forEach(([day, mealInfo]) => {
+            const date = mealInfo.date;
+            formattedMeals[date] = mealInfo.meals;
+          });
+        });
+
+        setMealData(formattedMeals);
+
+        // Extract and set available dates
+        const availableDates = Object.keys(formattedMeals);
+        setSelectedDates(availableDates);
+        setSelectedDate(availableDates[0]); // Set first date as default
+      }
+    } catch (error) {
+      console.error("API Error:", error);
+    }
+  };
   const isDateDisabled = (date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -115,13 +192,15 @@ const MealPlanner = () => {
 
   const handleDateSelection = (date) => {
     if (isDateDisabled(date)) return;
-
+  
+    let newSelectedDates = [];
+  
     if (selectedPlan?.includes("MONTHLY")) {
       const daysToSelect = selectedPlan.includes("5 days") ? 20 : 24;
       const validDates = [];
       let currentDate = new Date(date);
       let daysAdded = 0;
-
+  
       while (daysAdded < daysToSelect) {
         if (!isDateDisabled(new Date(currentDate))) {
           validDates.push(new Date(currentDate));
@@ -129,24 +208,84 @@ const MealPlanner = () => {
         }
         currentDate.setDate(currentDate.getDate() + 1);
       }
-
-      setSelectedDates(validDates.map(d => d.toISOString().split('T')[0]));
+  
+      newSelectedDates = validDates.map(d => d.toISOString().split('T')[0]);
     } else if (selectedPlan?.includes("WEEKLY")) {
       const daysToSelect = selectedPlan.includes("5 days") ? 5 : 6;
       const validDates = [];
       let currentDate = new Date(date);
-
+  
       while (validDates.length < daysToSelect) {
         if (!isDateDisabled(new Date(currentDate))) {
           validDates.push(new Date(currentDate));
         }
         currentDate.setDate(currentDate.getDate() + 1);
       }
-
-      setSelectedDates(validDates.map(d => d.toISOString().split('T')[0]));
+  
+      newSelectedDates = validDates.map(d => d.toISOString().split('T')[0]);
+    }
+  
+    // Update state
+    setSelectedDates(newSelectedDates);
+    
+    // Save to session storage if we have dates
+    if (newSelectedDates.length > 0) {
+      const startDate = newSelectedDates[0];
+      const endDate = newSelectedDates[newSelectedDates.length - 1];
+      
+      // Save to session storage
+      sessionStorage.setItem('startDate', startDate);
+      sessionStorage.setItem('endDate', endDate);
+      
+      console.log('Saved to session storage:', { startDate, endDate });
     }
   };
+  
+  // Also update your reset function to clear session storage
+  const handleResetSelections = () => {
+    setSelectedOptions({});
+    setSelectedPlan(null);
+    setSelectedDates([]);
+    
+    // Clear from session storage
+    sessionStorage.removeItem('startDate');
+    sessionStorage.removeItem('endDate');
+  };
+  
 
+  // const handleDateSelection = (date) => {
+  //   if (isDateDisabled(date)) return;
+
+  //   if (selectedPlan?.includes("MONTHLY")) {
+  //     const daysToSelect = selectedPlan.includes("5 days") ? 20 : 24;
+  //     const validDates = [];
+  //     let currentDate = new Date(date);
+  //     let daysAdded = 0;
+
+  //     while (daysAdded < daysToSelect) {
+  //       if (!isDateDisabled(new Date(currentDate))) {
+  //         validDates.push(new Date(currentDate));
+  //         daysAdded++;
+  //       }
+  //       currentDate.setDate(currentDate.getDate() + 1);
+  //     }
+
+  //     setSelectedDates(validDates.map(d => d.toISOString().split('T')[0]));
+  //   } else if (selectedPlan?.includes("WEEKLY")) {
+  //     const daysToSelect = selectedPlan.includes("5 days") ? 5 : 6;
+  //     const validDates = [];
+  //     let currentDate = new Date(date);
+
+  //     while (validDates.length < daysToSelect) {
+  //       if (!isDateDisabled(new Date(currentDate))) {
+  //         validDates.push(new Date(currentDate));
+  //       }
+  //       currentDate.setDate(currentDate.getDate() + 1);
+  //     }
+
+  //     setSelectedDates(validDates.map(d => d.toISOString().split('T')[0]));
+  //   }
+  // };
   const renderCalendar = (monthOffset) => {
     const month = new Date(currentYear, currentMonth + monthOffset, 1);
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -180,7 +319,6 @@ const MealPlanner = () => {
         </button>
       );
     }
-
     return (
       <div className="w-72">
         <h3 className="text-lg font-medium mb-4">
@@ -199,7 +337,6 @@ const MealPlanner = () => {
       </div>
     );
   };
-
   const handleNextMonth = () => {
     if (currentMonth === 11) {
       setCurrentMonth(0);
@@ -217,341 +354,6 @@ const MealPlanner = () => {
       setCurrentMonth(currentMonth - 1);
     }
   };
-  const enhancements = [
-    {
-      id: 1,
-      name: "Premium Breakfast",
-      pricePerDay: 10.0,
-      image: "/api/placeholder/80/80",
-    },
-    {
-      id: 2,
-      name: "Gym Access",
-      pricePerDay: 15.0,
-      image: "/api/placeholder/80/80",
-    },
-    {
-      id: 3,
-      name: "Pool Access",
-      pricePerDay: 12.0,
-      image: "/api/placeholder/80/80",
-    },
-    {
-      id: 4,
-      name: "Spa Session",
-      pricePerDay: 20.0,
-      image: "/api/placeholder/80/80",
-    },
-    {
-      id: 5,
-      name: "Private Lounge",
-      pricePerDay: 25.0,
-      image: "/api/placeholder/80/80",
-    },
-    {
-      id: 6,
-      name: "Late Checkout",
-      pricePerDay: 8.0,
-      image: "/api/placeholder/80/80",
-    },
-    {
-      id: 7,
-      name: "Room Service",
-      pricePerDay: 18.0,
-      image: "/api/placeholder/80/80",
-    },
-    {
-      id: 8,
-      name: "Complimentary Drinks",
-      pricePerDay: 5.0,
-      image: "/api/placeholder/80/80",
-    },
-  ];
-
-
-  const mealData = {
-    "2024-02-17": {
-      breakfast: [
-        {
-          id: 'b1',
-          name: "Classic Oatmeal Bowl",
-          weight: "350g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "320 kcal",
-            protein: "12g",
-            fat: "8g",
-            carbohydrates: "54g"
-          },
-          default: true
-        },
-        {
-          id: 'b2',
-          name: "Greek Yogurt Parfait",
-          weight: "300g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "280 kcal",
-            protein: "15g",
-            fat: "6g",
-            carbohydrates: "42g"
-          }
-        },
-        {
-          id: 'b3',
-          name: "Protein Pancakes",
-          weight: "320g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "350 kcal",
-            protein: "18g",
-            fat: "9g",
-            carbohydrates: "48g"
-          }
-        },
-        {
-          id: 'b4',
-          name: "Avocado Toast",
-          weight: "280g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "310 kcal",
-            protein: "14g",
-            fat: "16g",
-            carbohydrates: "32g"
-          }
-        }
-      ],
-      lunch: [
-        {
-          id: 'l1',
-          name: "Grilled Chicken Salad",
-          weight: "400g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "420 kcal",
-            protein: "35g",
-            fat: "22g",
-            carbohydrates: "28g"
-          },
-          default: true
-        },
-        {
-          id: 'l2',
-          name: "Quinoa Buddha Bowl",
-          weight: "380g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "380 kcal",
-            protein: "16g",
-            fat: "18g",
-            carbohydrates: "46g"
-          }
-        },
-        {
-          id: 'l3',
-          name: "Salmon Poke Bowl",
-          weight: "420g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "450 kcal",
-            protein: "32g",
-            fat: "24g",
-            carbohydrates: "38g"
-          }
-        },
-        {
-          id: 'l4',
-          name: "Mediterranean Wrap",
-          weight: "350g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "390 kcal",
-            protein: "18g",
-            fat: "16g",
-            carbohydrates: "48g"
-          }
-        }
-      ],
-      dinner: [
-        {
-          id: 'd1',
-          name: "Grilled Salmon",
-          weight: "380g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "460 kcal",
-            protein: "38g",
-            fat: "26g",
-            carbohydrates: "24g"
-          },
-          default: true
-        },
-        {
-          id: 'd2',
-          name: "Vegetarian Stir-Fry",
-          weight: "400g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "380 kcal",
-            protein: "16g",
-            fat: "14g",
-            carbohydrates: "52g"
-          }
-        },
-        {
-          id: 'd3',
-          name: "Lean Beef Bowl",
-          weight: "420g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "480 kcal",
-            protein: "42g",
-            fat: "22g",
-            carbohydrates: "36g"
-          }
-        },
-        {
-          id: 'd4',
-          name: "Turkey Meatballs",
-          weight: "380g",
-          image: "/api/placeholder/400/300",
-          nutrition: {
-            energy: "420 kcal",
-            protein: "36g",
-            fat: "18g",
-            carbohydrates: "42g"
-          }
-        }
-      ]
-    }
-  };
-
-  // Add these functions to your component
-
-  // Check if selection is complete before enabling "Continue" button
-  const isSelectionComplete = () => {
-    // Check if at least one package is selected
-    const hasPackageSelection = Object.keys(selectedOptions).length > 0;
-
-    // Check if duration is selected
-    const hasDurationSelection = selectedPlan !== null;
-
-    // Check if start date is selected
-    const hasDateSelection = selectedDates.length > 0;
-
-    return hasPackageSelection && hasDurationSelection && hasDateSelection;
-  };
-
-  // Save selections to session storage
-  const saveSelectionsToSessionStorage = () => {
-    // Create an object with all the selections
-    const selections = {
-      packages: selectedOptions,
-      duration: selectedPlan,
-      startDate: selectedDates.length > 0 ? selectedDates[0] : null, // First date as start date
-      endDate: selectedDates.length > 0 ? selectedDates[selectedDates.length - 1] : null,
-      // Save ALL selected dates, not just the first one
-      selectedDates: selectedDates,
-      selectedAt: new Date().toISOString(),
-      step: activeStep
-    };
-
-    // Save to session storage
-    sessionStorage.setItem('mealPlanSelections', JSON.stringify(selections));
-
-    // Log for debugging
-    console.log('Selections saved to session storage:', selections);
-  };
-
-
-  // Add this to your component's useEffect to load from session storage on initial render
-  useEffect(() => {
-    // Check if there are saved selections in session storage
-    const savedSelections = sessionStorage.getItem('mealPlanSelections');
-
-    if (savedSelections) {
-      console.log(savedSelections, 'uuuu')
-      try {
-        const parsedSelections = JSON.parse(savedSelections);
-
-        // Restore selections from session storage
-        if (parsedSelections.packages) {
-          setSelectedOptions(parsedSelections.packages);
-        }
-
-        if (parsedSelections.duration) {
-          setSelectedPlan(parsedSelections.duration);
-        }
-
-        // Restore ALL selected dates
-        if (parsedSelections.selectedDates && Array.isArray(parsedSelections.selectedDates)) {
-          setSelectedDates(parsedSelections.selectedDates);
-        }
-
-        // Restore step if available
-        if (parsedSelections.step) {
-          setActiveStep(parsedSelections.step);
-        }
-
-        // Log for debugging
-        console.log('Selections loaded from session storage:', parsedSelections);
-      } catch (error) {
-        console.error("Error parsing saved selections:", error);
-        // Clear corrupted data
-        sessionStorage.removeItem('mealPlanSelections');
-      }
-    }
-  }, []);
-  // useEffect(() => {
-  //   // Check if there are saved selections in session storage
-  //   const savedSelections = sessionStorage.getItem('mealPlanSelections');
-
-  //   if (savedSelections) {
-  //     try {
-  //       const parsedSelections = JSON.parse(savedSelections);
-
-  //       // Restore selections from session storage
-  //       if (parsedSelections.packages) {
-  //         setSelectedOptions(parsedSelections.packages);
-  //       }
-
-  //       if (parsedSelections.duration) {
-  //         setSelectedPlan(parsedSelections.duration);
-  //       }
-
-  //       // Restore ALL selected dates, not just the first one
-  //       if (parsedSelections.selectedDates && Array.isArray(parsedSelections.selectedDates)) {
-  //         setSelectedDates(parsedSelections.selectedDates);
-  //       }
-
-  //       // Restore step if available
-  //       if (parsedSelections.step) {
-  //         setActiveStep(parsedSelections.step);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error parsing saved selections:", error);
-  //       // Clear corrupted data
-  //       sessionStorage.removeItem('mealPlanSelections');
-  //     }
-  //   }
-  // }, []);
-
-  // You might want to add a reset function if needed
-  const resetSelections = () => {
-    setSelectedOptions({});
-    setSelectedPlan(null);
-    setSelectedDates([]);
-    sessionStorage.removeItem('mealPlanSelections');
-  };
-
-  const handleMealSelection = (date, mealType, mealId) => {
-    setSelectedMeals(prev => ({
-      ...prev,
-      [`${date}-${mealType}`]: mealId
-    }));
-  };
-
   const renderStepContent = () => {
     switch (activeStep) {
       case 1:
@@ -567,41 +369,39 @@ const MealPlanner = () => {
                   Choose from our carefully crafted meal packages designed to meet your nutritional needs
                 </p>
               </div>
-
-              {/* Package Selection */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                {packages.map((pkg) => (
-                  <div key={pkg.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        {pkg.icon}
+                {selectedPlans && selectedPlans.packages && selectedPlans.packages.map((packageItem) => {
+                  return (
+                    <div key={packageItem._id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          {/* You'll need to get icons from somewhere else since they're not in the JSON */}
+                          <svg className="w-6 h-6 text-green-600" /* SVG props here */></svg>
+                        </div>
+                        <span className="text-sm font-medium text-[#059033]">
+                          {/* Add subtitle if available */}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-[#059033]">{pkg.subtitle}</span>
-                    </div>
 
-                    <h3 className="text-xl font-semibold mb-2">{pkg.title}</h3>
-                    <p className="text-gray-600 text-sm mb-6">{pkg.description}</p>
+                      <h3 className="text-xl font-semibold mb-2">{packageItem.packageName}</h3>
+                      <p className="text-gray-600 text-sm mb-6">{packageItem.description}</p>
 
-                    <div className="space-y-3">
-                      {selectedPlans.packages.map((packageItem) => (
+                      <div className="space-y-3">
                         <button
-                          key={`${pkg.id}-${packageItem._id}`}
-                          onClick={() => handleSelection(pkg.id, packageItem._id, packageItem.identifier)}
+                          onClick={() => handleSelection(packageItem._id, packageItem._id, packageItem.identifier)}
                           className={`w-full p-4 rounded-lg text-left text-sm font-medium transition-all
-              ${isSelected(pkg.id, packageItem._id)
+            ${isSelected(packageItem._id, packageItem._id)
                               ? "bg-[#059033] text-white shadow-md"
                               : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                             }`}
                         >
                           {packageItem.packageName}
                         </button>
-                      ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-
-
               {/* Duration Selection */}
               <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
                 <h2 className="text-xl font-semibold mb-6">Select Duration</h2>
@@ -621,7 +421,6 @@ const MealPlanner = () => {
                   ))}
                 </div>
               </div>
-
 
               {/* Calendar Section */}
               <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
@@ -685,7 +484,77 @@ const MealPlanner = () => {
                 Swap pre-selected favourites by choosing yours
               </p>
             </div>
+            <div className="p-4 md:p-6 max-w-7xl mx-auto">
+              {/* Date Selection */}
+              <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
+                <h2 className="text-xl md:text-2xl font-semibold">Meal Selection</h2>
+                <p className="text-sm font-medium text-gray-600">
+                  Swap pre-selected favourites by choosing yours
+                </p>
+              </div>
 
+              <div className="flex gap-3 overflow-x-auto mb-6 pb-2">
+                {selectedDates.map((date) => (
+                  <button
+                    key={date}
+                    onClick={() => setSelectedDate(date)}
+                    className={`px-6 py-3 rounded-full font-medium whitespace-nowrap ${date === selectedDate
+                      ? "bg-[#059033] text-white"
+                      : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                  >
+                    {new Date(date).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </button>
+                ))}
+              </div>
+
+              {/* Meal Listing */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {mealData[selectedDate]?.map((meal) => (
+                  <div
+                    key={meal._id}
+                    className="border rounded-lg p-4 shadow-sm bg-white"
+                  >
+                    <img
+                      src={meal.image[0]}
+                      alt={meal.mealName}
+                      className="w-full h-40 object-cover rounded-md"
+                    />
+                    <h3 className="mt-3 text-lg font-semibold">{meal.mealName}</h3>
+                    <p className="text-sm text-gray-600">{meal.description}</p>
+                    <p className="mt-2 text-sm font-medium text-gray-700">
+                      <span className="line-through text-red-500">
+                        ${meal.fareDetails.strikeOff}
+                      </span>{" "}
+                      ${meal.fareDetails.totalFare}{" "}
+                      <span className="text-green-500">(-${meal.fareDetails.discount})</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* <div className="flex gap-3 overflow-x-auto mb-6 pb-2">
+              {selectedDates.map((date) => (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDate(date)}
+                  className={`px-6 py-3 rounded-full font-medium whitespace-nowrap
+      ${date === selectedDate
+                      ? "bg-[#059033] text-white"
+                      : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+                >
+                  {new Date(date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </button>
+              ))}
+            </div>
             <div className="flex gap-3 overflow-x-auto mb-6 pb-2">
               {selectedDates.map((date) => (
                 <button
@@ -703,55 +572,7 @@ const MealPlanner = () => {
                   })}
                 </button>
               ))}
-            </div>
-
-            <div className="space-y-12">
-              {['breakfast', 'lunch', 'dinner'].map((mealType) => (
-                <div key={mealType}>
-                  <h3 className="text-xl font-semibold mb-6 capitalize">{mealType}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {mealData[selectedDate]?.[mealType]?.map((meal) => {
-                      const isSelected = selectedMeals[`${selectedDate}-${mealType}`] === meal.id;
-
-                      return (
-                        <div
-                          key={meal.id}
-                          className={`bg-white rounded-xl shadow-sm transition-all 
-                        ${isSelected ? 'ring-2 ring-[#059033]' : 'hover:shadow-md'}`}
-                        >
-                          <img
-                            src={meal.image}
-                            alt={meal.name}
-                            className="w-full h-48 object-cover rounded-t-xl"
-                          />
-                          <div className="p-4">
-                            <h4 className="font-medium mb-1">{meal.name}</h4>
-                            <p className="text-sm text-gray-600 mb-3">{meal.weight}</p>
-
-                            <div className="text-sm space-y-1 mb-4">
-                              <p>Energy: {meal.nutrition.energy}</p>
-                              <p>Protein: {meal.nutrition.protein}</p>
-                              <p>Fat: {meal.nutrition.fat}</p>
-                              <p>Carbs: {meal.nutrition.carbohydrates}</p>
-                            </div>
-
-                            <button
-                              onClick={() => handleMealSelection(selectedDate, mealType, meal.id)}
-                              className={`w-full py-2 rounded-lg font-medium transition-colors 
-                            ${isSelected
-                                  ? 'bg-[#059033] text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                            >
-                              {isSelected ? 'SELECTED' : 'SELECT'}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
+            </div> */}
           </div>
         );
 
@@ -887,44 +708,6 @@ const MealPlanner = () => {
             </form>
           </div>
         );
-
-        // case 3:
-        return (
-          <div className="max-w-2xl mx-auto">
-            <form className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
-                  <textarea
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </form>
-          </div>
-        );
     }
   };
 
@@ -972,24 +755,29 @@ const MealPlanner = () => {
         <div className="flex justify-between mt-12">
           <button
             onClick={() => {
-              // Save selections to session storage before proceeding
-              saveSelectionsToSessionStorage();
-              // Then navigate to next step
-              setActiveStep(Math.min(4, activeStep + 1));
+              // Go back one step
+              setActiveStep(Math.max(1, activeStep - 1));
             }}
-            // onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
             className="px-6 py-2 rounded-xl border-2 border-[#059033] text-[#059033] hover:bg-green-50"
           >
             Back
           </button>
           <button
-            onClick={() => setActiveStep(Math.min(4, activeStep + 1))}
+            onClick={() => {
+              // Save selections to session storage before proceeding
+              saveSelectionsToSessionStorage();
+              // Then navigate to next step
+              if (activeStep === 4) {
+                // If this is the final step, redirect will happen via the useEffect
+                console.log('Order completed, redirecting to summary page');
+              }
+              setActiveStep(Math.min(5, activeStep + 1));
+            }}
             className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
           >
             {activeStep === 4 ? 'Complete Order' : 'Continue'}
           </button>
         </div>
-
       </div>
     </div>
   );

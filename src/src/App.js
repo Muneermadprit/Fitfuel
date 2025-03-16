@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import PortfolioPage from './Pages/Home';
 import ChatbotIcon from './Pages/Menuicon';
@@ -15,6 +15,19 @@ import ProductSummary from './Pages/ProductSummary';
 import AdminDashboardPage from './AdminPages/AdminDashboardPage';
 import AdminLogin from './AdminPages/AdminLoginPage'
 const App = () => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('https://api.dailyfit.ae/api/user/get-token', { withCredentials: true })
+        const data = await response.json();
+        console.log('API Response:', data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
   return (
     <div>
       <ChatbotIcon />
@@ -35,9 +48,6 @@ const App = () => {
         <Route path="/admin-login" element={<AdminLogin />} />
 
         {/* <Route path="  "element={<ProductListPage />} /> */}
-
-
-
       </Routes>
     </div>
   );

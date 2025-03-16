@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { TiThMenuOutline } from 'react-icons/ti';
 import FooterPage from './FooterPage';
+import axios from "axios";
 
 const MealPlanShop = () => {
     const navigate = useNavigate();
@@ -26,17 +27,18 @@ const MealPlanShop = () => {
         const fetchMealPlans = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('https://api.dailyfit.ae/api/user/get-meal-plans');
-                const result = await response.json();
+                const response = await axios.get('https://api.dailyfit.ae/api/user/get-meal-plans', {
+                    withCredentials: true
+                });
 
-                if (result.status) {
-                    setMealPlansData(result.data);
+                if (response.data.status) {
+                    setMealPlansData(response.data.data);
 
                     // Extract unique categories
                     const uniqueCategories = [];
                     const categorySet = new Set();
 
-                    result.data.forEach(mealPlan => {
+                    response.data.data.forEach(mealPlan => {
                         mealPlan.category.forEach(cat => {
                             if (!categorySet.has(cat)) {
                                 categorySet.add(cat);
