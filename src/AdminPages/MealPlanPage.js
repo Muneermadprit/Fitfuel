@@ -147,7 +147,7 @@ export default function MealPlanPage() {
       description: formData.get('description'),
       packages: selectedMealPackIds,
       category: selectedMealCategoryIds,
-      image: imagePreview ? [imagePreview] : [],
+      image: imagePreview ? imagePreview : [],
       identifier: selectedPackage?.identifier || identifier,
       isDeleted: false
     };
@@ -155,7 +155,7 @@ export default function MealPlanPage() {
     try {
       let response;
       if (selectedPackage) {
-        response = await axios.put(
+        response = await axios.patch(
           `https://api.dailyfit.ae/api/admin/update-mealPlan`,
           newPackage,
           { withCredentials: true }
