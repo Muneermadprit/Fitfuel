@@ -14,11 +14,12 @@ import ProfilePage from './Pages/ProfilePage';
 import ProductSummary from './Pages/ProductSummary';
 import AdminDashboardPage from './AdminPages/AdminDashboardPage';
 import AdminLogin from './AdminPages/AdminLoginPage'
+import axios from 'axios';
 const App = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('https://api.dailyfit.ae/api/user/get-token', { withCredentials: true })
+        const response = await axios.get("http://localhost:3000/api/user/get-token",{withCredentials:true});
         const data = await response.json();
         console.log('API Response:', data);
       } catch (error) {
