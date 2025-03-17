@@ -248,7 +248,7 @@ import { motion } from "framer-motion";
 import fitnessVideo from '../images/fitness.mp4';
 import Modal from "react-modal";
 import { useNavigate } from "react-router-dom";
-
+import logo from '../images/WhatsApp Image 2025-03-17 at 8.17.20 AM.jpeg'
 Modal.setAppElement("#root");
 const DilyfitHomePage = () => {
   const navigate = useNavigate();
@@ -397,8 +397,13 @@ Message: ${formData.message}`;
         <div className="container mx-auto px-4 py-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
-              <a href="/" className="text-2xl font-bold no-underline text-white">DAILYFIT</a>
+              <a href="/" className="flex items-center">
+                <img src={logo} alt="DailyFit Logo" className="h-10 w-auto" />
+              </a>
             </div>
+            {/* <div className="flex items-center">
+              <a href="/" className="text-2xl font-bold no-underline text-white">DAILYFIT</a>
+            </div> */}
             <div className="hidden md:flex space-x-6">
               <a href="/" className="text-white no-underline hover:text-green-200 transition duration-200">Home</a>
               <a href="/about" className="text-white no-underline hover:text-green-200 transition duration-200">About</a>

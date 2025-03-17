@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { TiThMenuOutline } from 'react-icons/ti';
 import FooterPage from './FooterPage';
 import axios from "axios";
+import logo from '../images/WhatsApp Image 2025-03-17 at 8.17.20 AM.jpeg'
+
 
 const MealPlanShop = () => {
     const navigate = useNavigate();
@@ -84,10 +86,10 @@ const MealPlanShop = () => {
                 {/* Logo */}
                 <div className="flex items-center space-x-4">
                     <img
-                        src="/api/placeholder/60/60"
+                        src={logo}
                         alt="Logo"
                         className="w-12 h-12 rounded-full shadow-sm" />
-                    <h1 className="text-xl font-semibold text-[#464194]">Daily Fit</h1>
+                    {/* <h1 className="text-xl font-semibold text-[#464194]">Daily Fit</h1> */}
                 </div>
 
                 {/* Desktop Navigation */}

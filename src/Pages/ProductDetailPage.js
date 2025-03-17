@@ -15,48 +15,62 @@ const MealPlanner = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState(null);
   const [mealData, setMealData] = useState([]);
-  // const packages = [
-  //   {
-  //     id: 'fullPackage',
-  //     title: 'Full Package',
-  //     icon: <Users className="w-6 h-6" />,
-  //     subtitle: 'Perfect for families',
-  //     description: 'Complete daily nutrition with all meals included',
-  //     options: [
-  //       '⭐ 2 Main Meals with Breakfast & FITT Snack',
-  //       '1 Main Meal with Breakfast & FITT Snack'
-  //     ]
-  //   },
-  //   {
-  //     id: 'mainMealsWithBreakfast',
-  //     title: 'Main Meals with Breakfast',
-  //     icon: <Clock className="w-6 h-6" />,
-  //     subtitle: 'Start your day right',
-  //     description: 'Essential meals to power your morning and afternoon',
-  //     options: [
-  //       '⭐ 2 Main Meals with Breakfast',
-  //       '1 Main Meal with Breakfast'
-  //     ]
-  //   },
-  //   {
-  //     id: 'mainMealsWithSnacks',
-  //     title: 'Main Meals with FITT Snacks',
-  //     icon: <Utensils className="w-6 h-6" />,
-  //     subtitle: 'Balanced nutrition',
-  //     description: 'Perfect combination of main meals and healthy snacks',
-  //     options: [
-  //       '2 Main Meals & FITT Snack',
-  //       '1 Main Meal & FITT Snack'
-  //     ]
-  //   }
-  // ];
-
+  const [selectedEnhancements, setSelectedEnhancements] = useState([]);
   const plans = [
     "MONTHLY (6 days per week)",
     "MONTHLY (5 days per week)",
     "WEEKLY (6 days)",
     "WEEKLY (5 days)"
   ];
+  const [formData, setFormData] = useState({
+    street: "",
+    buildingFloor: "",
+    houseOrFlatNumber: "",
+    landmark: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "",
+    phone: "",
+    identifier: "Home", // Default identifier
+  });
+
+  const handleAddressSubmit = async (e) => {
+    e.preventDefault();
+
+    const payload = { address: formData };
+
+    try {
+      const response = await axios.post("https://api.dailyfit.ae/api/user/add-address", payload, { withCredentials: true });
+      alert("Address added successfully!");
+      console.log("Response:", response.data);
+    } catch (error) {
+      alert("Failed to add address. Please try again.");
+      console.error("Error:", error);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const payload = { address: formData };
+
+    try {
+      const response = await axios.post("https://api.dailyfit.ae/api/user/add-address", payload, {
+        headers: { "Content-Type": "application/json" },
+      });
+      alert("Address added successfully!");
+      console.log("Response:", response.data);
+    } catch (error) {
+      alert("Failed to add address. Please try again.");
+      console.error("Error:", error);
+    }
+  };
 
   const [selectedPackage, setSelectedPackage] = useState({
     packageId: null,
@@ -143,12 +157,28 @@ const MealPlanner = () => {
   ];
 
 
-  const handleSelection = async (packageId, identifierPackage) => { 
-    console.log(packageId);
+  const handleSelectionAddOn = (item) => {
+    let updatedSelections = [...selectedEnhancements];
+
+    if (updatedSelections.some((selected) => selected.id === item.id)) {
+      // Remove item if already selected
+      updatedSelections = updatedSelections.filter((selected) => selected.id !== item.id);
+    } else {
+      // Add item if not selected
+      updatedSelections.push(item);
+    }
+
+    setSelectedEnhancements(updatedSelections);
+    sessionStorage.setItem("selectedEnhancements", JSON.stringify(updatedSelections));
+  };
+
+
+  const handleSelection = async (packageId, identifierPackage) => {
+    sessionStorage.setItem("package", packageId);
     try {
       const response = await axios.post(
         "https://api.dailyfit.ae/api/user/get-package-details",
-        { packageId, identifierPackage }
+        { packageId, identifierPackage }, { withCredentials: true }
       );
 
       if (response.data && response.data.data) {
@@ -192,15 +222,15 @@ const MealPlanner = () => {
 
   const handleDateSelection = (date) => {
     if (isDateDisabled(date)) return;
-  
+
     let newSelectedDates = [];
-  
+
     if (selectedPlan?.includes("MONTHLY")) {
       const daysToSelect = selectedPlan.includes("5 days") ? 20 : 24;
       const validDates = [];
       let currentDate = new Date(date);
       let daysAdded = 0;
-  
+
       while (daysAdded < daysToSelect) {
         if (!isDateDisabled(new Date(currentDate))) {
           validDates.push(new Date(currentDate));
@@ -208,50 +238,50 @@ const MealPlanner = () => {
         }
         currentDate.setDate(currentDate.getDate() + 1);
       }
-  
+
       newSelectedDates = validDates.map(d => d.toISOString().split('T')[0]);
     } else if (selectedPlan?.includes("WEEKLY")) {
       const daysToSelect = selectedPlan.includes("5 days") ? 5 : 6;
       const validDates = [];
       let currentDate = new Date(date);
-  
+
       while (validDates.length < daysToSelect) {
         if (!isDateDisabled(new Date(currentDate))) {
           validDates.push(new Date(currentDate));
         }
         currentDate.setDate(currentDate.getDate() + 1);
       }
-  
+
       newSelectedDates = validDates.map(d => d.toISOString().split('T')[0]);
     }
-  
+
     // Update state
     setSelectedDates(newSelectedDates);
-    
+
     // Save to session storage if we have dates
     if (newSelectedDates.length > 0) {
       const startDate = newSelectedDates[0];
       const endDate = newSelectedDates[newSelectedDates.length - 1];
-      
+
       // Save to session storage
       sessionStorage.setItem('startDate', startDate);
       sessionStorage.setItem('endDate', endDate);
-      
+
       console.log('Saved to session storage:', { startDate, endDate });
     }
   };
-  
+
   // Also update your reset function to clear session storage
   const handleResetSelections = () => {
     setSelectedOptions({});
     setSelectedPlan(null);
     setSelectedDates([]);
-    
+
     // Clear from session storage
     sessionStorage.removeItem('startDate');
     sessionStorage.removeItem('endDate');
   };
-  
+
 
   // const handleDateSelection = (date) => {
   //   if (isDateDisabled(date)) return;
@@ -354,6 +384,34 @@ const MealPlanner = () => {
       setCurrentMonth(currentMonth - 1);
     }
   };
+
+  const handleCompleteOrder = async () => {
+    // Retrieve values from session storage
+    const packageId = sessionStorage.getItem("package");
+    const startDate = sessionStorage.getItem("startDate");
+    const endDate = sessionStorage.getItem("endDate");
+
+    if (!packageId || !startDate || !endDate) {
+      alert("Missing required order details. Please check your selections.");
+      return;
+    }
+
+    const payload = {
+      package: packageId,
+      startDate: startDate,
+      endDate: endDate,
+    };
+
+    try {
+      const response = await axios.post("https://api.dailyfit.ae/api/user/add-to-cart", payload, { withCredentials: true });
+      alert("Order completed successfully!");
+      console.log("Response:", response.data);
+    } catch (error) {
+      alert("Failed to complete order. Please try again.");
+      console.error("Error:", error);
+    }
+  };
+
   const renderStepContent = () => {
     switch (activeStep) {
       case 1:
@@ -379,11 +437,11 @@ const MealPlanner = () => {
                           <svg className="w-6 h-6 text-green-600" /* SVG props here */></svg>
                         </div>
                         <span className="text-sm font-medium text-[#059033]">
-                          {/* Add subtitle if available */}
+                          Perfect for families
                         </span>
                       </div>
 
-                      <h3 className="text-xl font-semibold mb-2">{packageItem.packageName}</h3>
+                      <h3 className="text-xl font-semibold mb-2">{packageItem.packageGroup} || Full Pcakage</h3>
                       <p className="text-gray-600 text-sm mb-6">{packageItem.description}</p>
 
                       <div className="space-y-3">
@@ -597,15 +655,13 @@ const MealPlanner = () => {
                     key={item.id}
                     className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-shadow border border-gray-200 flex flex-col items-center text-center"
                   >
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-20 h-20 rounded-full object-cover border-4 border-green-400"
-                    />
+                    <img src={item.image} alt={item.name} className="w-20 h-20 rounded-full object-cover border-4 border-green-400" />
                     <h3 className="mt-4 text-lg font-semibold text-gray-900">{item.name}</h3>
                     <p className="text-sm text-gray-600 font-medium">AED {item.pricePerDay.toFixed(2)} / day</p>
                     <input
                       type="checkbox"
+                      checked={selectedEnhancements.some((selected) => selected.id === item.id)}
+                      onChange={() => handleSelectionAddOn(item)}
                       className="mt-4 w-6 h-6 text-green-600 border-gray-300 rounded focus:ring-green-500 focus:outline-none"
                     />
                   </div>
@@ -618,93 +674,112 @@ const MealPlanner = () => {
       case 4:
         return (
           <div className="max-w-2xl mx-auto">
-            <div className="mb-8 text-center">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-              </div>
-            </div>
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleAddressSubmit}>
               <div className="grid grid-cols-2 gap-6">
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
                   <input
                     type="text"
+                    name="street"
+                    value={formData.street}
+                    onChange={handleChange}
                     className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    placeholder="Enter your street address"
+                    required
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Apartment/Unit (Optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Building Floor</label>
                   <input
                     type="text"
+                    name="buildingFloor"
+                    value={formData.buildingFloor}
+                    onChange={handleChange}
                     className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    placeholder="Apt, Suite, Unit, etc."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">House/Flat Number</label>
+                  <input
+                    type="text"
+                    name="houseOrFlatNumber"
+                    value={formData.houseOrFlatNumber}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Landmark</label>
+                  <input
+                    type="text"
+                    name="landmark"
+                    value={formData.landmark}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
                   <input
                     type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
                     className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                    required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
                   <input
                     type="text"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
                     className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                    required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
                   <input
                     type="text"
+                    name="postalCode"
+                    value={formData.postalCode}
+                    onChange={handleChange}
                     className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                    required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
                   <input
                     type="text"
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
                     className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                    required
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Instructions (Optional)</label>
-                  <textarea
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
                     className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    rows={3}
-                    placeholder="Add any special instructions for delivery"
+                    required
                   />
                 </div>
               </div>
+
+              <button
+                type="submit"
+                className="w-full bg-[#059033] text-white py-3 rounded-xl font-medium hover:bg-purple-700 transition"
+              >
+                Submit Address
+              </button>
             </form>
           </div>
         );
@@ -754,6 +829,27 @@ const MealPlanner = () => {
         {/* Navigation */}
         <div className="flex justify-between mt-12">
           <button
+            onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
+            className="px-6 py-2 rounded-xl border-2 border-[#059033] text-[#059033] hover:bg-green-50"
+          >
+            Back
+          </button>
+          <button
+            onClick={() => {
+              saveSelectionsToSessionStorage();
+              if (activeStep === 4) {
+                handleCompleteOrder(); // Call API on final step
+              }
+              setActiveStep(Math.min(5, activeStep + 1));
+            }}
+            className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
+          >
+            {activeStep === 4 ? "Complete Order" : "Continue"}
+          </button>
+        </div>
+
+        {/* <div className="flex justify-between mt-12">
+          <button
             onClick={() => {
               // Go back one step
               setActiveStep(Math.max(1, activeStep - 1));
@@ -777,7 +873,7 @@ const MealPlanner = () => {
           >
             {activeStep === 4 ? 'Complete Order' : 'Continue'}
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );
