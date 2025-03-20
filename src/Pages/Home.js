@@ -397,9 +397,11 @@ Message: ${formData.message}`;
         <div className="container mx-auto px-4 py-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
-              <a href="/" className="flex items-center">
+              <h1 className="text-2xl font-bold text-white tracking-wide">Daily Fit</h1>
+
+              {/* <a href="/" className="flex items-center">
                 <img src={logo} alt="DailyFit Logo" className="h-10 w-auto" />
-              </a>
+              </a> */}
             </div>
             {/* <div className="flex items-center">
               <a href="/" className="text-2xl font-bold no-underline text-white">DAILYFIT</a>

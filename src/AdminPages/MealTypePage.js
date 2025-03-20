@@ -48,6 +48,7 @@ export default function MealTypePage() {
             });
 
             // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
+            fetchMealTypes();
             toast.success("Category deleted successfully!");
         } catch (error) {
             console.error("Error deleting category:", error);
@@ -76,7 +77,7 @@ export default function MealTypePage() {
             if (isEditing && selectedPackage) {
                 // Update existing meal type
                 // await axios.patch(`https://api.dailyfit.ae/api/admin/update-category/${selectedPackage.id}`, categoryData);
-                await axios.patch('https://api.dailyfit.ae/api/admin/updateMealType', {
+                await axios.patch('https://api.dailyfit.ae/api/admin/update-mealtype', {
                     // id: selectedPackage.id,
                     mealType
                 }, { withCredentials: true });
@@ -220,6 +221,7 @@ export default function MealTypePage() {
                     </div>
                 </div>
             )}
+            <ToastContainer position="top-right" />
         </div>
     );
 }

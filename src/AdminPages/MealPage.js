@@ -213,48 +213,95 @@ export default function MealPage() {
     };
 
     const handleEdit = (meal) => {
-        // Find the matching category and meal type objects
-        const categoryObj = categoryPackage.find(cat => cat.categoryName === meal.category);
-        const mealTypeObj = mealType.find(type => type.mealType === meal.mealType);
+        // Get the category name from the categoryPackage using the category ID
+        const categoryId = Array.isArray(meal.category) ? meal.category[0] : meal.category;
+        const categoryObj = categoryPackage.find(cat => cat._id === categoryId || cat.identifier === categoryId);
+        const categoryName = categoryObj ? categoryObj.categoryName : '';
 
         // Set selected meal types if available
         if (meal.mealTypes && Array.isArray(meal.mealTypes)) {
             setSelectedMealTypes(meal.mealTypes.map(type => type._id || type));
-        } else if (mealTypeObj) {
-            setSelectedMealTypes([mealTypeObj._id]);
+        } else if (Array.isArray(meal.mealType) && meal.mealType.length > 0) {
+            // Handle if mealType is an array of IDs
+            setSelectedMealTypes(meal.mealType.map(id => id));
         } else {
             setSelectedMealTypes([]);
         }
 
         setSelectedMealId(meal._id);
         setFormData({
-            mealName: meal.mealName,
-            description: meal.description,
-            category: meal.category,
-            categoryId: categoryObj ? categoryObj._id : '',
-            mealType: meal.mealType,
-            mealTypeId: mealTypeObj ? mealTypeObj._id : '',
-            package: meal.package,
-            image: meal.image, // These are the URLs of existing images
+            mealName: meal.mealName || '',
+            description: meal.description || '',
+            category: categoryName,
+            categoryId: categoryId || '',
+            mealType: '', // Since mealType is handled through selectedMealTypes
+            mealTypeId: '',
+            package: Array.isArray(meal.package) ? meal.package : [],
+            image: Array.isArray(meal.image) ? meal.image : [],
             fareDetails: {
-                totalFare: meal.fareDetails.totalFare,
-                strikeOff: meal.fareDetails.strikeOff,
-                discount: meal.fareDetails.discount
+                totalFare: meal.fareDetails?.totalFare || '',
+                strikeOff: meal.fareDetails?.strikeOff || '',
+                discount: meal.fareDetails?.discount || ''
             },
             moreDetails: {
-                energy: meal.moreDetails.energy,
-                protein: meal.moreDetails.protein,
-                fat: meal.moreDetails.fat,
-                carbohydrates: meal.moreDetails.carbohydrates,
-                allergens: Array.isArray(meal.moreDetails.allergens)
+                energy: meal.moreDetails?.energy || '',
+                protein: meal.moreDetails?.protein || '',
+                fat: meal.moreDetails?.fat || '',
+                carbohydrates: meal.moreDetails?.carbohydrates || '',
+                allergens: Array.isArray(meal.moreDetails?.allergens)
                     ? meal.moreDetails.allergens
-                    : meal.moreDetails.allergens ? meal.moreDetails.allergens.split(',').map(item => item.trim()) : []
+                    : meal.moreDetails?.allergens ? meal.moreDetails.allergens.split(',').map(item => item.trim()) : []
             }
         });
+
         setImageFiles([]);
         setImagePreviewUrls([]);
         setIsCanvasOpen(true);
     };
+
+    // const handleEdit = (meal) => {
+    //     // Find the matching category and meal type objects
+    //     const categoryObj = categoryPackage.find(cat => cat.categoryName === meal.category);
+    //     const mealTypeObj = mealType.find(type => type.mealType === meal.mealType);
+
+    //     // Set selected meal types if available
+    //     if (meal.mealTypes && Array.isArray(meal.mealTypes)) {
+    //         setSelectedMealTypes(meal.mealTypes.map(type => type._id || type));
+    //     } else if (mealTypeObj) {
+    //         setSelectedMealTypes([mealTypeObj._id]);
+    //     } else {
+    //         setSelectedMealTypes([]);
+    //     }
+
+    //     setSelectedMealId(meal._id);
+    //     setFormData({
+    //         mealName: meal.mealName,
+    //         description: meal.description,
+    //         category: meal.category,
+    //         categoryId: categoryObj ? categoryObj._id : '',
+    //         mealType: meal.mealType,
+    //         mealTypeId: mealTypeObj ? mealTypeObj._id : '',
+    //         package: meal.package,
+    //         image: meal.image, // These are the URLs of existing images
+    //         fareDetails: {
+    //             totalFare: meal.fareDetails.totalFare,
+    //             strikeOff: meal.fareDetails.strikeOff,
+    //             discount: meal.fareDetails.discount
+    //         },
+    //         moreDetails: {
+    //             energy: meal.moreDetails.energy,
+    //             protein: meal.moreDetails.protein,
+    //             fat: meal.moreDetails.fat,
+    //             carbohydrates: meal.moreDetails.carbohydrates,
+    //             allergens: Array.isArray(meal.moreDetails.allergens)
+    //                 ? meal.moreDetails.allergens
+    //                 : meal.moreDetails.allergens ? meal.moreDetails.allergens.split(',').map(item => item.trim()) : []
+    //         }
+    //     });
+    //     setImageFiles([]);
+    //     setImagePreviewUrls([]);
+    //     setIsCanvasOpen(true);
+    // };
 
     const handleDelete = async (id) => {
         try {
@@ -342,13 +389,47 @@ export default function MealPage() {
             console.error('Error saving meal:', error);
         }
     };
-
     const columns = [
         { name: 'Name', selector: row => row.mealName, sortable: true },
         { name: 'Description', selector: row => row.description, sortable: true },
-        { name: 'Category', selector: row => row.category, sortable: true },
-        { name: 'Type', selector: row => row.mealType, sortable: true },
-        { name: 'Price', selector: row => `$${row.fareDetails.totalFare.toFixed(2)}`, sortable: true },
+        {
+            name: 'Category',
+            selector: row => {
+                // Handle if category is an array or string
+                if (Array.isArray(row.category)) {
+                    // Try to find category names from the IDs
+                    const categoryNames = row.category.map(catId => {
+                        const cat = categoryPackage.find(c => c._id === catId || c.identifier === catId);
+                        return cat ? cat.categoryName : catId;
+                    });
+                    return categoryNames.join(', ');
+                }
+                return row.category;
+            },
+            sortable: true
+        },
+        {
+            name: 'Type',
+            selector: row => {
+                if (Array.isArray(row.mealType) && row.mealType.length > 0) {
+                    const typeNames = row.mealType.map(typeId => {
+                        const type = mealType.find(t => t._id === typeId);
+                        return type ? type.mealType : typeId;
+                    });
+                    return typeNames.join(', ');
+                }
+                return row.mealType || 'N/A';
+            },
+            sortable: true
+        },
+        {
+            name: 'Price',
+            selector: row => {
+                const fare = row.fareDetails?.totalFare;
+                return fare ? `$${fare.toFixed(2)}` : 'N/A';
+            },
+            sortable: true
+        },
         {
             name: 'Actions',
             cell: (row) => (
@@ -363,6 +444,26 @@ export default function MealPage() {
             ),
         },
     ];
+    // const columns = [
+    //     { name: 'Name', selector: row => row.mealName, sortable: true },
+    //     { name: 'Description', selector: row => row.description, sortable: true },
+    //     { name: 'Category', selector: row => row.category, sortable: true },
+    //     { name: 'Type', selector: row => row.mealType, sortable: true },
+    //     { name: 'Price', selector: row => `$${row.fareDetails.totalFare.toFixed(2)}`, sortable: true },
+    //     {
+    //         name: 'Actions',
+    //         cell: (row) => (
+    //             <div className="flex justify-center space-x-2">
+    //                 <button onClick={() => handleEdit(row)} className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600">
+    //                     <Pencil size={16} />
+    //                 </button>
+    //                 <button onClick={() => handleDelete(row.identifier)} className="bg-red-500 text-white p-2 rounded hover:bg-red-600">
+    //                     <Trash2 size={16} />
+    //                 </button>
+    //             </div>
+    //         ),
+    //     },
+    // ];
 
     const filteredPackages = useMemo(() => {
         return Array.isArray(mealPackages) ? mealPackages.filter(pkg =>
@@ -459,6 +560,7 @@ export default function MealPage() {
                                 </select>
                             </div>
                             <div className="border p-2 rounded max-h-64 overflow-y-auto">
+                                <label className="block text-sm font-medium text-gray-700">Select Meal Type</label>
                                 {mealType && mealType.length > 0 ? (
                                     mealType.map((type) => (
                                         <div key={type._id} className="flex items-center mb-2 p-2 hover:bg-gray-100 rounded">
@@ -679,6 +781,7 @@ export default function MealPage() {
                     </div>
                 </div>
             )}
+            <ToastContainer position="top-right" />
         </div>
     );
 }
