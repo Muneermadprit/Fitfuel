@@ -249,6 +249,7 @@ import fitnessVideo from '../images/fitness.mp4';
 import Modal from "react-modal";
 import { useNavigate } from "react-router-dom";
 import logo from '../images/WhatsApp Image 2025-03-17 at 8.17.20 AM.jpeg'
+import Payment from './payment/Payment';
 Modal.setAppElement("#root");
 const DilyfitHomePage = () => {
   const navigate = useNavigate();
@@ -489,6 +490,7 @@ Message: ${formData.message}`;
           <CalorieCalculator />
         </div>
       </Modal>
+      <Payment/>
 
       {/* Featured Products Slider */}
       <div className="py-16 bg-white">
