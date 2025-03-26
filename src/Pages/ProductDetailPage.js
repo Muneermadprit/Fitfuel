@@ -6,8 +6,6 @@ import axios from "axios";
 const MealPlanner = () => {
   const location = useLocation();
   const selectedPlans = location.state?.selectedPlan;
-  console.log('Received Plan:', selectedPlans);
-  
   const [activeStep, setActiveStep] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -18,14 +16,16 @@ const MealPlanner = () => {
   const [mealData, setMealData] = useState([]);
   const [selectedEnhancements, setSelectedEnhancements] = useState([]);
   const [selectedPackageId, setSelectedPackageId] = useState(null);
-  
+  // New state to track selected meals for each day
+  const [selectedMeals, setSelectedMeals] = useState({});
+
   const plans = [
     "MONTHLY (6 days per week)",
     "MONTHLY (5 days per week)",
     "WEEKLY (6 days)",
     "WEEKLY (5 days)"
   ];
-  
+
   const [formData, setFormData] = useState({
     street: "",
     buildingFloor: "",
@@ -74,78 +74,72 @@ const MealPlanner = () => {
       paymentMethod: sessionStorage.getItem('paymentMethod') || ''
     };
 
-    sessionStorage.setItem('checkoutData', JSON.stringify(formData));
-    console.log('Selections saved to session storage');
+    // Save selected meals to session storage
+    // sessionStorage.setItem('selectedMeals', JSON.stringify(selectedMeals));
+
+    // sessionStorage.setItem('checkoutData', JSON.stringify(formData));
+    // console.log('Selections saved to session storage');
+    // console.log('Selected meals saved:', selectedMeals);
   };
-  
-  const enhancements = [
-    {
-      id: 1,
-      name: "Premium Breakfast",
-      pricePerDay: 10.0,
-      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
-    },
-    {
-      id: 2,
-      name: "Gym Access",
-      pricePerDay: 15.0,
-      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
-    },
-    {
-      id: 3,
-      name: "Pool Access",
-      pricePerDay: 12.0,
-      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
-    },
-    {
-      id: 4,
-      name: "Spa Session",
-      pricePerDay: 20.0,
-      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
-    },
-    {
-      id: 5,
-      name: "Private Lounge",
-      pricePerDay: 25.0,
-      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
-    },
-    {
-      id: 6,
-      name: "Late Checkout",
-      pricePerDay: 8.0,
-      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
-    },
-    {
-      id: 7,
-      name: "Room Service",
-      pricePerDay: 18.0,
-      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
-    },
-    {
-      id: 8,
-      name: "Complimentary Drinks",
-      pricePerDay: 5.0,
-      image: "https://www.vitamix.com/content/dam/vitamix/migration/media/recipe/rcpchocolateshake/images/chocolatemilkshakemainjpg.jpg",
-    },
-  ];
+  const [addons, setAddons] = useState([]);
 
-  const handleSelectionAddOn = (item) => {
-    let updatedSelections = [...selectedEnhancements];
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get("https://api.dailyfit.ae/api/user/get-addons", { withCredentials: true });
+        setAddons(response.data.data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
 
-    if (updatedSelections.some((selected) => selected.id === item.id)) {
-      updatedSelections = updatedSelections.filter((selected) => selected.id !== item.id);
-    } else {
-      updatedSelections.push(item);
+    fetchCategories();
+  }, []);
+
+
+  const handleSelectionAddOn = async (item) => {
+    console.log(item._id, 'pppp')
+    try {
+      let updatedSelections = [...selectedEnhancements];
+
+      if (updatedSelections.some((selected) => selected._id === item._id)) {
+        // Item is being deselected
+        updatedSelections = updatedSelections.filter((selected) => selected._id !== item._id);
+      } else {
+        // Item is being selected
+        updatedSelections.push(item);
+      }
+
+      // Make API call using Axios
+      await axios.post('https://api.dailyfit.ae/api/user/add-addons', {
+        id: item._id,
+      }, { withCredentials: true });
+
+      // Update local state and session storage
+      setSelectedEnhancements(updatedSelections);
+      sessionStorage.setItem("selectedEnhancements", JSON.stringify(updatedSelections));
+    } catch (error) {
+      console.error('Error updating add-ons:', error);
+      // Optional: Handle specific error scenarios
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Server Error:', error.response.data);
+        console.error('Status Code:', error.response.status);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error setting up request:', error.message);
+      }
     }
-
-    setSelectedEnhancements(updatedSelections);
-    sessionStorage.setItem("selectedEnhancements", JSON.stringify(updatedSelections));
   };
 
   const handleSelection = async (packageId, identifierPackage) => {
     setSelectedPackageId(packageId);
     sessionStorage.setItem("package", packageId);
-    
+
     try {
       const response = await axios.post(
         "https://api.dailyfit.ae/api/user/get-package-details",
@@ -156,7 +150,7 @@ const MealPlanner = () => {
       if (response.data && response.data.data) {
         const packages = response.data.data;
         const formattedMeals = {};
-        
+
         packages.forEach((pkg) => {
           Object.entries(pkg.meals).forEach(([day, mealInfo]) => {
             const date = mealInfo.date;
@@ -166,9 +160,20 @@ const MealPlanner = () => {
 
         setMealData(formattedMeals);
         const availableDates = Object.keys(formattedMeals);
-        
+
         if (availableDates.length > 0) {
           setSelectedDate(availableDates[0]);
+
+          // Initialize selected meals with first product for each day
+          const initialSelectedMeals = {};
+          availableDates.forEach(date => {
+            if (formattedMeals[date] && formattedMeals[date].length > 0) {
+              initialSelectedMeals[date] = formattedMeals[date][0]._id;
+            }
+          });
+
+          setSelectedMeals(initialSelectedMeals);
+          // sessionStorage.setItem("selectedMeals", JSON.stringify(initialSelectedMeals));
         }
       }
     } catch (error) {
@@ -176,7 +181,9 @@ const MealPlanner = () => {
     }
   };
 
+
   const handleDateSelection = (date) => {
+    console.log(date, 'oooo')
     if (isDateDisabled(date)) return;
 
     let newSelectedDates = [];
@@ -209,23 +216,24 @@ const MealPlanner = () => {
       }
 
       newSelectedDates = validDates.map(d => d.toISOString().split('T')[0]);
+      console.log(newSelectedDates, '366')
     } else {
       newSelectedDates = [date.toISOString().split('T')[0]];
     }
 
     setSelectedDates(newSelectedDates);
-
+    console.log(newSelectedDates, 'jjjj')
     if (newSelectedDates.length > 0) {
       setSelectedDate(newSelectedDates[0]);
       const startDate = newSelectedDates[0];
       const endDate = newSelectedDates[newSelectedDates.length - 1];
 
-      sessionStorage.setItem('startDate', startDate);
-      sessionStorage.setItem('endDate', endDate);
-      console.log('Saved to session storage:', { startDate, endDate });
+      // sessionStorage.setItem('startDate', startDate);
+      // sessionStorage.setItem('endDate', endDate);
+      // console.log('Saved to session storage:', { startDate, endDate });
     }
   };
-  
+
   const isDateDisabled = (date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -239,13 +247,26 @@ const MealPlanner = () => {
     return false;
   };
 
+  // New function to handle meal selection
+  const handleMealSelection = (date, mealId) => {
+    const updatedMeals = {
+      ...selectedMeals,
+      [date]: mealId
+    };
+
+    setSelectedMeals(updatedMeals);
+    // sessionStorage.setItem("selectedMeals", JSON.stringify(updatedMeals));
+  };
+
   const handleResetSelections = () => {
     setSelectedOptions({});
     setSelectedPlan(null);
     setSelectedDates([]);
+    setSelectedMeals({});
 
     sessionStorage.removeItem('startDate');
     sessionStorage.removeItem('endDate');
+    sessionStorage.removeItem('selectedMeals');
   };
 
   const renderCalendar = (monthOffset) => {
@@ -282,7 +303,7 @@ const MealPlanner = () => {
         </button>
       );
     }
-    
+
     return (
       <div className="w-72">
         <h3 className="text-lg font-medium mb-4 text-gray-800">
@@ -301,7 +322,7 @@ const MealPlanner = () => {
       </div>
     );
   };
-  
+
   const handleNextMonth = () => {
     if (currentMonth === 11) {
       setCurrentMonth(0);
@@ -318,25 +339,40 @@ const MealPlanner = () => {
     } else {
       setCurrentMonth(currentMonth - 1);
     }
-  };
-
-  const handleCompleteOrder = async () => {
+  }; const handleCompleteOrder = async () => {
     const packageId = sessionStorage.getItem("package");
     const startDate = sessionStorage.getItem("startDate");
     const endDate = sessionStorage.getItem("endDate");
+    const selectedMealsFromStorage = sessionStorage.getItem("selectedProducts");
 
     if (!packageId || !startDate || !endDate) {
       alert("Missing required order details. Please check your selections.");
       return;
     }
 
+    // Parse the stored selectedMeals JSON
+    let parsedSelectedMeals;
+    try {
+      parsedSelectedMeals = JSON.parse(selectedMealsFromStorage);
+    } catch (error) {
+      console.error("Error parsing selectedProducts from sessionStorage:", error);
+      alert("Error with meal selection data. Please try again.");
+      return;
+    }
+
+    // Extract just the selectedMeals array from the parsed object
+    // The structure in storage has an extra wrapper object with selectedMeals key
+    const mealsArray = parsedSelectedMeals.selectedMeals || [];
+
     const payload = {
       package: packageId,
       startDate: startDate,
       endDate: endDate,
+      selectedMeals: mealsArray
     };
+
     console.log(payload, 'cart payload');
-    
+
     try {
       const response = await axios.post("https://api.dailyfit.ae/api/user/add-to-cart", payload, { withCredentials: true });
       alert("Order completed successfully!");
@@ -347,12 +383,19 @@ const MealPlanner = () => {
       console.error("Error:", error);
     }
   };
-
   useEffect(() => {
     if (selectedDates.length > 0 && !selectedDate) {
       setSelectedDate(selectedDates[0]);
     }
   }, [selectedDates, selectedDate]);
+
+  // Load saved selections from session storage on component mount
+  useEffect(() => {
+    const savedMeals = sessionStorage.getItem("selectedMeals");
+    if (savedMeals) {
+      setSelectedMeals(JSON.parse(savedMeals));
+    }
+  }, []);
 
   // Step indicators component
   const StepIndicator = ({ step, title, icon }) => {
@@ -360,7 +403,7 @@ const MealPlanner = () => {
     return (
       <div className={`flex flex-col items-center ${activeStep >= step ? 'text-emerald-600' : 'text-gray-400'}`}>
         <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-2 transition-all
-          ${activeStep === step ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 
+          ${activeStep === step ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' :
             activeStep > step ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
           <Icon className="w-7 h-7" />
         </div>
@@ -384,11 +427,11 @@ const MealPlanner = () => {
                   Customize your nutrition journey with our chef-crafted meal packages
                 </p>
               </div>
-              
+
               {/* Package Selection Section */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
                 {selectedPlans && selectedPlans.packages && selectedPlans.packages.map((packageItem) => (
-                  <div key={packageItem._id} 
+                  <div key={packageItem._id}
                     className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group">
                     <div className="h-3 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
                     <div className="p-8">
@@ -521,7 +564,7 @@ const MealPlanner = () => {
                       className={`px-6 py-3 rounded-xl font-medium whitespace-nowrap transition-all duration-300 ${date === selectedDate
                         ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md"
                         : "border border-gray-200 text-gray-700 hover:bg-emerald-50 hover:border-emerald-200"
-                      }`}
+                        }`}
                     >
                       {new Date(date).toLocaleDateString("en-US", {
                         weekday: "short",
@@ -536,14 +579,23 @@ const MealPlanner = () => {
                   {mealData[selectedDate]?.map((meal) => (
                     <div
                       key={meal._id}
-                      className="rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white group"
+                      className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white group cursor-pointer
+              ${selectedMeals[selectedDate] === meal._id ? 'ring-2 ring-emerald-500' : ''}`}
+                      onClick={() => handleMealSelection(selectedDate, meal._id)}
                     >
-                      <div className="h-60 overflow-hidden">
+                      <div className="h-60 overflow-hidden relative">
                         <img
                           src={meal.image[0]}
                           alt={meal.mealName}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
+                        {selectedMeals[selectedDate] === meal._id && (
+                          <div className="absolute top-3 right-3 bg-emerald-500 text-white p-2 rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
                       </div>
                       <div className="p-6">
                         <h3 className="text-xl font-bold text-gray-800 mb-2">{meal.mealName}</h3>
@@ -566,65 +618,124 @@ const MealPlanner = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Meal selection summary */}
+              <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+                <h2 className="text-2xl font-bold mb-6 text-gray-800">Your Meal Selection</h2>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selected Meal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {selectedDates.map((date) => {
+                        const mealId = selectedMeals[date];
+                        const mealName = mealData[date]?.find(meal => meal._id === mealId)?.mealName || "No meal selected";
+
+                        return (
+                          <tr key={date}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {new Date(date).toLocaleDateString("en-US", {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {mealName}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Confirm button */}
+              <div className="flex justify-center mb-16">
+                <button
+                  onClick={handleConfirmSelection}
+                  className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+                >
+                  Confirm Selection
+                </button>
+              </div>
             </div>
           </div>
         );
 
       case 3:
         return (
-          <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-6">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
-                <div>
-                  <h2 className="text-3xl font-bold text-gray-800 mb-2">Enhance Your Experience</h2>
-                  <p className="text-gray-600">
-                    Add premium options to elevate your meal plan
-                  </p>
-                </div>
-                <button className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all duration-300 flex items-center gap-2">
-                  SKIP
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {addons.map((item) => {
+              const isSelected = selectedEnhancements.some((selected) => selected._id === item._id);
 
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-16">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {enhancements.map((item) => (
+              return (
+                <div
+                  key={item._id}
+                  className={`rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative group
+                ${isSelected ? "ring-2 ring-emerald-500" : "hover:ring-1 hover:ring-emerald-200"}
+              `}
+                  onClick={() => handleSelectionAddOn(item)}
+                  role="checkbox"
+                  aria-checked={isSelected}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleSelectionAddOn(item);
+                    }
+                  }}
+                >
+                  <div className="h-40 overflow-hidden">
+                    <img
+                      src={item.image[0]}
+                      alt={item.mealName}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="p-6 text-center">
+                    <h3 className="text-lg font-bold text-gray-800 mb-1">{item.mealName}</h3>
+                    <p className="text-emerald-600 font-medium">
+                      AED {item.fareDetails.totalFare.toFixed(2)} / day
+                    </p>
+
                     <div
-                      key={item.id}
-                      className={`rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative group
-                        ${selectedEnhancements.some((selected) => selected.id === item.id) ? 'ring-2 ring-emerald-500' : ''}
-                      `}
-                      onClick={() => handleSelectionAddOn(item)}
+                      className={`mt-3 py-1 px-3 rounded-full text-sm font-medium transition-all duration-300
+                    ${isSelected ? "bg-emerald-100 text-emerald-700" : "bg-gray-50 text-gray-500"}
+                  `}
                     >
-                      <div className="h-40 overflow-hidden">
-                        <img 
-                          src={item.image} 
-                          alt={item.name} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                        />
-                      </div>
-                      <div className="p-6 text-center">
-                        <h3 className="text-lg font-bold text-gray-800 mb-1">{item.name}</h3>
-                        <p className="text-emerald-600 font-medium">AED {item.pricePerDay.toFixed(2)} / day</p>
-                        
-                        {selectedEnhancements.some((selected) => selected.id === item.id) && (
-                          <div className="absolute top-3 right-3 bg-emerald-500 text-white p-1 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
+                      {isSelected ? "Selected" : "Click to select"}
                     </div>
-                  ))}
+
+                    {isSelected && (
+                      <div className="absolute top-3 right-3 bg-emerald-500 text-white p-1 rounded-full shadow-md">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
         );
 
-        case 4:
+      case 4:
         return (
           <div className="max-w-2xl mx-auto">
             <form className="space-y-6" onSubmit={handleAddressSubmit}>
@@ -738,6 +849,59 @@ const MealPlanner = () => {
         );
     }
   };
+  const handleConfirmSelection = () => {
+    if (selectedDates.length === 0) {
+      console.warn("No dates selected");
+      return;
+    }
+
+    const startDate = selectedDates[0];
+    const endDate = selectedDates[selectedDates.length - 1];
+
+    const selectedMealsArray = selectedDates.map((date) => ({
+      date,
+      meals: selectedMeals[date] ? [selectedMeals[date]] : [],
+    }));
+
+    const formattedData = {
+      selectedMeals: selectedMealsArray,
+    };
+    console.log("Selected Products:", formattedData);
+    console.log("Start Date:", startDate);
+    console.log("End Date:", endDate);
+    sessionStorage.setItem("selectedProducts", JSON.stringify(formattedData));
+    sessionStorage.setItem("startDate", startDate);
+    sessionStorage.setItem("endDate", endDate);
+
+    // console.log("Selected Meals:", JSON.stringify(formattedData, null, 2));
+  };
+
+  const handleBackClick = () => {
+    // Determine the previous step based on current step
+    const previousStep = Math.max(1, activeStep - 1);
+
+    // Reset any necessary state for the previous step
+    switch (previousStep) {
+      case 1:
+        // If going back to step 1, you might want to reset some selections
+        setSelectedPackageId(null);
+        setSelectedPlan(null);
+        break;
+      case 2:
+        // If going back to step 2, reset meal selections if needed
+        setSelectedDate(null);
+        setSelectedMeals({});
+        break;
+      case 3:
+        // If going back to step 3, reset enhancements
+        setSelectedEnhancements([]);
+        break;
+    }
+
+    // Set the active step to the previous step
+    setActiveStep(previousStep);
+  };
+
 
   return (
 
@@ -780,8 +944,14 @@ const MealPlanner = () => {
 
         {/* Navigation */}
         <div className="flex justify-between mt-12">
-          <button
+          {/* <button
             onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
+            className="px-6 py-2 rounded-xl border-2 border-[#059033] text-[#059033] hover:bg-green-50"
+          >
+            Back
+          </button> */}
+          <button
+            onClick={handleBackClick}
             className="px-6 py-2 rounded-xl border-2 border-[#059033] text-[#059033] hover:bg-green-50"
           >
             Back

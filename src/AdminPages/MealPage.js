@@ -213,6 +213,8 @@ export default function MealPage() {
     };
 
     const handleEdit = (meal) => {
+        console.log(meal.identifier, 'meal');
+
         // Get the category name from the categoryPackage using the category ID
         const categoryId = Array.isArray(meal.category) ? meal.category[0] : meal.category;
         const categoryObj = categoryPackage.find(cat => cat._id === categoryId || cat.identifier === categoryId);
@@ -232,6 +234,7 @@ export default function MealPage() {
         setFormData({
             mealName: meal.mealName || '',
             description: meal.description || '',
+            identifier: meal.identifier || '', // <-- Added identifier field
             category: categoryName,
             categoryId: categoryId || '',
             mealType: '', // Since mealType is handled through selectedMealTypes
@@ -259,49 +262,55 @@ export default function MealPage() {
         setIsCanvasOpen(true);
     };
 
+
     // const handleEdit = (meal) => {
-    //     // Find the matching category and meal type objects
-    //     const categoryObj = categoryPackage.find(cat => cat.categoryName === meal.category);
-    //     const mealTypeObj = mealType.find(type => type.mealType === meal.mealType);
+    //     console.log(meal,'meal')
+    //     // Get the category name from the categoryPackage using the category ID
+    //     const categoryId = Array.isArray(meal.category) ? meal.category[0] : meal.category;
+    //     const categoryObj = categoryPackage.find(cat => cat._id === categoryId || cat.identifier === categoryId);
+    //     const categoryName = categoryObj ? categoryObj.categoryName : '';
 
     //     // Set selected meal types if available
     //     if (meal.mealTypes && Array.isArray(meal.mealTypes)) {
     //         setSelectedMealTypes(meal.mealTypes.map(type => type._id || type));
-    //     } else if (mealTypeObj) {
-    //         setSelectedMealTypes([mealTypeObj._id]);
+    //     } else if (Array.isArray(meal.mealType) && meal.mealType.length > 0) {
+    //         // Handle if mealType is an array of IDs
+    //         setSelectedMealTypes(meal.mealType.map(id => id));
     //     } else {
     //         setSelectedMealTypes([]);
     //     }
 
     //     setSelectedMealId(meal._id);
     //     setFormData({
-    //         mealName: meal.mealName,
-    //         description: meal.description,
-    //         category: meal.category,
-    //         categoryId: categoryObj ? categoryObj._id : '',
-    //         mealType: meal.mealType,
-    //         mealTypeId: mealTypeObj ? mealTypeObj._id : '',
-    //         package: meal.package,
-    //         image: meal.image, // These are the URLs of existing images
+    //         mealName: meal.mealName || '',
+    //         description: meal.description || '',
+    //         category: categoryName,
+    //         categoryId: categoryId || '',
+    //         mealType: '', // Since mealType is handled through selectedMealTypes
+    //         mealTypeId: '',
+    //         package: Array.isArray(meal.package) ? meal.package : [],
+    //         image: Array.isArray(meal.image) ? meal.image : [],
     //         fareDetails: {
-    //             totalFare: meal.fareDetails.totalFare,
-    //             strikeOff: meal.fareDetails.strikeOff,
-    //             discount: meal.fareDetails.discount
+    //             totalFare: meal.fareDetails?.totalFare || '',
+    //             strikeOff: meal.fareDetails?.strikeOff || '',
+    //             discount: meal.fareDetails?.discount || ''
     //         },
     //         moreDetails: {
-    //             energy: meal.moreDetails.energy,
-    //             protein: meal.moreDetails.protein,
-    //             fat: meal.moreDetails.fat,
-    //             carbohydrates: meal.moreDetails.carbohydrates,
-    //             allergens: Array.isArray(meal.moreDetails.allergens)
+    //             energy: meal.moreDetails?.energy || '',
+    //             protein: meal.moreDetails?.protein || '',
+    //             fat: meal.moreDetails?.fat || '',
+    //             carbohydrates: meal.moreDetails?.carbohydrates || '',
+    //             allergens: Array.isArray(meal.moreDetails?.allergens)
     //                 ? meal.moreDetails.allergens
-    //                 : meal.moreDetails.allergens ? meal.moreDetails.allergens.split(',').map(item => item.trim()) : []
+    //                 : meal.moreDetails?.allergens ? meal.moreDetails.allergens.split(',').map(item => item.trim()) : []
     //         }
     //     });
+
     //     setImageFiles([]);
     //     setImagePreviewUrls([]);
     //     setIsCanvasOpen(true);
     // };
+
 
     const handleDelete = async (id) => {
         try {
@@ -327,6 +336,7 @@ export default function MealPage() {
                 // Update existing meal
                 await axios.patch('https://api.dailyfit.ae/api/admin/update-meal', {
                     id: selectedMealId,
+                    identifier: formData.identifier,
                     mealName: formData.mealName,
                     description: formData.description,
                     category: formData.categoryId,
@@ -444,26 +454,6 @@ export default function MealPage() {
             ),
         },
     ];
-    // const columns = [
-    //     { name: 'Name', selector: row => row.mealName, sortable: true },
-    //     { name: 'Description', selector: row => row.description, sortable: true },
-    //     { name: 'Category', selector: row => row.category, sortable: true },
-    //     { name: 'Type', selector: row => row.mealType, sortable: true },
-    //     { name: 'Price', selector: row => `$${row.fareDetails.totalFare.toFixed(2)}`, sortable: true },
-    //     {
-    //         name: 'Actions',
-    //         cell: (row) => (
-    //             <div className="flex justify-center space-x-2">
-    //                 <button onClick={() => handleEdit(row)} className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600">
-    //                     <Pencil size={16} />
-    //                 </button>
-    //                 <button onClick={() => handleDelete(row.identifier)} className="bg-red-500 text-white p-2 rounded hover:bg-red-600">
-    //                     <Trash2 size={16} />
-    //                 </button>
-    //             </div>
-    //         ),
-    //     },
-    // ];
 
     const filteredPackages = useMemo(() => {
         return Array.isArray(mealPackages) ? mealPackages.filter(pkg =>

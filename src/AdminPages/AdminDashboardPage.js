@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Home, Package, Utensils, Users, PlusSquare, LayoutGrid, Drumstick, Tag, Calendar, Box, Folder } from "lucide-react"; // Importing appropriate icons
+import { Settings, Home, Package, Utensils, Users, PlusSquare, LayoutGrid, Drumstick, Tag, Calendar, Box, Folder, ClipboardList } from "lucide-react"; // Importing appropriate icons
 import ProductCrudPage from './ProductCrudPage';  // Importing the page
 import UserCrudPage from './UsersCrudPage';
 import MealPage from './MealPage';
@@ -7,6 +7,7 @@ import MealPackagePage from './MealPackage';
 import MealTypePage from './MealTypePage';
 import MealPlanPage from './MealPlanPage';
 import AddOnPage from './AddOnPage';
+import OrderDetailsPage from './OrderDetailsPage';
 import CategoryPage from './CategoryPage';
 import ImageCustomizer from './ImageCustomizer'
 
@@ -18,12 +19,6 @@ const Sidebar = ({ onSelect }) => {
                 <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('category')}>
                     <Folder className="mr-2" /> Category
                 </li>
-                {/* <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('product')}>
-                    <Package className="mr-2" /> Product
-                </li> */}
-                {/* <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('mealSelect')}>
-                    <Utensils className="mr-2" /> Meal Selection
-                </li> */}
                 <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('meal')}>
                     <Drumstick className="mr-2" /> Meal
                 </li>
@@ -36,18 +31,15 @@ const Sidebar = ({ onSelect }) => {
                 <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('mealPackage')}>
                     <Box className="mr-2" /> Meal Package
                 </li>
-                <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('users')}>
-                    <Users className="mr-2" /> Users Overview
-                </li>
-                {/* <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('users')}>
-                    <Users className="mr-2" /> Users Overview
-                </li>
                 <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('addProduct')}>
                     <PlusSquare className="mr-2" /> Add On Product
                 </li>
-                <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('layoutDesign')}>
-                    <LayoutGrid className="mr-2" /> Layout Design
-                </li> */}
+                <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('users')}>
+                    <Users className="mr-2" /> Users Overview
+                </li>
+                <li className="cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('orders')}>
+                    <ClipboardList className="mr-2" /> Orders Overview
+                </li>
             </ul>
             <div className="mt-4 cursor-pointer hover:bg-purple-700 p-2 rounded flex items-center" onClick={() => onSelect('settings')}>
                 <Settings className="mr-2" /> Settings
@@ -77,6 +69,8 @@ const AdminDashboardPage = () => {
                 return <MealTypePage />;
             case 'mealPackage':
                 return <MealPackagePage />;
+            case 'orders':
+                return <OrderDetailsPage />;
             default:
                 return <ProductCrudPage />;
         }
@@ -101,6 +95,8 @@ const AdminDashboardPage = () => {
                 return 'Meal Type';
             case 'mealPackage':
                 return 'Meal Package';
+            case 'orders':
+                return 'Ordes List';
             default:
                 return 'Daily Fit';
         }

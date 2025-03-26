@@ -64,13 +64,29 @@ export default function MealPlanPage() {
 
   const handleEdit = (mealPackage) => {
     setSelectedPackage(mealPackage);
-    setImagePreview(mealPackage.image);
+    setImagePreview(mealPackage.image || null);
     setSelectedMealType(mealPackage.type || '');
-    // Convert single values to arrays if they exist
-    setSelectedMealPackIds(Array.isArray(mealPackage.packages) ? mealPackage.packages :
-      mealPackage.mealPackId ? [mealPackage.mealPackId] : []);
-    setSelectedMealCategoryIds(Array.isArray(mealPackage.category) ? mealPackage.category :
-      mealPackage.category ? [mealPackage.category] : []);
+
+    // Safely handle package IDs
+    const packageIds = Array.isArray(mealPackage.packages)
+      ? mealPackage.packages
+      : mealPackage.packages
+        ? [mealPackage.packages]
+        : [];
+    setSelectedMealPackIds(packageIds.map(pkg =>
+      typeof pkg === 'object' && pkg._id ? pkg._id : pkg
+    ));
+
+    // Safely handle category IDs
+    const categoryIds = Array.isArray(mealPackage.category)
+      ? mealPackage.category
+      : mealPackage.category
+        ? [mealPackage.category]
+        : [];
+    setSelectedMealCategoryIds(categoryIds.map(cat =>
+      typeof cat === 'object' && cat._id ? cat._id : cat
+    ));
+
     setIsCanvasOpen(true);
   };
 
@@ -138,9 +154,10 @@ export default function MealPlanPage() {
       return;
     }
 
-    // Create an identifier from the meal plan name
+    // Create an identifier from the meal plan name if it's a new entry
     const mealPlanName = formData.get('name');
-    const identifier = mealPlanName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+    const identifier = selectedPackage?.identifier ||
+      mealPlanName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
 
     const newPackage = {
       mealPlanName: mealPlanName,
@@ -148,7 +165,7 @@ export default function MealPlanPage() {
       packages: selectedMealPackIds,
       category: selectedMealCategoryIds,
       image: imagePreview ? imagePreview : [],
-      identifier: selectedPackage?.identifier || identifier,
+      identifier: identifier, // Ensure identifier is passed
       isDeleted: false
     };
 
@@ -169,6 +186,7 @@ export default function MealPlanPage() {
         );
         toast.success("Meal plan added successfully!");
       }
+
       fetchProducts();
       setIsCanvasOpen(false);
       setImagePreview(null);

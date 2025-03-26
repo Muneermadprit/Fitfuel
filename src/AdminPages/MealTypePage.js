@@ -76,9 +76,8 @@ export default function MealTypePage() {
         try {
             if (isEditing && selectedPackage) {
                 // Update existing meal type
-                // await axios.patch(`https://api.dailyfit.ae/api/admin/update-category/${selectedPackage.id}`, categoryData);
-                await axios.patch('https://api.dailyfit.ae/api/admin/update-mealtype', {
-                    // id: selectedPackage.id,
+                await axios.patch('https://api.dailyfit.ae/api/admin/update-mealtype',  {
+                    identifier: selectedPackage.identifier, // <-- Added identifier
                     mealType
                 }, { withCredentials: true });
             } else {

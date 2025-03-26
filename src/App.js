@@ -14,21 +14,25 @@ import ProfilePage from './Pages/ProfilePage';
 import ProductSummary from './Pages/ProductSummary';
 import AdminDashboardPage from './AdminPages/AdminDashboardPage';
 import AdminLogin from './AdminPages/AdminLoginPage'
+import PaymentPage from './Payment/PaymentPage';
+import ContactPage from './Pages/ContactPage';
 import axios from 'axios';
 const App = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("https://api.dailyfit.ae/api/user/get-token",{withCredentials:true});
-        const data = await response.json();
-        console.log('API Response:', data);
+        const response = await axios.get(
+          "https://api.dailyfit.ae/api/user/get-token",
+          { withCredentials: true }
+        );
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching data:", error);
       }
     };
 
     fetchData();
   }, []);
+
   return (
     <div>
       <ChatbotIcon />
@@ -38,7 +42,6 @@ const App = () => {
         <Route path="/Order" element={<Authlogin />} />
         <Route path="/OrderRedirection" element={<OrderRedirection />} />
         <Route path="/Register" element={<Register />} />
-        <Route path="/Register" element={<Register />} />
         <Route path="/checkout" element={<MealPlanShop />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/cart" element={<CartPage />} />
@@ -47,7 +50,8 @@ const App = () => {
         <Route path="/summary" element={<ProductSummary />} />
         <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
         <Route path="/admin-login" element={<AdminLogin />} />
-
+        <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         {/* <Route path="  "element={<ProductListPage />} /> */}
       </Routes>
     </div>

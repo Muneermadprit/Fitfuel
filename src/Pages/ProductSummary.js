@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ChevronDown, ChevronUp, ShoppingBag, MapPin, Package, Plus, Minus, AlertCircle, } from "lucide-react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import logo from '../images/logo.png'
+import { useNavigate } from 'react-router-dom';
 
 const ProductSummary = () => {
   const [cartData, setCartData] = useState(null);
@@ -10,6 +12,9 @@ const ProductSummary = () => {
   const [selectedAddOns, setSelectedAddOns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [currentPackageIndex, setCurrentPackageIndex] = useState(0);
+  const navigate = useNavigate();
+
   // Navigation links
   const navLinks = [
     { label: "Home", href: "/" },
@@ -18,9 +23,13 @@ const ProductSummary = () => {
     { label: "Contact", href: "/contact" }
   ];
 
+  // Helper function to safely format currency values
+  const formatCurrency = (value) => {
+    return typeof value === 'number' ? value.toFixed(2) : '0.00';
+  };
 
+  // After setting cartData from the API response, restructure it for your component
   useEffect(() => {
-    // Fetch cart details from API
     const fetchCart = async () => {
       setLoading(true);
       try {
@@ -29,7 +38,50 @@ const ProductSummary = () => {
         });
 
         if (response.data && response.data.data) {
-          setCartData(response.data.data);
+          const apiData = response.data.data;
+
+          const restructuredData = {
+            meals: (apiData.cart?.package?.selectedMeals || []).map(dateItem => ({
+              packageName: "Your Package",
+              description: "Your package description",
+              fareTotalPerDay: (apiData.fareDetails?.mealsTotalPrice || 0) /
+                (apiData.cart?.package?.selectedMeals?.length || 1),
+              meals: (dateItem.mealDetails || []).map(meal => ({
+                ...meal,
+                mealName: meal.mealName || "Unnamed Meal",
+                description: meal.description || "",
+                mealType: meal.mealType || [],
+                image: meal.image || [],
+                moreDetails: {
+                  energy: meal.moreDetails?.energy || 0,
+                  protein: meal.moreDetails?.protein || 0,
+                  carbohydrates: meal.moreDetails?.carbohydrates || 0,
+                  fat: meal.moreDetails?.fat || 0,
+                  allergens: meal.moreDetails?.allergens || []
+                },
+                fareDetails: {
+                  totalFare: meal.fareDetails?.totalFare || 0,
+                  discount: meal.fareDetails?.discount || 0,
+                  strikeOff: meal.fareDetails?.strikeOff || 0
+                }
+              }))
+            })),
+            addons: apiData.addons.map(addon => ({
+              name: addon.mealName,
+              pricePerDay: addon.fareDetails?.totalFare || 0,
+              image: addon.image?.[0] || "/api/placeholder/48/48"
+            })),
+            fareDetails: {
+              mealsTotalPrice: apiData.fareDetails?.mealsTotalPrice || 0,
+              totalFare: apiData.fareDetails?.totalFare || 0,
+              addOnsTotalPrice: apiData.fareDetails?.addOnsTotalPrice || 0
+            },
+            savedAddress: apiData.savedAddress || []
+          };
+
+          setCartData(restructuredData);
+          // Automatically select all add-ons
+          setSelectedAddOns(restructuredData.addons);
         }
       } catch (error) {
         console.error("Error fetching cart:", error);
@@ -39,14 +91,24 @@ const ProductSummary = () => {
     };
 
     fetchCart();
-
-    // Get selected add-ons from session storage
-    const storedAddOns = JSON.parse(sessionStorage.getItem("selectedEnhancements")) || [];
-    setSelectedAddOns(storedAddOns);
   }, []);
 
   const toggleExpand = (index) => {
     setExpanded((prev) => ({ ...prev, [index]: !prev[index] }));
+  };
+
+  const navigatePackage = (direction) => {
+    if (!cartData || !cartData.meals || cartData.meals.length === 0) return;
+
+    if (direction === 'next') {
+      setCurrentPackageIndex((prev) =>
+        prev < cartData.meals.length - 1 ? prev + 1 : prev
+      );
+    } else {
+      setCurrentPackageIndex((prev) =>
+        prev > 0 ? prev - 1 : prev
+      );
+    }
   };
 
   if (loading) {
@@ -67,25 +129,41 @@ const ProductSummary = () => {
     );
   }
 
-  // Extract cart details
-  const { meals, addons, fareDetails, savedAddress } = cartData;
+  // Extract cart details with safe defaults
+  const { meals = [], addons = [], fareDetails = { mealsTotalPrice: 0, totalFare: 0 }, savedAddress = [] } = cartData;
 
   // Cool bag and delivery charges
   const coolBagPrice = coolBag ? 5.0 : 0.0;
   const deliveryCharge = 10.0;
 
-  // Calculate total including add-ons
-  const addOnsTotal = selectedAddOns.reduce((sum, addOn) => sum + addOn.pricePerDay, 0);
-  const totalAmount = fareDetails.totalFare + addOnsTotal;
+  // Calculate total including add-ons - safely handle potential undefined values
+  const addOnsTotal = selectedAddOns.reduce((sum, addOn) => sum + (addOn.pricePerDay || 0), 0);
+  const totalAmount = (fareDetails?.totalFare || 0) + addOnsTotal;
   const gst = (totalAmount + coolBagPrice + deliveryCharge) * 0.1; // 10% GST
   const grandTotal = totalAmount + coolBagPrice + deliveryCharge + gst;
+
+  // Get current package to display
+  const currentPackage = meals.length > 0 ? meals[currentPackageIndex] : null;
+
+  const handleCompleteOrder = () => {
+    // Check session storage
+    const orderStage = sessionStorage.getItem('userType');
+
+    if (orderStage === '1') {
+      // Redirect to order page if orderStage is 0
+      navigate('/payment');
+    } else {
+      // Redirect to payment page for other stages
+      navigate('/order');
+    }
+  };
 
   return (
     <>
       <header className="flex items-center justify-between px-6 py-4 bg-[#65a30d] shadow-lg rounded-b-lg relative z-50">
         {/* Logo */}
         <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-bold text-white tracking-wide">Daily Fit</h1>
+          <img src={logo} alt="DailyFit Logo" className="h-16 w-32 object-contain" />
         </div>
 
         {/* Desktop Navigation */}
@@ -152,124 +230,146 @@ const ProductSummary = () => {
           </span>
         </div>
 
-        {/* Packages Section */}
-        {meals.length > 0 ? (
+        {/* Packages Section - Now Dynamic with Navigation */}
+        {meals.length > 0 && currentPackage ? (
           <div className="space-y-6">
-            {meals.map((mealPackage, packageIndex) => (
-              <div key={packageIndex} className="rounded-xl overflow-hidden bg-white shadow-md border border-gray-100">
-                <div className="bg-gradient-to-r from-green-600 to-teal-500 p-4 text-white">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-bold">{mealPackage.packageName}</h3>
-                    <span className="text-white bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-medium">
-                      ${mealPackage.fareTotalPerDay.toFixed(2)}
-                    </span>
-                  </div>
-                  <p className="text-green-50 mt-1 text-sm">{mealPackage.description}</p>
-                </div>
+            <div className="flex items-center justify-between mb-2">
+              <button
+                onClick={() => navigatePackage('prev')}
+                disabled={currentPackageIndex === 0}
+                className={`p-2 rounded-full ${currentPackageIndex === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-green-600 hover:bg-green-50'}`}
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
 
-                {/* Individual Meals in Package */}
-                <div className="divide-y divide-gray-100">
-                  {mealPackage.meals.map((meal, mealIndex) => (
-                    <div key={mealIndex} className="p-4 bg-white">
-                      <div
-                        className="flex justify-between items-center cursor-pointer"
-                        onClick={() => toggleExpand(`${packageIndex}-${mealIndex}`)}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
-                            {meal.image && meal.image.length > 0 ? (
-                              <img
-                                src={meal.image[0]}
-                                alt={meal.mealName}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = "/api/placeholder/48/48";
-                                }} />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                                <Package className="w-6 h-6 text-gray-400" />
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <span className="text-lg font-semibold text-gray-800">{meal.mealName}</span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {meal.mealType.map((type, i) => (
-                                <span key={i} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
-                                  {type}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="text-gray-900 font-bold mr-3">${meal.fareDetails.totalFare.toFixed(2)}</span>
-                          {expanded[`${packageIndex}-${mealIndex}`] ? (
-                            <Minus className="w-5 h-5 text-gray-500" />
+              <div className="text-center">
+                <p className="text-sm text-gray-500">
+                  Package {currentPackageIndex + 1} of {meals.length}
+                </p>
+              </div>
+
+              <button
+                onClick={() => navigatePackage('next')}
+                disabled={currentPackageIndex >= meals.length - 1}
+                className={`p-2 rounded-full ${currentPackageIndex >= meals.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-green-600 hover:bg-green-50'}`}
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="rounded-xl overflow-hidden bg-white shadow-md border border-gray-100">
+              <div className="bg-gradient-to-r from-green-600 to-teal-500 p-4 text-white">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold">{currentPackage.packageName || "Meal Package"}</h3>
+                  <span className="text-white bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-medium">
+                    ${formatCurrency(currentPackage.fareTotalPerDay)}
+                  </span>
+                </div>
+                <p className="text-green-50 mt-1 text-sm">{currentPackage.description || "Package description"}</p>
+              </div>
+
+              {/* Individual Meals in Package */}
+              <div className="divide-y divide-gray-100">
+                {(currentPackage.meals || []).map((meal, mealIndex) => (
+                  <div key={mealIndex} className="p-4 bg-white">
+                    <div
+                      className="flex justify-between items-center cursor-pointer"
+                      onClick={() => toggleExpand(`${currentPackageIndex}-${mealIndex}`)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
+                          {meal.image && meal.image.length > 0 ? (
+                            <img
+                              src={meal.image[0]}
+                              alt={meal.mealName || "Meal"}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "/api/placeholder/48/48";
+                              }} />
                           ) : (
-                            <Plus className="w-5 h-5 text-gray-500" />
+                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                              <Package className="w-6 h-6 text-gray-400" />
+                            </div>
                           )}
                         </div>
-                      </div>
-
-                      {expanded[`${packageIndex}-${mealIndex}`] && (
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                          <div className="flex flex-col md:flex-row md:items-start gap-4">
-                            {meal.image && meal.image.length > 0 && (
-                              <img
-                                src={meal.image[0]}
-                                alt={meal.mealName}
-                                className="w-full md:w-32 h-32 object-cover rounded-lg shadow-md"
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = "/api/placeholder/128/128";
-                                }} />
-                            )}
-                            <div className="flex-1">
-                              <p className="text-gray-700 mb-4">{meal.description}</p>
-
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                                <div className="bg-blue-50 p-3 rounded-lg shadow-sm">
-                                  <p className="font-semibold text-blue-700">Energy</p>
-                                  <p className="font-medium text-blue-900">{meal.moreDetails.energy} kcal</p>
-                                </div>
-                                <div className="bg-green-50 p-3 rounded-lg shadow-sm">
-                                  <p className="font-semibold text-green-700">Protein</p>
-                                  <p className="font-medium text-green-900">{meal.moreDetails.protein}g</p>
-                                </div>
-                                <div className="bg-yellow-50 p-3 rounded-lg shadow-sm">
-                                  <p className="font-semibold text-yellow-700">Carbs</p>
-                                  <p className="font-medium text-yellow-900">{meal.moreDetails.carbohydrates}g</p>
-                                </div>
-                                <div className="bg-red-50 p-3 rounded-lg shadow-sm">
-                                  <p className="font-semibold text-red-700">Fat</p>
-                                  <p className="font-medium text-red-900">{meal.moreDetails.fat}g</p>
-                                </div>
-                              </div>
-
-                              {meal.moreDetails.allergens && meal.moreDetails.allergens.length > 0 && (
-                                <div className="mt-4 bg-amber-50 p-3 rounded-lg shadow-sm">
-                                  <p className="text-sm font-semibold text-amber-700">Allergens:</p>
-                                  <p className="text-sm text-amber-800">{meal.moreDetails.allergens.join(", ")}</p>
-                                </div>
-                              )}
-
-                              {meal.fareDetails.discount > 0 && (
-                                <div className="mt-3 bg-green-50 p-2 rounded-lg inline-block">
-                                  <span className="line-through text-gray-500">${meal.fareDetails.strikeOff.toFixed(2)}</span>
-                                  <span className="ml-2 text-green-600 font-medium">Save ${meal.fareDetails.discount.toFixed(2)}</span>
-                                </div>
-                              )}
-                            </div>
+                        <div>
+                          <span className="text-lg font-semibold text-gray-800">{meal.mealName || "Unnamed Meal"}</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {(meal.mealType || []).map((type, i) => (
+                              <span key={i} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                                {type}
+                              </span>
+                            ))}
                           </div>
                         </div>
-                      )}
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-gray-900 font-bold mr-3">${formatCurrency(meal.fareDetails?.totalFare)}</span>
+                        {expanded[`${currentPackageIndex}-${mealIndex}`] ? (
+                          <Minus className="w-5 h-5 text-gray-500" />
+                        ) : (
+                          <Plus className="w-5 h-5 text-gray-500" />
+                        )}
+                      </div>
                     </div>
-                  ))}
-                </div>
+
+                    {expanded[`${currentPackageIndex}-${mealIndex}`] && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="flex flex-col md:flex-row md:items-start gap-4">
+                          {meal.image && meal.image.length > 0 && (
+                            <img
+                              src={meal.image[0]}
+                              alt={meal.mealName || "Meal"}
+                              className="w-full md:w-32 h-32 object-cover rounded-lg shadow-md"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "/api/placeholder/128/128";
+                              }} />
+                          )}
+                          <div className="flex-1">
+                            <p className="text-gray-700 mb-4">{meal.description || "No description available"}</p>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                              <div className="bg-blue-50 p-3 rounded-lg shadow-sm">
+                                <p className="font-semibold text-blue-700">Energy</p>
+                                <p className="font-medium text-blue-900">{meal.moreDetails?.energy || 0} kcal</p>
+                              </div>
+                              <div className="bg-green-50 p-3 rounded-lg shadow-sm">
+                                <p className="font-semibold text-green-700">Protein</p>
+                                <p className="font-medium text-green-900">{meal.moreDetails?.protein || 0}g</p>
+                              </div>
+                              <div className="bg-yellow-50 p-3 rounded-lg shadow-sm">
+                                <p className="font-semibold text-yellow-700">Carbs</p>
+                                <p className="font-medium text-yellow-900">{meal.moreDetails?.carbohydrates || 0}g</p>
+                              </div>
+                              <div className="bg-red-50 p-3 rounded-lg shadow-sm">
+                                <p className="font-semibold text-red-700">Fat</p>
+                                <p className="font-medium text-red-900">{meal.moreDetails?.fat || 0}g</p>
+                              </div>
+                            </div>
+
+                            {meal.moreDetails?.allergens && meal.moreDetails.allergens.length > 0 && (
+                              <div className="mt-4 bg-amber-50 p-3 rounded-lg shadow-sm">
+                                <p className="text-sm font-semibold text-amber-700">Allergens:</p>
+                                <p className="text-sm text-amber-800">{meal.moreDetails.allergens.join(", ")}</p>
+                              </div>
+                            )}
+
+                            {(meal.fareDetails?.discount || 0) > 0 && (
+                              <div className="mt-3 bg-green-50 p-2 rounded-lg inline-block">
+                                <span className="text-gray-900 font-bold mr-3">${formatCurrency(meal.fareDetails?.strikeOff)}</span>
+                                <span className="text-gray-900 font-bold mr-3">${formatCurrency(meal.fareDetails?.discount)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         ) : (
           <div className="text-center p-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
@@ -295,17 +395,18 @@ const ProductSummary = () => {
                     <div className="w-12 h-12 bg-white rounded-lg shadow-sm overflow-hidden flex-shrink-0">
                       <img
                         src={addOn.image}
-                        alt={addOn.name}
+                        alt={addOn.name || "Add-on"}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.target.onerror = null;
                           e.target.src = "/api/placeholder/48/48";
-                        }} />
+                        }}
+                      />
                     </div>
                     <span className="text-gray-800 font-medium">{addOn.name}</span>
                   </div>
                   <span className="text-gray-900 font-bold bg-green-100 px-3 py-1 rounded-full">
-                    ${addOn.pricePerDay.toFixed(2)}
+                    ${formatCurrency(addOn.pricePerDay)}
                   </span>
                 </div>
               ))}
@@ -331,7 +432,7 @@ const ProductSummary = () => {
                 <p className="text-sm text-gray-600">Keep your meals fresh during delivery</p>
               </div>
             </label>
-            <span className="text-gray-900 font-bold">${coolBagPrice.toFixed(2)}</span>
+            <span className="text-gray-900 font-bold">${formatCurrency(coolBagPrice)}</span>
           </div>
         </div>
 
@@ -350,12 +451,12 @@ const ProductSummary = () => {
                 </div>
                 <div>
                   <p className="text-gray-800 font-medium">
-                    {`${savedAddress[0].houseOrFlatNumber}, ${savedAddress[0].buildingFloor}, ${savedAddress[0].street}`}
+                    {`${savedAddress[0]?.houseOrFlatNumber || ''}, ${savedAddress[0]?.buildingFloor || ''}, ${savedAddress[0]?.street || ''}`}
                   </p>
                   <p className="text-gray-600">
-                    {`${savedAddress[0].city}, ${savedAddress[0].state}, ${savedAddress[0].country} - ${savedAddress[0].postalCode}`}
+                    {`${savedAddress[0]?.city || ''}, ${savedAddress[0]?.state || ''}, ${savedAddress[0]?.country || ''} - ${savedAddress[0]?.postalCode || ''}`}
                   </p>
-                  <p className="text-gray-500 mt-1">Phone: {savedAddress[0].phone}</p>
+                  <p className="text-gray-500 mt-1">Phone: {savedAddress[0]?.phone || 'N/A'}</p>
                   {savedAddress.length > 1 && (
                     <button className="text-sm text-green-600 mt-2 flex items-center hover:text-green-700">
                       <Plus className="w-4 h-4 mr-1" />
@@ -380,45 +481,49 @@ const ProductSummary = () => {
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2">
               <span className="text-gray-600">Meals Total:</span>
-              <span className="font-medium text-gray-800">${fareDetails.mealsTotalPrice.toFixed(2)}</span>
+              <span className="font-medium text-gray-800">${formatCurrency(fareDetails?.mealsTotalPrice)}</span>
             </div>
 
             <div className="flex justify-between items-center py-2">
               <span className="text-gray-600">Add-Ons Total:</span>
-              <span className="font-medium text-gray-800">${addOnsTotal.toFixed(2)}</span>
+              <span className="font-medium text-gray-800">${formatCurrency(addOnsTotal)}</span>
             </div>
 
             <div className="flex justify-between items-center py-2">
               <span className="text-gray-600">Delivery:</span>
-              <span className="font-medium text-gray-800">${deliveryCharge.toFixed(2)}</span>
+              <span className="font-medium text-gray-800">${formatCurrency(deliveryCharge)}</span>
             </div>
 
             <div className="flex justify-between items-center py-2">
               <span className="text-gray-600">GST (10%):</span>
-              <span className="font-medium text-gray-800">${gst.toFixed(2)}</span>
+              <span className="font-medium text-gray-800">${formatCurrency(gst)}</span>
             </div>
 
             <div className="flex justify-between items-center py-2">
               <span className="text-gray-600">Cool Bag:</span>
-              <span className="font-medium text-gray-800">${coolBagPrice.toFixed(2)}</span>
+              <span className="font-medium text-gray-800">${formatCurrency(coolBagPrice)}</span>
             </div>
 
             <div className="h-px bg-gray-200 my-2"></div>
 
             <div className="flex justify-between items-center py-3">
               <span className="text-lg font-semibold text-gray-800">Grand Total:</span>
-              <span className="text-xl font-bold text-green-600">${grandTotal.toFixed(2)}</span>
+              <span className="text-xl font-bold text-green-600">${formatCurrency(grandTotal)}</span>
             </div>
           </div>
         </div>
 
-        <button className="w-full mt-6 bg-gradient-to-r from-green-600 to-green-500 text-white py-4 rounded-xl font-semibold text-lg hover:from-green-700 hover:to-green-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center">
+        <button
+          onClick={handleCompleteOrder}
+          className="w-full mt-6 bg-gradient-to-r from-green-600 to-green-500 text-white py-4 rounded-xl font-semibold text-lg hover:from-green-700 hover:to-green-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center"
+        >
           Complete Order
           <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
           </svg>
         </button>
-      </div></>
+      </div>
+    </>
   );
 };
 

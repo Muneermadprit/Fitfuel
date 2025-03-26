@@ -1,62 +1,85 @@
-import React, { useState } from "react";
-import { auth, googleProvider } from "./firebaseconfig";
-import {
-  signInWithPopup,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  deleteUser,
-} from "firebase/auth";
-import { FcGoogle } from "react-icons/fc";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({
+    username: "",
+    password: "",
+    general: ""
+  });
 
-  // Sign in with Google
-  const handleGoogleSignIn = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      console.log("User signed in with Google:", result.user);
-    } catch (error) {
-      console.error("Google Sign-In Error:", error);
+  const navigate = useNavigate();
+
+  const validateForm = () => {
+    let formErrors = {
+      username: "",
+      password: "",
+      general: ""
+    };
+
+    // Username validation
+    if (!username) {
+      formErrors.username = "Username is required";
+    } else if (username.length < 3) {
+      formErrors.username = "Username must be at least 3 characters long";
     }
+
+    // Password validation
+    if (!password) {
+      formErrors.password = "Password is required";
+    } else if (password.length < 4) {
+      formErrors.password = "Password must be at least 4 characters long";
+    }
+
+    setErrors(formErrors);
+
+    // Return true if no errors
+    return !formErrors.username && !formErrors.password;
   };
 
-  // Sign in with Email and Password
-  const handleEmailSignIn = async () => {
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      console.log("User signed in with email:", result.user.displayName);
-    } catch (error) {
-      console.error("Email Sign-In Error:", error);
-    }
-  };
+  const handleEmailSignIn = async (e) => {
+    e.preventDefault();
 
-  // Sign up with Email and Password
-  const handleEmailSignUp = async () => {
-    try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      console.log("User signed up with email:", result.user);
-    } catch (error) {
-      console.error("Email Sign-Up Error:", error);
-    }
-  };
+    // Reset general error
+    setErrors(prev => ({ ...prev, general: "" }));
 
-  // Sign out and delete account
-  const handleSignOut = async () => {
+    // Validate form first
+    if (!validateForm()) {
+      return;
+    }
+
     try {
-      const user = auth.currentUser;
-      if (user) {
-        await deleteUser(user);
-        console.log("User deleted from Firebase Authentication");
-        await signOut(auth);
-        console.log("User signed out");
+      const response = await axios.post('https://api.dailyfit.ae/api/user/login', {
+        userName: username,
+        password: password
+      }, { withCredentials: true });
+
+      // Check for specific response structure
+      if (response.data && response.data.status === true) {
+
+        // Store user information in localStorage if needed
+        localStorage.setItem('userInfo', JSON.stringify(response.data));
+        sessionStorage.setItem('userType', response.data.userType);
+        // Redirect to checkout page
+        // navigate('/checkout');
       } else {
-        console.log("No user is signed in.");
+        // Handle case where status is not true
+        setErrors(prev => ({
+          ...prev,
+          general: response.data.message || "Login failed. Please try again."
+        }));
       }
     } catch (error) {
-      console.error("Error deleting user:", error);
+      console.error("Login Error:", error.response ? error.response.data : error.message);
+
+      // Set error message from API or default error
+      setErrors(prev => ({
+        ...prev,
+        general: error.response?.data?.message || "An unexpected error occurred. Please try again."
+      }));
     }
   };
 
@@ -67,41 +90,61 @@ const Auth = () => {
           Login
         </h2>
 
-        <button
-          onClick={handleGoogleSignIn}
-          className="w-full bg-blue-500  text-white py-3 px-4 rounded-lg mb-6 shadow-md hover:bg-blue-600 transition duration-200 flex items-center justify-center"
-        >
-          <FcGoogle  className="mr-2" size={40}/><span className="">Sign in with Google</span> 
-        </button>
+        {/* General Error Message */}
+        {errors.general && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            {errors.general}
+          </div>
+        )}
 
-        <div className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-        </div>
+        <form onSubmit={handleEmailSignIn} className="space-y-4">
+          <div>
+            <input
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                // Clear username error when user starts typing
+                setErrors(prev => ({ ...prev, username: "" }));
+              }}
+              className={`w-full border ${errors.username
+                ? "border-red-500 focus:ring-red-400"
+                : "border-gray-300 focus:ring-blue-400"
+                } rounded-lg px-4 py-3 focus:outline-none focus:ring-2`}
+            />
+            {errors.username && (
+              <p className="text-red-500 text-xs mt-1">{errors.username}</p>
+            )}
+          </div>
 
-        <div className="flex flex-col sm:flex-row sm:justify-center sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mt-6">
+          <div>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                // Clear password error when user starts typing
+                setErrors(prev => ({ ...prev, password: "" }));
+              }}
+              className={`w-full border ${errors.password
+                ? "border-red-500 focus:ring-red-400"
+                : "border-gray-300 focus:ring-blue-400"
+                } rounded-lg px-4 py-3 focus:outline-none focus:ring-2`}
+            />
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+            )}
+          </div>
+
           <button
-            onClick={handleEmailSignIn}
+            type="submit"
             className="w-full mt-6 bg-green-500 text-white py-3 px-4 rounded-lg shadow-md hover:bg-green-600 transition duration-200"
           >
-            Sign in 
+            Sign in
           </button>
-         
-        </div>
-
-       
+        </form>
       </div>
     </div>
   );

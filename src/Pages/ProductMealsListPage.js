@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { TiThMenuOutline } from 'react-icons/ti';
 import FooterPage from './FooterPage';
 import axios from "axios";
-import logo from '../images/WhatsApp Image 2025-03-17 at 8.17.20 AM.jpeg'
+import logo from '../images/logo.png'
 
 
 const MealPlanShop = () => {
@@ -15,14 +15,13 @@ const MealPlanShop = () => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isProfileVisible, setIsProfileVisible] = useState(false);
 
-    // Navigation links
-    const navLinks = [
-        { label: "Home", href: "/" },
-        { label: "About", href: "/about" },
-        { label: "Menu", href: "/menu" },
-        { label: "Contact", href: "/contact" }
-    ];
+    // Check user type and set profile link visibility
+    useEffect(() => {
+        const userType = sessionStorage.getItem('userType');
+        setIsProfileVisible(!!userType);
+    }, []);
 
     // Fetch meal plans from API
     useEffect(() => {
@@ -73,7 +72,6 @@ const MealPlanShop = () => {
         plan.category.includes(selectedCategory)
     );
 
-
     // Update the handleClick function to accept the plan data
     const handleClick = (plan) => {
         // Navigate to select-plan page with the selected plan data
@@ -82,72 +80,40 @@ const MealPlanShop = () => {
 
     return (
         <>
-            <header className="flex items-center justify-between px-6 py-4 bg-[#65a30d] shadow-lg rounded-b-lg relative z-50">
-                {/* Logo */}
-                <div className="flex items-center space-x-4">
-                    {/* <img
-                        src="/path-to-your-logo.png"
-                        alt="Logo"
-                        className="w-12 h-12 rounded-full shadow-sm"
-                    /> */}
-                    <h1 className="text-2xl font-bold text-white tracking-wide">Daily Fit</h1>
-
-                </div>
-
-                {/* Desktop Navigation */}
-                <nav className="hidden md:flex space-x-6">
-                    {navLinks.map((link) => (
-                        <span
-                            key={link.label}
-                            className="text-lg text-white hover:text-yellow-300 font-medium transition-colors cursor-pointer px-3"
-                        >
-                            {link.label}
-                        </span>
-                    ))}
-                </nav>
-
-                {/* Mobile Menu Button */}
-                <button
-                    className="md:hidden text-white focus:outline-none"
-                    onClick={() => setMenuOpen(!menuOpen)}
-                >
-                    ☰
-                </button>
-
-                {/* Mobile Menu Overlay */}
-                <div
-                    className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${menuOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
-                    onClick={() => setMenuOpen(false)}
-                />
-
-                {/* Mobile Menu */}
-                <div
-                    className={`fixed top-0 right-0 h-full w-3/4 max-w-sm bg-white shadow-xl z-50 transition-transform duration-500 ${menuOpen ? "translate-x-0" : "translate-x-full"}`}
-                >
-                    <div className="flex items-center justify-between px-4 py-4 bg-[#65a30d]">
-                        <h2 className="text-lg font-semibold text-white">Menu</h2>
-                        <button
-                            className="text-white hover:text-gray-300 focus:outline-none"
-                            onClick={() => setMenuOpen(false)}
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-                    </div>
-                    <ul className="p-6 space-y-4">
-                        {navLinks.map((link) => (
-                            <li key={link.label}>
-                                <span
-                                    className="block text-lg text-[#65a30d] hover:text-green-700 font-medium transition-colors cursor-pointer"
-                                    onClick={() => setMenuOpen(false)}
+            <nav className="bg-gradient-to-r from-green-600 to-lime-600 text-white shadow-lg sticky top-0 z-50">
+                <div className="container mx-auto px-4 py-3">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                            <a href="/" className="flex items-center">
+                                <img src={logo} alt="DailyFit Logo" className="h-16 w-32 object-contain" />
+                            </a>
+                        </div>
+                        <div className="hidden md:flex space-x-6">
+                            <a href="/" className="text-white no-underline hover:text-green-200 transition duration-200">Home</a>
+                            <a href="/about" className="text-white no-underline hover:text-green-200 transition duration-200">About</a>
+                            <a href="/contact" className="text-white no-underline hover:text-green-200 transition duration-200">Contact</a>
+                            {isProfileVisible && (
+                                <a
+                                    href="/profile"
+                                    className="text-white no-underline hover:text-green-200 transition duration-200"
                                 >
-                                    {link.label}
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
+                                    Profile
+                                </a>
+                            )}
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <a href="/Order" className="bg-white text-green-600 px-4 py-2 rounded-lg font-semibold no-underline hover:bg-green-100 transition duration-200">Login</a>
+                            <button className="md:hidden text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </header>
+            </nav>
 
+            {/* Rest of the component remains the same */}
             <div className="max-w-7xl mx-auto px-4 py-8">
                 {/* Row container */}
                 <div className="flex flex-col lg:flex-row gap-8">
