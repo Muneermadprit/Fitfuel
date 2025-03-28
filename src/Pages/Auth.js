@@ -64,7 +64,7 @@ const Auth = () => {
         localStorage.setItem('userInfo', JSON.stringify(response.data));
         sessionStorage.setItem('userType', response.data.userType);
         // Redirect to checkout page
-        // navigate('/checkout');
+        navigate('/checkout');
       } else {
         // Handle case where status is not true
         setErrors(prev => ({

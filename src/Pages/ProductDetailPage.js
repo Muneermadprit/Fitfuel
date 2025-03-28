@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ShoppingBag, Calendar, MapPin, Gift } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const MealPlanner = () => {
   const location = useLocation();
@@ -50,7 +52,14 @@ const MealPlanner = () => {
 
     try {
       const response = await axios.post("https://api.dailyfit.ae/api/user/add-address", payload, { withCredentials: true });
-      alert("Address added successfully!");
+      toast.success("Address added successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       console.log("Response:", response.data);
     } catch (error) {
       alert("Failed to add address. Please try again.");
@@ -180,6 +189,7 @@ const MealPlanner = () => {
       console.error("API Error:", error);
     }
   };
+
 
 
   const handleDateSelection = (date) => {
@@ -375,7 +385,7 @@ const MealPlanner = () => {
 
     try {
       const response = await axios.post("https://api.dailyfit.ae/api/user/add-to-cart", payload, { withCredentials: true });
-      alert("Order completed successfully!");
+      toast.success('Successfully Completed your order! wait for Payment')
       window.location.href = '/summary';
       console.log("Response:", response.data);
     } catch (error) {
@@ -417,6 +427,7 @@ const MealPlanner = () => {
       case 1:
         return (
           <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-6">
+            <ToastContainer />
             <div className="max-w-7xl mx-auto">
               {/* Header Section */}
               <div className="text-center mb-12 space-y-4">
@@ -540,6 +551,7 @@ const MealPlanner = () => {
 
         return (
           <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-6">
+            <ToastContainer />
             <div className="max-w-7xl mx-auto">
               <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
                 <div>
@@ -738,6 +750,7 @@ const MealPlanner = () => {
       case 4:
         return (
           <div className="max-w-2xl mx-auto">
+            <ToastContainer />
             <form className="space-y-6" onSubmit={handleAddressSubmit}>
               <div className="grid grid-cols-2 gap-6">
                 <div className="col-span-2">
@@ -866,6 +879,14 @@ const MealPlanner = () => {
     const formattedData = {
       selectedMeals: selectedMealsArray,
     };
+    toast.success("Menu added successfully!", {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     console.log("Selected Products:", formattedData);
     console.log("Start Date:", startDate);
     console.log("End Date:", endDate);
