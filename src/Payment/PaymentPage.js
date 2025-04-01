@@ -7,7 +7,7 @@ export default function PaymentPage() {
     const order = async (e) => {
         try {
             e.preventDefault()
-            const { data } = await Axios.post('user/createOrder', {
+            const { data } = await Axios.post('/createOrder', {
                 "address": {
                     "street": "123 Main Street",
                     "buildingFloor": "3rd Floor",
@@ -26,12 +26,11 @@ export default function PaymentPage() {
             const res = await loadScript(
                 "https://checkout.razorpay.com/v1/checkout.js"
             );
+            console.log(res, 'response')
             if (!res) {
                 alert("Razorpay SDK failed to load. Are you online?");
                 return;
             }
-
-            debugger
             const options = {
                 key: "rzp_test_8yAxkM6TR2ggyI",
                 amount: data.data.amount,
@@ -47,7 +46,7 @@ export default function PaymentPage() {
                     } else {
                         alert("Payment verification failed.");
                     }
-
+              
                 },
                 prefill: {
                     name: "saju",
@@ -55,7 +54,7 @@ export default function PaymentPage() {
                     contact: "971XXXXXXXXX",
                 },
                 theme: { color: "#3399cc" },
-            };
+              };
             const paymentObject = new window.Razorpay(options);
             paymentObject.open();
 

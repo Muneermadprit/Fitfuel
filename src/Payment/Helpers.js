@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const Axios = axios.create({
-    baseURL: 'http://localhost:3000/api/',
+    baseURL: 'https://api.dailyfit.ae/api/user/',
     timeout: 60000,
     headers: {
         'Content-Type': 'application/json',

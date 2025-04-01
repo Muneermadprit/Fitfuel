@@ -82,13 +82,6 @@ const MealPlanner = () => {
       shippingAddress: sessionStorage.getItem('shippingAddress') ? JSON.parse(sessionStorage.getItem('shippingAddress')) : {},
       paymentMethod: sessionStorage.getItem('paymentMethod') || ''
     };
-
-    // Save selected meals to session storage
-    // sessionStorage.setItem('selectedMeals', JSON.stringify(selectedMeals));
-
-    // sessionStorage.setItem('checkoutData', JSON.stringify(formData));
-    // console.log('Selections saved to session storage');
-    // console.log('Selected meals saved:', selectedMeals);
   };
   const [addons, setAddons] = useState([]);
 
@@ -237,10 +230,6 @@ const MealPlanner = () => {
       setSelectedDate(newSelectedDates[0]);
       const startDate = newSelectedDates[0];
       const endDate = newSelectedDates[newSelectedDates.length - 1];
-
-      // sessionStorage.setItem('startDate', startDate);
-      // sessionStorage.setItem('endDate', endDate);
-      // console.log('Saved to session storage:', { startDate, endDate });
     }
   };
 
@@ -349,7 +338,8 @@ const MealPlanner = () => {
     } else {
       setCurrentMonth(currentMonth - 1);
     }
-  }; const handleCompleteOrder = async () => {
+  };
+  const handleCompleteOrder = async () => {
     const packageId = sessionStorage.getItem("package");
     const startDate = sessionStorage.getItem("startDate");
     const endDate = sessionStorage.getItem("endDate");
@@ -749,115 +739,141 @@ const MealPlanner = () => {
 
       case 4:
         return (
-          <div className="max-w-2xl mx-auto">
-            <ToastContainer />
-            <form className="space-y-6" onSubmit={handleAddressSubmit}>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
-                  <input
-                    type="text"
-                    name="street"
-                    value={formData.street}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Building Floor</label>
-                  <input
-                    type="text"
-                    name="buildingFloor"
-                    value={formData.buildingFloor}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">House/Flat Number</label>
-                  <input
-                    type="text"
-                    name="houseOrFlatNumber"
-                    value={formData.houseOrFlatNumber}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Landmark</label>
-                  <input
-                    type="text"
-                    name="landmark"
-                    value={formData.landmark}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
-                  <input
-                    type="text"
-                    name="postalCode"
-                    value={formData.postalCode}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                  <input
-                    type="text"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-              </div>
 
-              <button
-                type="submit"
-                className="w-full bg-[#059033] text-white py-3 rounded-xl font-medium transition"
-              >
-                Submit Address
-              </button>
-            </form>
+          <div className="max-w-2xl mx-auto">
+            {sessionStorage.getItem('userType') === '1' ? (
+              <>
+                <ToastContainer />
+                <div className="mb-6 text-center">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Shipping Address</h2>
+                  <p className="text-gray-600">If you have already added your address, you can skip this step</p>
+                </div>
+                <form className="space-y-6" onSubmit={handleAddressSubmit}>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
+                      <input
+                        type="text"
+                        name="street"
+                        value={formData.street}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Building Floor</label>
+                      <input
+                        type="text"
+                        name="buildingFloor"
+                        value={formData.buildingFloor}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">House/Flat Number</label>
+                      <input
+                        type="text"
+                        name="houseOrFlatNumber"
+                        value={formData.houseOrFlatNumber}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Landmark</label>
+                      <input
+                        type="text"
+                        name="landmark"
+                        value={formData.landmark}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                      <input
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
+                      <input
+                        type="text"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
+                      <input
+                        type="text"
+                        name="postalCode"
+                        value={formData.postalCode}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                      <input
+                        type="text"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-4">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#059033] text-white py-3 rounded-xl font-medium transition hover:bg-[#047029]"
+                    >
+                      Submit Address
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveSelectionsToSessionStorage();
+                        handleCompleteOrder();
+                      }}
+                      className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-medium transition hover:bg-gray-300"
+                    >
+                      Skip
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="text-center py-10">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Please Login to Continue</h2>
+                  <p className="text-gray-600">You need to be logged in to access this feature</p>
+                </div>
+                <button
+                  onClick={() => window.location.href = '/Order'}
+                  className="bg-[#059033] text-white py-3 px-8 rounded-xl font-medium transition hover:bg-[#047029]"
+                >
+                  Go to Login
+                </button>
+              </div>
+            )}
           </div>
         );
     }
@@ -965,12 +981,45 @@ const MealPlanner = () => {
 
         {/* Navigation */}
         <div className="flex justify-between mt-12">
-          {/* <button
-            onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
+          <button
+            onClick={handleBackClick}
             className="px-6 py-2 rounded-xl border-2 border-[#059033] text-[#059033] hover:bg-green-50"
           >
             Back
-          </button> */}
+          </button>
+          {activeStep === 4 ? (
+            sessionStorage.getItem('userType') === '1' ? (
+              <button
+                onClick={() => {
+                  saveSelectionsToSessionStorage();
+                  handleCompleteOrder(); // Call API on final step
+                  setActiveStep(Math.min(5, activeStep + 1));
+                }}
+                className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
+              >
+                Complete Order
+              </button>
+            ) : (
+              <button
+                onClick={() => window.location.href = '/Order'}
+                className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
+              >
+                Login to Complete Order
+              </button>
+            )
+          ) : (
+            <button
+              onClick={() => {
+                saveSelectionsToSessionStorage();
+                setActiveStep(Math.min(5, activeStep + 1));
+              }}
+              className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
+            >
+              Continue
+            </button>
+          )}
+        </div>
+        {/* <div className="flex justify-between mt-12">
           <button
             onClick={handleBackClick}
             className="px-6 py-2 rounded-xl border-2 border-[#059033] text-[#059033] hover:bg-green-50"
@@ -989,7 +1038,7 @@ const MealPlanner = () => {
           >
             {activeStep === 4 ? "Complete Order" : "Continue"}
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ChevronDown, ChevronUp, ShoppingBag, MapPin, Package, Plus, Minus, AlertCircle, } from "lucide-react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Check } from "lucide-react";
 import logo from '../images/logo.png'
 import { useNavigate } from 'react-router-dom';
 
@@ -13,6 +13,9 @@ const ProductSummary = () => {
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentPackageIndex, setCurrentPackageIndex] = useState(0);
+  const [selectedAddressIndex, setSelectedAddressIndex] = useState(0);
+  const [showAddressSelector, setShowAddressSelector] = useState(false);
+  const [profileData, setProfileData] = useState(null);
   const navigate = useNavigate();
 
   // Navigation links
@@ -93,6 +96,22 @@ const ProductSummary = () => {
     fetchCart();
   }, []);
 
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get('https://api.dailyfit.ae/api/user/get-profile', { withCredentials: true });
+        setProfileData(response.data.data);
+        setLoading(false);
+      } catch (err) {
+        // setError(err);
+        // setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
+
   const toggleExpand = (index) => {
     setExpanded((prev) => ({ ...prev, [index]: !prev[index] }));
   };
@@ -109,6 +128,15 @@ const ProductSummary = () => {
         prev > 0 ? prev - 1 : prev
       );
     }
+  };
+
+  const toggleAddressSelector = () => {
+    setShowAddressSelector(prev => !prev);
+  };
+
+  const selectAddress = (index) => {
+    setSelectedAddressIndex(index);
+    setShowAddressSelector(false);
   };
 
   if (loading) {
@@ -132,30 +160,117 @@ const ProductSummary = () => {
   // Extract cart details with safe defaults
   const { meals = [], addons = [], fareDetails = { mealsTotalPrice: 0, totalFare: 0 }, savedAddress = [] } = cartData;
 
-  // Cool bag and delivery charges
-  const coolBagPrice = coolBag ? 5.0 : 0.0;
-  const deliveryCharge = 10.0;
-
-  // Calculate total including add-ons - safely handle potential undefined values
-  const addOnsTotal = selectedAddOns.reduce((sum, addOn) => sum + (addOn.pricePerDay || 0), 0);
-  const totalAmount = (fareDetails?.totalFare || 0) + addOnsTotal;
-  const gst = (totalAmount + coolBagPrice + deliveryCharge) * 0.1; // 10% GST
-  const grandTotal = totalAmount + coolBagPrice + deliveryCharge + gst;
-
   // Get current package to display
   const currentPackage = meals.length > 0 ? meals[currentPackageIndex] : null;
 
-  const handleCompleteOrder = () => {
-    // Check session storage
-    const orderStage = sessionStorage.getItem('userType');
+  const handleCompleteOrder = async () => {
+    try {
+      const orderStage = sessionStorage.getItem('userType');
 
-    if (orderStage === '1') {
-      // Redirect to order page if orderStage is 0
-      navigate('/payment');
-    } else {
-      // Redirect to payment page for other stages
-      navigate('/order');
+      // If orderStage is not '1', navigate to the order page and return early
+      if (orderStage !== '1') {
+        navigate('/Order');
+        return;
+      }
+
+      // Get the currently selected address
+      const selectedAddress = savedAddress[selectedAddressIndex];
+
+      // Format the address according to the required model structure
+      const addressPayload = {
+        address: {
+          street: selectedAddress?.street || '',
+          buildingFloor: selectedAddress?.buildingFloor || '',
+          houseOrFlatNumber: selectedAddress?.houseOrFlatNumber || '',
+          landmark: selectedAddress?.landmark || '',
+          city: selectedAddress?.city || '',
+          state: selectedAddress?.state || '',
+          postalCode: selectedAddress?.postalCode || '',
+          country: selectedAddress?.country || '',
+          phone: selectedAddress?.phone || '',
+          identifier: selectedAddress?.name || 'Home'
+        },
+        bagIncluded: coolBag
+      };
+
+      // Call the createOrder API with the address payload
+      const response = await axios.post(
+        "https://api.dailyfit.ae/api/user/createOrder",
+        addressPayload,
+        { withCredentials: true }
+      );
+
+      const data = response.data;
+
+      if (!data.status) throw new Error("Failed to create order");
+
+      // Load Razorpay script
+      const loadScript = (src) => {
+        return new Promise((resolve) => {
+          const script = document.createElement("script");
+          script.src = src;
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+        });
+      };
+
+      const res = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+
+      if (!res) {
+        alert("Razorpay SDK failed to load. Are you online?");
+        return;
+      }
+
+      const options = {
+        key: "rzp_test_8yAxkM6TR2ggyI",
+        amount: data.data.amount,
+        currency: data.data.currency,
+        name: "Your Company",
+        description: "Payment for Order",
+        order_id: data.data.id,
+        handler: async function (response) {
+          const verifyRes = await axios.post(
+            "https://api.dailyfit.ae/api/user/verify-payment",
+            response
+          );
+          if (verifyRes.data.status) {
+            alert("Payment successful!");
+            navigate('/order-success');
+          } else {
+            alert("Payment verification failed.");
+          }
+        },
+        prefill: {
+          name: profileData?.userName,
+          email: profileData?.userEmail,
+          contact: "",
+        },
+        theme: { color: "#3399cc" },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+
+    } catch (error) {
+      console.error("Error processing order:", error);
+      alert("An error occurred while processing your order. Please try again.");
     }
+  };
+
+  // Format address for display
+  const formatAddress = (address) => {
+    const parts = [
+      address?.houseOrFlatNumber,
+      address?.buildingFloor,
+      address?.street,
+      address?.city,
+      address?.state,
+      address?.country,
+      address?.postalCode
+    ].filter(Boolean);
+
+    return parts.join(', ');
   };
 
   return (
@@ -432,11 +547,10 @@ const ProductSummary = () => {
                 <p className="text-sm text-gray-600">Keep your meals fresh during delivery</p>
               </div>
             </label>
-            <span className="text-gray-900 font-bold">${formatCurrency(coolBagPrice)}</span>
           </div>
         </div>
 
-        {/* Address Section */}
+        {/* Address Section - Updated to show multiple addresses */}
         <div className="mt-8">
           <h3 className="text-xl font-semibold flex items-center mb-3 text-gray-800">
             <MapPin className="w-5 h-5 mr-2 text-green-600" />
@@ -444,27 +558,65 @@ const ProductSummary = () => {
           </h3>
 
           {savedAddress.length > 0 ? (
-            <div className="bg-white rounded-xl p-4 shadow-md border border-gray-100">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-gray-800 font-medium">
-                    {`${savedAddress[0]?.houseOrFlatNumber || ''}, ${savedAddress[0]?.buildingFloor || ''}, ${savedAddress[0]?.street || ''}`}
-                  </p>
-                  <p className="text-gray-600">
-                    {`${savedAddress[0]?.city || ''}, ${savedAddress[0]?.state || ''}, ${savedAddress[0]?.country || ''} - ${savedAddress[0]?.postalCode || ''}`}
-                  </p>
-                  <p className="text-gray-500 mt-1">Phone: {savedAddress[0]?.phone || 'N/A'}</p>
-                  {savedAddress.length > 1 && (
-                    <button className="text-sm text-green-600 mt-2 flex items-center hover:text-green-700">
-                      <Plus className="w-4 h-4 mr-1" />
-                      {savedAddress.length - 1} more saved addresses
-                    </button>
-                  )}
+            <div className="relative">
+              {/* Currently selected address */}
+              <div
+                className="bg-white rounded-xl p-4 shadow-md border border-gray-100 cursor-pointer"
+                onClick={toggleAddressSelector}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-gray-800 font-medium">
+                          {savedAddress[selectedAddressIndex]?.name || 'Home Address'}
+                        </p>
+                        <p className="text-gray-600">
+                          {`${savedAddress[selectedAddressIndex]?.houseOrFlatNumber || ''}, ${savedAddress[selectedAddressIndex]?.buildingFloor || ''}, ${savedAddress[selectedAddressIndex]?.street || ''}`}
+                        </p>
+                        <p className="text-gray-600">
+                          {`${savedAddress[selectedAddressIndex]?.city || ''}, ${savedAddress[selectedAddressIndex]?.state || ''} ${savedAddress[selectedAddressIndex]?.postalCode || ''}`}
+                        </p>
+                        <p className="text-gray-500 mt-1">Phone: {savedAddress[selectedAddressIndex]?.phone || 'N/A'}</p>
+                      </div>
+                      <div className="flex items-center text-green-600">
+                        {savedAddress.length > 1 && (
+                          <ChevronDown className={`w-5 h-5 transition-transform ${showAddressSelector ? 'rotate-180' : ''}`} />
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Address selector dropdown */}
+              {showAddressSelector && savedAddress.length > 1 && (
+                <div className="absolute left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-10 max-h-64 overflow-y-auto">
+                  {savedAddress.map((address, index) => (
+                    <div
+                      key={index}
+                      className={`p-3 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors flex items-start ${index === selectedAddressIndex ? 'bg-green-50' : ''}`}
+                      onClick={() => selectAddress(index)}
+                    >
+                      <div className="w-8 mr-3 flex-shrink-0 flex justify-center">
+                        {index === selectedAddressIndex ? (
+                          <Check className="w-5 h-5 text-green-600" />
+                        ) : (
+                          <div className="w-5 h-5"></div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-800">{address.name || `Address ${index + 1}`}</p>
+                        <p className="text-sm text-gray-600">{formatAddress(address)}</p>
+                        <p className="text-sm text-gray-500">Phone: {address.phone || 'N/A'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center p-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
@@ -481,34 +633,17 @@ const ProductSummary = () => {
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2">
               <span className="text-gray-600">Meals Total:</span>
-              <span className="font-medium text-gray-800">${formatCurrency(fareDetails?.mealsTotalPrice)}</span>
+              <span className="font-medium text-gray-800">AED{formatCurrency(fareDetails?.mealsTotalPrice)}</span>
             </div>
 
             <div className="flex justify-between items-center py-2">
               <span className="text-gray-600">Add-Ons Total:</span>
-              <span className="font-medium text-gray-800">${formatCurrency(addOnsTotal)}</span>
+              <span className="font-medium text-gray-800">AED{formatCurrency(fareDetails?.addOnsTotalPrice)}</span>
             </div>
-
-            <div className="flex justify-between items-center py-2">
-              <span className="text-gray-600">Delivery:</span>
-              <span className="font-medium text-gray-800">${formatCurrency(deliveryCharge)}</span>
-            </div>
-
-            <div className="flex justify-between items-center py-2">
-              <span className="text-gray-600">GST (10%):</span>
-              <span className="font-medium text-gray-800">${formatCurrency(gst)}</span>
-            </div>
-
-            <div className="flex justify-between items-center py-2">
-              <span className="text-gray-600">Cool Bag:</span>
-              <span className="font-medium text-gray-800">${formatCurrency(coolBagPrice)}</span>
-            </div>
-
             <div className="h-px bg-gray-200 my-2"></div>
-
             <div className="flex justify-between items-center py-3">
               <span className="text-lg font-semibold text-gray-800">Grand Total:</span>
-              <span className="text-xl font-bold text-green-600">${formatCurrency(grandTotal)}</span>
+              <span className="font-medium text-gray-800">AED{formatCurrency(fareDetails?.totalFare)}</span>
             </div>
           </div>
         </div>

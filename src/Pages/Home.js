@@ -5,19 +5,38 @@ import { motion } from "framer-motion";
 import fitnessVideo from '../images/fitness.mp4';
 import Modal from "react-modal";
 import { useNavigate } from "react-router-dom";
-import logo from '../images/logo.png'
+import logo from '../images/logo.png';
+import axios from "axios";
 Modal.setAppElement("#root");
 const DilyfitHomePage = () => {
   const navigate = useNavigate();
-  // Product Data
-  const products = [
-    { id: 1, name: 'Premium Protein Powder', price: 39.99, image: '/api/placeholder/400/300', rating: 4.8, category: 'Supplements' },
-    { id: 2, name: 'Adjustable Dumbbell Set', price: 129.99, image: '/api/placeholder/400/300', rating: 4.7, category: 'Equipment' },
-    { id: 3, name: 'Fitness Tracker Watch', price: 89.99, image: '/api/placeholder/400/300', rating: 4.9, category: 'Accessories' },
-    { id: 4, name: 'Compression Leggings', price: 49.99, image: '/api/placeholder/400/300', rating: 4.6, category: 'Apparel' },
-    { id: 5, name: 'Home Workout Guide', price: 19.99, image: '/api/placeholder/400/300', rating: 4.5, category: 'Books' },
-    { id: 6, name: 'Yoga Mat', price: 29.99, image: '/api/placeholder/400/300', rating: 4.7, category: 'Equipment' },
-  ];
+  const [products, setProducts] = useState([]);
+  const [currentProductIndex, setCurrentProductIndex] = useState(0);
+  const visibleProducts = 3;
+
+  useEffect(() => {
+    axios.get("https://api.dailyfit.ae/api/user/get-meals", { withCredentials: true })
+      .then(response => {
+        if (response.data.status && response.data.data) {
+          setProducts(response.data.data); // Set the meals array from the data property
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching meals:", error);
+      });
+  }, []);
+
+  const nextProduct = () => {
+    if (currentProductIndex < products.length - visibleProducts) {
+      setCurrentProductIndex(currentProductIndex + 1);
+    }
+  };
+
+  const prevProduct = () => {
+    if (currentProductIndex > 0) {
+      setCurrentProductIndex(currentProductIndex - 1);
+    }
+  };
 
   // Reviews Data
   const reviews = [
@@ -41,9 +60,9 @@ const DilyfitHomePage = () => {
   };
 
   // State for product slider
-  const [currentProductIndex, setCurrentProductIndex] = useState(0);
+  // const [currentProductIndex, setCurrentProductIndex] = useState(0);
   const productSliderLength = products.length;
-  const visibleProducts = 3;
+  // const visibleProducts = 3;
 
   // State for review slider
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
@@ -60,17 +79,17 @@ const DilyfitHomePage = () => {
   });
 
   // Next/Previous handlers for product slider
-  const nextProduct = () => {
-    setCurrentProductIndex((prevIndex) =>
-      (prevIndex + 1) % (productSliderLength - visibleProducts + 1)
-    );
-  };
+  // const nextProduct = () => {
+  //   setCurrentProductIndex((prevIndex) =>
+  //     (prevIndex + 1) % (productSliderLength - visibleProducts + 1)
+  //   );
+  // };
 
-  const prevProduct = () => {
-    setCurrentProductIndex((prevIndex) =>
-      prevIndex === 0 ? productSliderLength - visibleProducts : prevIndex - 1
-    );
-  };
+  // const prevProduct = () => {
+  //   setCurrentProductIndex((prevIndex) =>
+  //     prevIndex === 0 ? productSliderLength - visibleProducts : prevIndex - 1
+  //   );
+  // };
 
   // Next/Previous handlers for review slider
   const nextReview = () => {
@@ -241,61 +260,70 @@ Message: ${formData.message}`;
       </Modal>
 
       {/* Featured Products Slider */}
+
       <div className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Featured Products</h2>
-          <div className="relative">
-            <div className="overflow-hidden">
-              <div
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${currentProductIndex * (100 / visibleProducts)}%)` }}
-              >
-                {products.map((product) => (
-                  <div key={product.id} className="w-full md:w-1/3 flex-shrink-0 px-4">
-                    <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition duration-300">
-                      <img
-                        src="https://t4.ftcdn.net/jpg/03/61/86/91/360_F_361869194_7JGmIOSj2iUNi0AYoVhVyhKvaN6PkOah.jpg"
-                        alt={product.name}
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="p-6">
-                        <span className="text-sm text-green-600 font-semibold">{product.category}</span>
-                        <h3 className="text-xl font-bold mt-1 text-gray-800">{product.name}</h3>
-                        <div className="flex items-center mt-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={16}
-                              className={i < Math.floor(product.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
-                            />
-                          ))}
-                          <span className="ml-2 text-gray-600 text-sm">{product.rating}</span>
-                        </div>
-                        <div className="mt-4 flex items-center justify-between">
-                          <span className="text-2xl font-bold text-gray-800">${product.price}</span>
-                          <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
-                            Add to Cart
-                          </button>
+          <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Featured Meals</h2>
+          {products.length > 0 ? (
+            <div className="relative">
+              <div className="overflow-hidden">
+                <div
+                  className="flex transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(-${currentProductIndex * (100 / visibleProducts)}%)` }}
+                >
+                  {products.map((product) => (
+                    <div key={product._id} className="w-full md:w-1/3 flex-shrink-0 px-4">
+                      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition duration-300">
+                        <img
+                          src={product.image[0] || "https://t4.ftcdn.net/jpg/03/61/86/91/360_F_361869194_7JGmIOSj2iUNi0AYoVhVyhKvaN6PkOah.jpg"}
+                          alt={product.mealName}
+                          className="w-full h-48 object-cover"
+                        />
+                        <div className="p-6">
+                          <span className="text-sm text-green-600 font-semibold">
+                            {product.category.join(', ')}
+                          </span>
+                          <h3 className="text-xl font-bold mt-1 text-gray-800">{product.mealName}</h3>
+                          <p className="text-gray-600 mt-2 text-sm line-clamp-2">{product.description}</p>
+                          <div className="mt-4 flex items-center justify-between">
+                            <div>
+                              <span className="text-2xl font-bold text-gray-800">AED{product.fareDetails.totalFare}</span>
+                              {product.fareDetails.strikeOff && (
+                                <span className="ml-2 text-sm text-gray-500 line-through">
+                                  AED{product.fareDetails.strikeOff}
+                                </span>
+                              )}
+                            </div>
+                            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
+                              Add to Cart
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
+              <button
+                onClick={prevProduct}
+                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none"
+                disabled={currentProductIndex === 0}
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <button
+                onClick={nextProduct}
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none"
+                disabled={currentProductIndex >= products.length - visibleProducts}
+              >
+                <ChevronRight size={24} />
+              </button>
             </div>
-            <button
-              onClick={prevProduct}
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none"
-            >
-              <ChevronLeft size={24} />
-            </button>
-            <button
-              onClick={nextProduct}
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none"
-            >
-              <ChevronRight size={24} />
-            </button>
-          </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-600">Loading meals...</p>
+            </div>
+          )}
         </div>
       </div>
       {/* Why Choose Us */}
@@ -345,7 +373,7 @@ Message: ${formData.message}`;
                     <span className="ml-2 text-gray-600 text-sm">{product.rating}</span>
                   </div>
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="text-2xl font-bold text-gray-800">${product.price}</span>
+                    {/* <span className="text-2xl font-bold text-gray-800">${product.price}</span> */}
                     <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
                       View Details
                     </button>
