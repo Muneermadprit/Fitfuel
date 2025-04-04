@@ -261,7 +261,101 @@ Message: ${formData.message}`;
 
       {/* Featured Products Slider */}
 
-      <div className="py-16 bg-white">
+      <div className="py-8 md:py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-6 md:mb-12 text-gray-800">
+            Featured Meals
+          </h2>
+
+          {products.length > 0 ? (
+            <div className="relative">
+              <div className="overflow-hidden">
+                <div
+                  className="flex transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(-${currentProductIndex * (100 / visibleProducts)}%)` }}
+                >
+                  {products.map((product) => (
+                    <div
+                      key={product._id}
+                      className="w-full px-2 md:px-4 flex-shrink-0"
+                      style={{ width: `${100 / visibleProducts}%` }}
+                    >
+                      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition duration-300 h-full flex flex-col">
+                        <div className="aspect-w-16 aspect-h-9 relative">
+                          <img
+                            src={product.image[0] || "https://t4.ftcdn.net/jpg/03/61/86/91/360_F_361869194_7JGmIOSj2iUNi0AYoVhVyhKvaN6PkOah.jpg"}
+                            alt={product.mealName}
+                            className="w-full h-48 object-cover"
+                          />
+                        </div>
+                        <div className="p-4 md:p-6 flex flex-col flex-grow">
+                          <span className="text-xs md:text-sm text-green-600 font-semibold">
+                            {product.category.join(', ')}
+                          </span>
+                          <h3 className="text-lg md:text-xl font-bold mt-1 text-gray-800">{product.mealName}</h3>
+                          <p className="text-gray-600 mt-2 text-xs md:text-sm line-clamp-2 flex-grow">{product.description}</p>
+                          {/* <div className="mt-4 flex items-center justify-between">
+                            <div className="flex flex-col md:flex-row md:items-center">
+                              <span className="text-xl md:text-2xl font-bold text-gray-800">AED{product.fareDetails.totalFare}</span>
+                              {product.fareDetails.strikeOff && (
+                                <span className="md:ml-2 text-xs md:text-sm text-gray-500 line-through">
+                                  AED{product.fareDetails.strikeOff}
+                                </span>
+                              )}
+                            </div>
+                            <button className="bg-green-600 text-white px-3 py-1 md:px-4 md:py-2 rounded-lg hover:bg-green-700 transition duration-200 text-sm md:text-base">
+                              Add to Cart
+                            </button>
+                          </div> */}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Navigation buttons with improved accessibility and mobile responsiveness */}
+              <button
+                onClick={prevProduct}
+                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-1 md:p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={currentProductIndex === 0}
+                aria-label="Previous product"
+              >
+                <ChevronLeft size={16} className="md:w-6 md:h-6" />
+              </button>
+              <button
+                onClick={nextProduct}
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-1 md:p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={currentProductIndex >= products.length - visibleProducts}
+                aria-label="Next product"
+              >
+                <ChevronRight size={16} className="md:w-6 md:h-6" />
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-600">Loading meals...</p>
+            </div>
+          )}
+
+          {/* Pagination dots for mobile - optional enhancement */}
+          {visibleProducts === 1 && products.length > 1 && (
+            <div className="flex justify-center mt-4">
+              {Array.from({ length: Math.ceil(products.length) }).map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentProductIndex(index)}
+                  className={`h-2 w-2 mx-1 rounded-full ${currentProductIndex === index ? 'bg-green-600' : 'bg-gray-300'
+                    }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* <div className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Featured Meals</h2>
           {products.length > 0 ? (
@@ -325,7 +419,7 @@ Message: ${formData.message}`;
             </div>
           )}
         </div>
-      </div>
+      </div> */}
       {/* Why Choose Us */}
       <div className="py-16 bg-gray-100">
         <div className="container mx-auto px-4">

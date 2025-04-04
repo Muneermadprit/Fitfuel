@@ -35,7 +35,7 @@ const App = () => {
 
   return (
     <div>
-      <ChatbotIcon />
+      {/* <ChatbotIcon /> */}
 
       <Routes>
         <Route path="/" element={<PortfolioPage />} />

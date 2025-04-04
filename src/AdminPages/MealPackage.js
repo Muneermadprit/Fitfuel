@@ -128,23 +128,6 @@ export default function MealPackage() {
         }
     };
 
-
-
-    // const handleEdit = (mealPackage) => {
-    //     setSelectedPackage(mealPackage);
-    //     setIsCanvasOpen(true);
-    //     setIsEditable(true);
-    //     setFormErrors({});
-    //     setPackageGroup(mealPackage.packageGroup || "");
-
-    //     if (mealPackage.startDate && mealPackage.endDate) {
-    //         generateDateRange(
-    //             new Date(mealPackage.startDate),
-    //             new Date(mealPackage.endDate)
-    //         );
-    //     }
-    // };
-
     const validateForm = (formData) => {
         const errors = {};
         if (!formData.get('packageName')) errors.packageName = "Package name is required.";
@@ -161,7 +144,6 @@ export default function MealPackage() {
 
         return errors;
     };
-
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -183,10 +165,13 @@ export default function MealPackage() {
 
         while (currentDate <= endDate) {
             const dateStr = currentDate.toISOString().split('T')[0];
+            // Format the date as YYYY-MM-DD without time component
+            const formattedDate = dateStr;
+
             mealsArray.push({
                 [`day${dayCounter}`]: {
                     meals: selectedMeals[dateStr] || [],
-                    date: new Date(currentDate).toISOString(),
+                    date: formattedDate,  // Changed from ISO format to simple YYYY-MM-DD
                 },
             });
 
@@ -206,6 +191,9 @@ export default function MealPackage() {
             endDate: formData.get("endDate"),
             identifier: packageIdentifier, // Ensuring identifier is always included
             meals: mealsArray,
+            isDeleted: false,
+            isPermanent: false,
+            repeatTillEnd: true
         };
 
         console.log("Package Data being submitted:", packageData);
@@ -226,66 +214,6 @@ export default function MealPackage() {
             toast.error("Failed to save the meal package. Please try again.");
         }
     };
-
-
-    // const handleSubmit = async (e) => {
-    //     e.preventDefault();
-    //     const formData = new FormData(e.target);
-    //     const errors = validateForm(formData);
-
-    //     if (Object.keys(errors).length > 0) {
-    //         setFormErrors(errors);
-    //         return;
-    //     }
-
-    //     const startDate = new Date(formData.get("startDate"));
-    //     const endDate = new Date(formData.get("endDate"));
-
-    //     // Convert selectedMeals to the required format for API
-    //     const mealsArray = [];
-    //     let dayCounter = 1;
-
-    //     const currentDate = new Date(startDate);
-    //     while (currentDate <= endDate) {
-    //         const dateStr = currentDate.toISOString().split('T')[0];
-    //         mealsArray.push({
-    //             [`day${dayCounter}`]: {
-    //                 meals: selectedMeals[dateStr] || [],
-    //                 date: new Date(currentDate).toISOString(),
-    //             },
-    //         });
-
-    //         currentDate.setDate(currentDate.getDate() + 1);
-    //         dayCounter++;
-    //     }
-
-    //     const packageData = {
-    //         packageName: formData.get("packageName"),
-    //         description: formData.get("description"),
-    //         packageGroup: packageGroup,
-    //         startDate: formData.get("startDate"),
-    //         endDate: formData.get("endDate"),
-    //         meals: mealsArray,
-    //     };
-
-    //     console.log("Package Data being submitted:", packageData);
-
-    //     try {
-    //         if (isEditable && selectedPackage) {
-    //             await axios.patch("https://api.dailyfit.ae/api/admin/update-package", packageData, { withCredentials: true });
-    //             toast.success("Package updated successfully!");
-    //         } else {
-    //             await axios.post("https://api.dailyfit.ae/api/admin/add-package", packageData, { withCredentials: true });
-    //             toast.success("Package added successfully!");
-    //         }
-
-    //         fetchMealPackages();
-    //         setIsCanvasOpen(false);
-    //     } catch (error) {
-    //         console.error("Error saving meal package:", error);
-    //         toast.error("Failed to save the meal package. Please try again.");
-    //     }
-    // };
 
     const handleDelete = async (id) => {
         try {

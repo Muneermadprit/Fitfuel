@@ -154,11 +154,34 @@ const MealPlanner = () => {
         const formattedMeals = {};
 
         packages.forEach((pkg) => {
-          Object.entries(pkg.meals).forEach(([day, mealInfo]) => {
-            const date = mealInfo.date;
-            formattedMeals[date] = mealInfo.meals;
-          });
+          // Check if pkg.meals exists and is an object
+          if (pkg.meals && typeof pkg.meals === 'object') {
+            Object.entries(pkg.meals).forEach(([day, dayData]) => {
+              // Check if the dayData has a date property
+              if (dayData.date) {
+                const date = dayData.date;
+
+                // Use mealsDetails if available, otherwise use meals
+                const mealsList = dayData.mealsDetails && dayData.mealsDetails.length > 0
+                  ? dayData.mealsDetails
+                  : (dayData.meals && dayData.meals.length > 0 ? dayData.meals : []);
+
+                // Only add to formattedMeals if there are meals for this day
+                if (mealsList.length > 0) {
+                  // Make sure each meal has an image property that's an array
+                  const processedMeals = mealsList.map(meal => ({
+                    ...meal,
+                    image: meal.image && Array.isArray(meal.image) ? meal.image : ['/placeholder-image.jpg']
+                  }));
+
+                  formattedMeals[date] = processedMeals;
+                }
+              }
+            });
+          }
         });
+
+        console.log("Formatted Meals:", formattedMeals); // Debug log
 
         setMealData(formattedMeals);
         const availableDates = Object.keys(formattedMeals);
@@ -175,14 +198,12 @@ const MealPlanner = () => {
           });
 
           setSelectedMeals(initialSelectedMeals);
-          // sessionStorage.setItem("selectedMeals", JSON.stringify(initialSelectedMeals));
         }
       }
     } catch (error) {
       console.error("API Error:", error);
     }
   };
-
 
 
   const handleDateSelection = (date) => {
@@ -578,7 +599,67 @@ const MealPlanner = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-                  {mealData[selectedDate]?.map((meal) => (
+                  {selectedDate && mealData[selectedDate] ? (
+                    mealData[selectedDate].map((meal) => (
+                      <div
+                        key={meal._id}
+                        className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white group cursor-pointer
+      ${selectedMeals[selectedDate] === meal._id ? 'ring-2 ring-emerald-500' : ''}`}
+                        onClick={() => handleMealSelection(selectedDate, meal._id)}
+                      >
+                        <div className="h-60 overflow-hidden relative">
+                          {meal.image && meal.image.length > 0 ? (
+                            <img
+                              src={meal.image[0]}
+                              alt={meal.mealName}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-gray-400">No image available</span>
+                            </div>
+                          )}
+                          {selectedMeals[selectedDate] === meal._id && (
+                            <div className="absolute top-3 right-3 bg-emerald-500 text-white p-2 rounded-full flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-6">
+                          <h3 className="text-xl font-bold text-gray-800 mb-2">{meal.mealName || "Unnamed Meal"}</h3>
+                          <p className="text-gray-600 mb-4 line-clamp-2">{meal.description || "No description available"}</p>
+                          <div className="flex justify-between items-center">
+                            <div>
+                              {meal.fareDetails ? (
+                                <>
+                                  <span className="line-through text-red-500 text-sm">
+                                    ${meal.fareDetails.strikeOff}
+                                  </span>{" "}
+                                  <span className="text-lg font-bold text-emerald-600">
+                                    ${meal.fareDetails.totalFare}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-lg font-bold text-emerald-600">Price unavailable</span>
+                              )}
+                            </div>
+                            {meal.fareDetails && meal.fareDetails.discount ? (
+                              <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-sm font-medium">
+                                Save ${meal.fareDetails.discount}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-3 py-10 text-center">
+                      <p className="text-gray-500">No meals available for the selected date.</p>
+                    </div>
+                  )}
+                  {/* {mealData[selectedDate]?.map((meal) => (
                     <div
                       key={meal._id}
                       className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white group cursor-pointer
@@ -617,7 +698,7 @@ const MealPlanner = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ))} */}
                 </div>
               </div>
 

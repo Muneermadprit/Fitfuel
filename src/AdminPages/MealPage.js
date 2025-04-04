@@ -159,35 +159,41 @@ export default function MealPage() {
         }
     };
 
-    const handlePackageSizeChange = (e) => {
-        const sizes = e.target.value.split(',').map(size => size.trim());
-        setFormData(prev => ({
-            ...prev,
-            package: sizes
-        }));
-    };
-
-    const handleImageChange = (e) => {
-        const files = Array.from(e.target.files);
-        setImageFiles(files);
-
-        // Create temporary preview URLs for display in the form
-        const previewUrls = files.map(file => URL.createObjectURL(file));
-        setImagePreviewUrls(previewUrls);
-
-        // When editing, keep existing URLs and add new files for upload
-        // The actual image URLs will be set by the server after upload
-        if (selectedMealId) {
-            // Keep existing image URLs when editing
-            // New files will be uploaded separately
-        } else {
-            // For new entries, clear existing URLs
-            setFormData(prev => ({
-                ...prev,
-                image: [] // The actual URLs will be set by the server after upload
-            }));
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => {
+            setImageBase64(reader.result); // Base64 format
+          };
+          reader.onerror = (error) => {
+            console.log("Error converting file: ", error);
+          };
         }
-    };
+      };
+
+    // const handleImageChange = (e) => {
+    //     const files = Array.from(e.target.files);
+    //     setImageFiles(files);
+
+    //     // Create temporary preview URLs for display in the form
+    //     const previewUrls = files.map(file => URL.createObjectURL(file));
+    //     setImagePreviewUrls(previewUrls);
+
+    //     // When editing, keep existing URLs and add new files for upload
+    //     // The actual image URLs will be set by the server after upload
+    //     if (selectedMealId) {
+    //         // Keep existing image URLs when editing
+    //         // New files will be uploaded separately
+    //     } else {
+    //         // For new entries, clear existing URLs
+    //         setFormData(prev => ({
+    //             ...prev,
+    //             image: [] // The actual URLs will be set by the server after upload
+    //         }));
+    //     }
+    // };
 
     const handleRemoveImage = (index) => {
         // Remove image from preview and from files to upload
@@ -262,56 +268,7 @@ export default function MealPage() {
         setIsCanvasOpen(true);
     };
 
-
-    // const handleEdit = (meal) => {
-    //     console.log(meal,'meal')
-    //     // Get the category name from the categoryPackage using the category ID
-    //     const categoryId = Array.isArray(meal.category) ? meal.category[0] : meal.category;
-    //     const categoryObj = categoryPackage.find(cat => cat._id === categoryId || cat.identifier === categoryId);
-    //     const categoryName = categoryObj ? categoryObj.categoryName : '';
-
-    //     // Set selected meal types if available
-    //     if (meal.mealTypes && Array.isArray(meal.mealTypes)) {
-    //         setSelectedMealTypes(meal.mealTypes.map(type => type._id || type));
-    //     } else if (Array.isArray(meal.mealType) && meal.mealType.length > 0) {
-    //         // Handle if mealType is an array of IDs
-    //         setSelectedMealTypes(meal.mealType.map(id => id));
-    //     } else {
-    //         setSelectedMealTypes([]);
-    //     }
-
-    //     setSelectedMealId(meal._id);
-    //     setFormData({
-    //         mealName: meal.mealName || '',
-    //         description: meal.description || '',
-    //         category: categoryName,
-    //         categoryId: categoryId || '',
-    //         mealType: '', // Since mealType is handled through selectedMealTypes
-    //         mealTypeId: '',
-    //         package: Array.isArray(meal.package) ? meal.package : [],
-    //         image: Array.isArray(meal.image) ? meal.image : [],
-    //         fareDetails: {
-    //             totalFare: meal.fareDetails?.totalFare || '',
-    //             strikeOff: meal.fareDetails?.strikeOff || '',
-    //             discount: meal.fareDetails?.discount || ''
-    //         },
-    //         moreDetails: {
-    //             energy: meal.moreDetails?.energy || '',
-    //             protein: meal.moreDetails?.protein || '',
-    //             fat: meal.moreDetails?.fat || '',
-    //             carbohydrates: meal.moreDetails?.carbohydrates || '',
-    //             allergens: Array.isArray(meal.moreDetails?.allergens)
-    //                 ? meal.moreDetails.allergens
-    //                 : meal.moreDetails?.allergens ? meal.moreDetails.allergens.split(',').map(item => item.trim()) : []
-    //         }
-    //     });
-
-    //     setImageFiles([]);
-    //     setImagePreviewUrls([]);
-    //     setIsCanvasOpen(true);
-    // };
-
-
+    const [imageBase64, setImageBase64] = useState("");
     const handleDelete = async (id) => {
         try {
             await axios.delete(`https://api.dailyfit.ae/api/admin/delete`, {
@@ -383,7 +340,7 @@ export default function MealPage() {
                         carbohydrates: parseInt(formData.moreDetails.carbohydrates) || 0,
                         allergens: formData.moreDetails.allergens
                     },
-                    images: imageFiles.map((file) => file)
+                    image: imageBase64
                 }, { withCredentials: true });
             }
 
@@ -574,24 +531,13 @@ export default function MealPage() {
                             </div>
 
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700">Package Sizes</label>
-                                <input
-                                    type="text"
-                                    name="package"
-                                    placeholder="Package Sizes (comma-separated)"
-                                    value={formData.package.join(', ')}
-                                    onChange={handlePackageSizeChange}
-                                    className="border p-2 w-full rounded mt-1"
-                                />
-                            </div>
-
-                            <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700">Images</label>
                                 <input
                                     type="file"
                                     multiple
                                     accept="image/*"
-                                    onChange={handleImageChange}
+                                    onChange={  handleImageUpload
+                                    }
                                     className="mt-1 block w-full"
                                 />
 
