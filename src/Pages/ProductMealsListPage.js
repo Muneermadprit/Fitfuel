@@ -223,9 +223,8 @@ const MealPlanShop = () => {
                     </div>
 
                     {/* Promo section column */}
-                    <div className="w-full lg:w-4/12">
+                    {/* <div className="w-full lg:w-4/12">
                         <div className="sticky top-8 mt-16">
-                            {/* Promo Card */}
                             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                                 <div className="p-6">
                                     <div className="flex items-center gap-4">
@@ -248,7 +247,7 @@ const MealPlanShop = () => {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 
