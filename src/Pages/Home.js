@@ -118,7 +118,7 @@ const DilyfitHomePage = () => {
     e.preventDefault();
 
     // Format message for WhatsApp
-    const message = `New Inquiry from Dilyfit Website:
+    const message = `New Inquiry from Daily Fit Website:
 Name: ${formData.name}
 Email: ${formData.email}
 Phone: ${formData.phone}
@@ -129,7 +129,7 @@ Message: ${formData.message}`;
     const encodedMessage = encodeURIComponent(message);
 
     // Replace with your actual WhatsApp number
-    const whatsappNumber = '1234567890';
+    const whatsappNumber = '+918921929760';
 
     // Open WhatsApp with the pre-filled message
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
@@ -245,7 +245,7 @@ Message: ${formData.message}`;
         isOpen={modalIsOpen}
         onRequestClose={() => setModalIsOpen(false)}
         contentLabel="Calorie Calculator"
-        className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60"
+        className="fixed inset-0 flex items-center justify-center  bg-opacity-60"
       >
         <div className="bg-white p-8 rounded-2xl shadow-2xl w-96 relative text-center">
           <button

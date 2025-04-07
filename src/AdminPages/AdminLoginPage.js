@@ -8,10 +8,6 @@ const AdminLogin = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // const validateEmail = (email) => {
-  //   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  // };
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -20,12 +16,6 @@ const AdminLogin = () => {
       setError("Email and password are required");
       return;
     }
-
-    // Uncomment if you want to validate the email format
-    // if (!validateEmail(email)) {
-    //   setError("Invalid email format");
-    //   return;
-    // }
 
     if (password.length < 6) {
       setError("Password must be at least 6 characters");

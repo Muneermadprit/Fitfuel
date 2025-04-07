@@ -99,44 +99,44 @@ const MealPlanner = () => {
   }, []);
 
 
-  const handleSelectionAddOn = async (item) => {
-    console.log(item._id, 'pppp')
-    try {
-      let updatedSelections = [...selectedEnhancements];
+  // const handleSelectionAddOn = async (item) => {
+  //   console.log(item._id, 'pppp')
+  //   try {
+  //     let updatedSelections = [...selectedEnhancements];
 
-      if (updatedSelections.some((selected) => selected._id === item._id)) {
-        // Item is being deselected
-        updatedSelections = updatedSelections.filter((selected) => selected._id !== item._id);
-      } else {
-        // Item is being selected
-        updatedSelections.push(item);
-      }
+  //     if (updatedSelections.some((selected) => selected._id === item._id)) {
+  //       // Item is being deselected
+  //       updatedSelections = updatedSelections.filter((selected) => selected._id !== item._id);
+  //     } else {
+  //       // Item is being selected
+  //       updatedSelections.push(item);
+  //     }
 
-      // Make API call using Axios
-      await axios.post('https://api.dailyfit.ae/api/user/add-addons', {
-        id: item._id,
-      }, { withCredentials: true });
+  //     // Make API call using Axios
+  //     await axios.post('https://api.dailyfit.ae/api/user/add-addons', {
+  //       id: item._id,
+  //     }, { withCredentials: true });
 
-      // Update local state and session storage
-      setSelectedEnhancements(updatedSelections);
-      sessionStorage.setItem("selectedEnhancements", JSON.stringify(updatedSelections));
-    } catch (error) {
-      console.error('Error updating add-ons:', error);
-      // Optional: Handle specific error scenarios
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Server Error:', error.response.data);
-        console.error('Status Code:', error.response.status);
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('No response received');
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error('Error setting up request:', error.message);
-      }
-    }
-  };
+  //     // Update local state and session storage
+  //     setSelectedEnhancements(updatedSelections);
+  //     sessionStorage.setItem("selectedEnhancements", JSON.stringify(updatedSelections));
+  //   } catch (error) {
+  //     console.error('Error updating add-ons:', error);
+  //     // Optional: Handle specific error scenarios
+  //     if (error.response) {
+  //       // The request was made and the server responded with a status code
+  //       // that falls out of the range of 2xx
+  //       console.error('Server Error:', error.response.data);
+  //       console.error('Status Code:', error.response.status);
+  //     } else if (error.request) {
+  //       // The request was made but no response was received
+  //       console.error('No response received');
+  //     } else {
+  //       // Something happened in setting up the request that triggered an Error
+  //       console.error('Error setting up request:', error.message);
+  //     }
+  //   }
+  // };
 
   const handleSelection = async (packageId, identifierPackage) => {
     setSelectedPackageId(packageId);
@@ -204,54 +204,80 @@ const MealPlanner = () => {
       console.error("API Error:", error);
     }
   };
-
+  const formatDate = (dateObj) => {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const handleDateSelection = (date) => {
-    console.log(date, 'oooo')
-    if (isDateDisabled(date)) return;
+    console.log('Raw selected date:', date);
+
+    // Strip time part completely to avoid timezone shifting
+    const cleanDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const selectedDateStr = formatDate(cleanDate);
+
+    if (isDateDisabled(cleanDate)) {
+      console.log('Date is disabled');
+      return;
+    }
+
+    if (selectedDates.includes(selectedDateStr)) {
+      setSelectedDates([]);
+      setSelectedDate(null);
+      sessionStorage.removeItem('startDate');
+      sessionStorage.removeItem('endDate');
+      return;
+    }
 
     let newSelectedDates = [];
 
     if (selectedPlan?.includes("MONTHLY")) {
       const daysToSelect = selectedPlan.includes("5 days") ? 20 : 24;
-      const validDates = [];
-      let currentDate = new Date(date);
-      let daysAdded = 0;
-
-      while (daysAdded < daysToSelect) {
-        if (!isDateDisabled(new Date(currentDate))) {
-          validDates.push(new Date(currentDate));
-          daysAdded++;
-        }
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      newSelectedDates = validDates.map(d => d.toISOString().split('T')[0]);
-    } else if (selectedPlan?.includes("WEEKLY")) {
-      const daysToSelect = selectedPlan.includes("5 days") ? 5 : 6;
-      const validDates = [];
-      let currentDate = new Date(date);
+      let currentDate = new Date(cleanDate);
+      let validDates = [];
 
       while (validDates.length < daysToSelect) {
-        if (!isDateDisabled(new Date(currentDate))) {
-          validDates.push(new Date(currentDate));
+        const dateStr = formatDate(currentDate);
+        if (!isDateDisabled(currentDate)) {
+          validDates.push(dateStr);
         }
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      newSelectedDates = validDates.map(d => d.toISOString().split('T')[0]);
-      console.log(newSelectedDates, '366')
+      newSelectedDates = validDates;
+      sessionStorage.setItem('startDate', validDates[0]);
+      sessionStorage.setItem('endDate', validDates[validDates.length - 1]);
+
+    } else if (selectedPlan?.includes("WEEKLY")) {
+      const daysToSelect = selectedPlan.includes("5 days") ? 5 : 6;
+      let currentDate = new Date(cleanDate);
+      let validDates = [];
+
+      while (validDates.length < daysToSelect) {
+        const dateStr = formatDate(currentDate);
+        if (!isDateDisabled(currentDate)) {
+          validDates.push(dateStr);
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      newSelectedDates = validDates;
+      sessionStorage.setItem('startDate', validDates[0]);
+      sessionStorage.setItem('endDate', validDates[validDates.length - 1]);
+
     } else {
-      newSelectedDates = [date.toISOString().split('T')[0]];
+      // One-day selection fallback
+      newSelectedDates = [selectedDateStr];
+      sessionStorage.setItem('startDate', selectedDateStr);
+      sessionStorage.setItem('endDate', selectedDateStr);
     }
 
+    console.log("✅ Final date range selected:", newSelectedDates);
+
     setSelectedDates(newSelectedDates);
-    console.log(newSelectedDates, 'jjjj')
-    if (newSelectedDates.length > 0) {
-      setSelectedDate(newSelectedDates[0]);
-      const startDate = newSelectedDates[0];
-      const endDate = newSelectedDates[newSelectedDates.length - 1];
-    }
+    setSelectedDate(newSelectedDates[0]);
   };
 
   const isDateDisabled = (date) => {
@@ -418,7 +444,56 @@ const MealPlanner = () => {
     }
   }, []);
 
+  // Function to handle removing an add-on
+  const handleRemoveAddOn = (item) => {
+    const updatedSelections = selectedEnhancements.filter(
+      (selected) => selected._id !== item._id
+    );
+    setSelectedEnhancements(updatedSelections);
+  };
+
+  // Function to handle initial selection of an add-on
+  const handleSelectionAddOn = (item) => {
+    const newItem = { ...item, quantity: 1 };
+    setSelectedEnhancements([...selectedEnhancements, newItem]);
+  };
+
+  // Function to handle quantity change
+  const handleQuantityChange = (item, newQuantity) => {
+    const updatedSelections = selectedEnhancements.map((selected) =>
+      selected._id === item._id
+        ? { ...selected, quantity: newQuantity }
+        : selected
+    );
+    setSelectedEnhancements(updatedSelections);
+  };
+
+  // Function to handle confirming add-ons
+  const handleConfirmAddOns = async () => {
+    try {
+      // Create array with duplicated IDs based on quantity
+      const addOnIds = [];
+      selectedEnhancements.forEach(item => {
+        // Add the ID multiple times based on quantity
+        for (let i = 0; i < item.quantity; i++) {
+          addOnIds.push(item._id);
+        }
+      });
+
+      // Make API call using axios
+      const response = await axios.patch('https://api.dailyfit.ae/api/user/update-addons', {
+        addOns: addOnIds
+      }, { withCredentials: true });
+
+      // Handle successful response
+      console.log('Add-ons updated successfully:', response.data);
+      toast.success('Successfully Added your Addons!')
+    } catch (error) {
+      console.error('Error updating add-ons:', error.response ? error.response.data : error.message);
+    }
+  };
   // Step indicators component
+
   const StepIndicator = ({ step, title, icon }) => {
     const Icon = icon;
     return (
@@ -631,25 +706,6 @@ const MealPlanner = () => {
                           <h3 className="text-xl font-bold text-gray-800 mb-2">{meal.mealName || "Unnamed Meal"}</h3>
                           <p className="text-gray-600 mb-4 line-clamp-2">{meal.description || "No description available"}</p>
                           <div className="flex justify-between items-center">
-                            <div>
-                              {meal.fareDetails ? (
-                                <>
-                                  <span className="line-through text-red-500 text-sm">
-                                    ${meal.fareDetails.strikeOff}
-                                  </span>{" "}
-                                  <span className="text-lg font-bold text-emerald-600">
-                                    ${meal.fareDetails.totalFare}
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="text-lg font-bold text-emerald-600">Price unavailable</span>
-                              )}
-                            </div>
-                            {meal.fareDetails && meal.fareDetails.discount ? (
-                              <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-sm font-medium">
-                                Save ${meal.fareDetails.discount}
-                              </span>
-                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -659,46 +715,6 @@ const MealPlanner = () => {
                       <p className="text-gray-500">No meals available for the selected date.</p>
                     </div>
                   )}
-                  {/* {mealData[selectedDate]?.map((meal) => (
-                    <div
-                      key={meal._id}
-                      className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white group cursor-pointer
-              ${selectedMeals[selectedDate] === meal._id ? 'ring-2 ring-emerald-500' : ''}`}
-                      onClick={() => handleMealSelection(selectedDate, meal._id)}
-                    >
-                      <div className="h-60 overflow-hidden relative">
-                        <img
-                          src={meal.image[0]}
-                          alt={meal.mealName}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        {selectedMeals[selectedDate] === meal._id && (
-                          <div className="absolute top-3 right-3 bg-emerald-500 text-white p-2 rounded-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">{meal.mealName}</h3>
-                        <p className="text-gray-600 mb-4 line-clamp-2">{meal.description}</p>
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <span className="line-through text-red-500 text-sm">
-                              ${meal.fareDetails.strikeOff}
-                            </span>{" "}
-                            <span className="text-lg font-bold text-emerald-600">
-                              ${meal.fareDetails.totalFare}
-                            </span>
-                          </div>
-                          <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-sm font-medium">
-                            Save ${meal.fareDetails.discount}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))} */}
                 </div>
               </div>
 
@@ -753,46 +769,76 @@ const MealPlanner = () => {
 
       case 3:
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {addons.map((item) => {
-              const isSelected = selectedEnhancements.some((selected) => selected._id === item._id);
+          <div className="flex flex-col">
+            <h2 className="text-xl font-semibold text-gray-800 mb-6">
+              Choose Your Add-ons <span className="text-sm text-gray-500">(Optional) If u dont need You can Skip!</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {addons.map((item) => {
+                const isSelected = selectedEnhancements.some((selected) => selected._id === item._id);
+                const selectedItem = selectedEnhancements.find((selected) => selected._id === item._id);
+                const quantity = selectedItem ? selectedItem.quantity || 1 : 0;
 
-              return (
-                <div
-                  key={item._id}
-                  className={`rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative group
-                ${isSelected ? "ring-2 ring-emerald-500" : "hover:ring-1 hover:ring-emerald-200"}
-              `}
-                  onClick={() => handleSelectionAddOn(item)}
-                  role="checkbox"
-                  aria-checked={isSelected}
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleSelectionAddOn(item);
-                    }
-                  }}
-                >
-                  <div className="h-40 overflow-hidden">
-                    <img
-                      src={item.image[0]}
-                      alt={item.mealName}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                  <div className="p-6 text-center">
-                    <h3 className="text-lg font-bold text-gray-800 mb-1">{item.mealName}</h3>
-                    <p className="text-emerald-600 font-medium">
-                      AED {item.fareDetails.totalFare.toFixed(2)} / day
-                    </p>
-
-                    <div
-                      className={`mt-3 py-1 px-3 rounded-full text-sm font-medium transition-all duration-300
-                    ${isSelected ? "bg-emerald-100 text-emerald-700" : "bg-gray-50 text-gray-500"}
+                return (
+                  <div
+                    key={item._id}
+                    className={`rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 relative group
+                    ${isSelected ? "ring-2 ring-emerald-500" : ""}
                   `}
-                    >
-                      {isSelected ? "Selected" : "Click to select"}
+                    role="region"
+                    aria-label={`${item.mealName} add-on option`}
+                  >
+                    <div className="h-40 overflow-hidden">
+                      <img
+                        src={item.image[0]}
+                        alt={item.mealName}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                    <div className="p-6 text-center">
+                      <h3 className="text-lg font-bold text-gray-800 mb-1">{item.mealName}</h3>
+                      <p className="text-emerald-600 font-medium">
+                        AED {item.fareDetails.totalFare.toFixed(2)} / day
+                      </p>
+
+                      <div className="mt-4 flex items-center justify-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (quantity > 0) {
+                              if (quantity === 1) {
+                                handleRemoveAddOn(item);
+                              } else {
+                                handleQuantityChange(item, quantity - 1);
+                              }
+                            }
+                          }}
+                          className={`bg-emerald-500 hover:bg-emerald-600 text-white rounded-full w-8 h-8 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-emerald-300 ${quantity === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          aria-label="Decrease quantity"
+                          disabled={quantity === 0}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        <span className="mx-3 font-medium text-gray-700 min-w-[24px] text-center">{quantity}</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (quantity === 0) {
+                              handleSelectionAddOn(item);
+                            } else {
+                              handleQuantityChange(item, quantity + 1);
+                            }
+                          }}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full w-8 h-8 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                          aria-label="Increase quantity"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
 
                     {isSelected && (
@@ -812,9 +858,25 @@ const MealPlanner = () => {
                       </div>
                     )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            {/* Confirmation button */}
+            {selectedEnhancements.length > 0 && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={handleConfirmAddOns}
+                  className="py-3 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-base font-medium transition-all duration-300 shadow-md flex items-center space-x-2"
+                  aria-label="Confirm selected add-ons"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span>Confirm Add-ons</span>
+                </button>
+              </div>
+            )}
           </div>
         );
 
@@ -827,7 +889,11 @@ const MealPlanner = () => {
                 <ToastContainer />
                 <div className="mb-6 text-center">
                   <h2 className="text-2xl font-bold text-gray-800 mb-2">Shipping Address</h2>
-                  <p className="text-gray-600">If you have already added your address, you can skip this step</p>
+                  <p className="bg-yellow-100 text-green-700 font-semibold px-3 py-2 rounded-md">
+                    If you have already added your address, you can skip this step
+                  </p>
+
+                  {/* <p className="text-gray-600">If you have already added your address, you can skip this step</p> */}
                 </div>
                 <form className="space-y-6" onSubmit={handleAddressSubmit}>
                   <div className="grid grid-cols-2 gap-6">
@@ -1053,8 +1119,8 @@ const MealPlanner = () => {
           <p className="text-gray-600">
             {activeStep === 1 ? 'Select a meal plan that fits your lifestyle' :
               activeStep === 2 ? 'Customize your weekly menu' :
-                activeStep === 3 ? 'Tell us how to reach you' :
-                  'Where should we deliver your meals?'}
+                activeStep === 3 ? 'Add your Addon Products' :
+                  'Where should we deliver your meals? '}
           </p>
         </div>
 

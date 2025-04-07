@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ShoppingBag, Calendar, MapPin, Gift } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const MealPlanner = () => {
   const location = useLocation();
@@ -50,7 +52,14 @@ const MealPlanner = () => {
 
     try {
       const response = await axios.post("https://api.dailyfit.ae/api/user/add-address", payload, { withCredentials: true });
-      alert("Address added successfully!");
+      toast.success("Address added successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       console.log("Response:", response.data);
     } catch (error) {
       alert("Failed to add address. Please try again.");
@@ -73,13 +82,6 @@ const MealPlanner = () => {
       shippingAddress: sessionStorage.getItem('shippingAddress') ? JSON.parse(sessionStorage.getItem('shippingAddress')) : {},
       paymentMethod: sessionStorage.getItem('paymentMethod') || ''
     };
-
-    // Save selected meals to session storage
-    // sessionStorage.setItem('selectedMeals', JSON.stringify(selectedMeals));
-
-    // sessionStorage.setItem('checkoutData', JSON.stringify(formData));
-    // console.log('Selections saved to session storage');
-    // console.log('Selected meals saved:', selectedMeals);
   };
   const [addons, setAddons] = useState([]);
 
@@ -152,11 +154,34 @@ const MealPlanner = () => {
         const formattedMeals = {};
 
         packages.forEach((pkg) => {
-          Object.entries(pkg.meals).forEach(([day, mealInfo]) => {
-            const date = mealInfo.date;
-            formattedMeals[date] = mealInfo.meals;
-          });
+          // Check if pkg.meals exists and is an object
+          if (pkg.meals && typeof pkg.meals === 'object') {
+            Object.entries(pkg.meals).forEach(([day, dayData]) => {
+              // Check if the dayData has a date property
+              if (dayData.date) {
+                const date = dayData.date;
+
+                // Use mealsDetails if available, otherwise use meals
+                const mealsList = dayData.mealsDetails && dayData.mealsDetails.length > 0
+                  ? dayData.mealsDetails
+                  : (dayData.meals && dayData.meals.length > 0 ? dayData.meals : []);
+
+                // Only add to formattedMeals if there are meals for this day
+                if (mealsList.length > 0) {
+                  // Make sure each meal has an image property that's an array
+                  const processedMeals = mealsList.map(meal => ({
+                    ...meal,
+                    image: meal.image && Array.isArray(meal.image) ? meal.image : ['/placeholder-image.jpg']
+                  }));
+
+                  formattedMeals[date] = processedMeals;
+                }
+              }
+            });
+          }
         });
+
+        console.log("Formatted Meals:", formattedMeals); // Debug log
 
         setMealData(formattedMeals);
         const availableDates = Object.keys(formattedMeals);
@@ -173,7 +198,6 @@ const MealPlanner = () => {
           });
 
           setSelectedMeals(initialSelectedMeals);
-          // sessionStorage.setItem("selectedMeals", JSON.stringify(initialSelectedMeals));
         }
       }
     } catch (error) {
@@ -227,10 +251,6 @@ const MealPlanner = () => {
       setSelectedDate(newSelectedDates[0]);
       const startDate = newSelectedDates[0];
       const endDate = newSelectedDates[newSelectedDates.length - 1];
-
-      // sessionStorage.setItem('startDate', startDate);
-      // sessionStorage.setItem('endDate', endDate);
-      // console.log('Saved to session storage:', { startDate, endDate });
     }
   };
 
@@ -339,7 +359,8 @@ const MealPlanner = () => {
     } else {
       setCurrentMonth(currentMonth - 1);
     }
-  }; const handleCompleteOrder = async () => {
+  };
+  const handleCompleteOrder = async () => {
     const packageId = sessionStorage.getItem("package");
     const startDate = sessionStorage.getItem("startDate");
     const endDate = sessionStorage.getItem("endDate");
@@ -375,7 +396,7 @@ const MealPlanner = () => {
 
     try {
       const response = await axios.post("https://api.dailyfit.ae/api/user/add-to-cart", payload, { withCredentials: true });
-      alert("Order completed successfully!");
+      toast.success('Successfully Completed your order! wait for Payment')
       window.location.href = '/summary';
       console.log("Response:", response.data);
     } catch (error) {
@@ -396,6 +417,51 @@ const MealPlanner = () => {
       setSelectedMeals(JSON.parse(savedMeals));
     }
   }, []);
+  const handleQuantityChange = async (item, newQuantity) => {
+    try {
+      // First update the UI for immediate feedback
+      const updatedItem = { ...item, quantity: newQuantity };
+
+      const updatedSelections = selectedEnhancements.map(selected =>
+        selected._id === item._id ? updatedItem : selected
+      );
+
+      // Update local state and session storage for immediate UI feedback
+      setSelectedEnhancements(updatedSelections);
+      // sessionStorage.setItem("selectedEnhancements", JSON.stringify(updatedSelections));
+
+      // Then call the API to update the server using Axios
+      await axios.post('https://api.dailyfit.ae/api/user/add-addons', {
+        id: item._id,
+      }, { withCredentials: true });
+
+    } catch (error) {
+      console.error('Error updating add-on quantity:', error);
+      // Error handling matching your existing pattern
+      if (error.response) {
+        console.error('Server Error:', error.response.data);
+        console.error('Status Code:', error.response.status);
+      } else if (error.request) {
+        console.error('No response received');
+      } else {
+        console.error('Error setting up request:', error.message);
+      }
+
+      // Optionally revert the UI change if the API call fails
+      // You could restore the previous state here
+    }
+  };
+
+
+  // const handleQuantityChange = (item, newQuantity) => {
+  //   setSelectedEnhancements(prev => 
+  //     prev.map(selected => 
+  //       selected._id === item._id 
+  //         ? { ...selected, quantity: newQuantity }
+  //         : selected
+  //     )
+  //   );
+  // };
 
   // Step indicators component
   const StepIndicator = ({ step, title, icon }) => {
@@ -417,6 +483,7 @@ const MealPlanner = () => {
       case 1:
         return (
           <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-6">
+            <ToastContainer />
             <div className="max-w-7xl mx-auto">
               {/* Header Section */}
               <div className="text-center mb-12 space-y-4">
@@ -540,6 +607,7 @@ const MealPlanner = () => {
 
         return (
           <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-6">
+            <ToastContainer />
             <div className="max-w-7xl mx-auto">
               <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
                 <div>
@@ -576,7 +644,67 @@ const MealPlanner = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-                  {mealData[selectedDate]?.map((meal) => (
+                  {selectedDate && mealData[selectedDate] ? (
+                    mealData[selectedDate].map((meal) => (
+                      <div
+                        key={meal._id}
+                        className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white group cursor-pointer
+      ${selectedMeals[selectedDate] === meal._id ? 'ring-2 ring-emerald-500' : ''}`}
+                        onClick={() => handleMealSelection(selectedDate, meal._id)}
+                      >
+                        <div className="h-60 overflow-hidden relative">
+                          {meal.image && meal.image.length > 0 ? (
+                            <img
+                              src={meal.image[0]}
+                              alt={meal.mealName}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-gray-400">No image available</span>
+                            </div>
+                          )}
+                          {selectedMeals[selectedDate] === meal._id && (
+                            <div className="absolute top-3 right-3 bg-emerald-500 text-white p-2 rounded-full flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-6">
+                          <h3 className="text-xl font-bold text-gray-800 mb-2">{meal.mealName || "Unnamed Meal"}</h3>
+                          <p className="text-gray-600 mb-4 line-clamp-2">{meal.description || "No description available"}</p>
+                          <div className="flex justify-between items-center">
+                            <div>
+                              {meal.fareDetails ? (
+                                <>
+                                  <span className="line-through text-red-500 text-sm">
+                                    ${meal.fareDetails.strikeOff}
+                                  </span>{" "}
+                                  <span className="text-lg font-bold text-emerald-600">
+                                    ${meal.fareDetails.totalFare}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-lg font-bold text-emerald-600">Price unavailable</span>
+                              )}
+                            </div>
+                            {meal.fareDetails && meal.fareDetails.discount ? (
+                              <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-sm font-medium">
+                                Save ${meal.fareDetails.discount}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-3 py-10 text-center">
+                      <p className="text-gray-500">No meals available for the selected date.</p>
+                    </div>
+                  )}
+                  {/* {mealData[selectedDate]?.map((meal) => (
                     <div
                       key={meal._id}
                       className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white group cursor-pointer
@@ -615,7 +743,7 @@ const MealPlanner = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ))} */}
                 </div>
               </div>
 
@@ -673,23 +801,17 @@ const MealPlanner = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {addons.map((item) => {
               const isSelected = selectedEnhancements.some((selected) => selected._id === item._id);
+              const selectedItem = selectedEnhancements.find((selected) => selected._id === item._id);
+              const quantity = selectedItem ? selectedItem.quantity || 1 : 0;
 
               return (
                 <div
                   key={item._id}
-                  className={`rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative group
-                ${isSelected ? "ring-2 ring-emerald-500" : "hover:ring-1 hover:ring-emerald-200"}
-              `}
-                  onClick={() => handleSelectionAddOn(item)}
-                  role="checkbox"
-                  aria-checked={isSelected}
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleSelectionAddOn(item);
-                    }
-                  }}
+                  className={`rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 relative group
+          ${isSelected ? "ring-2 ring-emerald-500" : "hover:ring-1 hover:ring-emerald-200"}
+        `}
+                  role="region"
+                  aria-label={`${item.mealName} add-on option`}
                 >
                   <div className="h-40 overflow-hidden">
                     <img
@@ -704,147 +826,256 @@ const MealPlanner = () => {
                       AED {item.fareDetails.totalFare.toFixed(2)} / day
                     </p>
 
-                    <div
-                      className={`mt-3 py-1 px-3 rounded-full text-sm font-medium transition-all duration-300
-                    ${isSelected ? "bg-emerald-100 text-emerald-700" : "bg-gray-50 text-gray-500"}
-                  `}
-                    >
-                      {isSelected ? "Selected" : "Click to select"}
-                    </div>
-
-                    {isSelected && (
-                      <div className="absolute top-3 right-3 bg-emerald-500 text-white p-1 rounded-full shadow-md">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
+                    {isSelected ? (
+                      <div className="mt-4 flex items-center justify-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleQuantityChange(item, quantity + 1);
+                          }}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full w-8 h-8 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                          aria-label="Increase quantity"
                         >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        <span className="mx-3 font-medium text-gray-700 min-w-[24px]">{quantity}</span>
+                        <div className="w-8 h-8"></div> {/* Spacer to keep the quantity centered */}
                       </div>
+                    ) : (
+                      <button
+                        onClick={() => handleSelectionAddOn(item)}
+                        className="mt-4 py-2 px-4 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-full text-sm font-medium transition-all duration-300 w-full"
+                        aria-label="Select add-on"
+                      >
+                        Select
+                      </button>
                     )}
                   </div>
+
+                  {isSelected && (
+                    <div className="absolute top-3 right-3 bg-emerald-500 text-white p-1 rounded-full shadow-md">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
+          // <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          //   {addons.map((item) => {
+          //     const isSelected = selectedEnhancements.some((selected) => selected._id === item._id);
+
+          //     return (
+          //       <div
+          //         key={item._id}
+          //         className={`rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer relative group
+          //       ${isSelected ? "ring-2 ring-emerald-500" : "hover:ring-1 hover:ring-emerald-200"}
+          //     `}
+          //         onClick={() => handleSelectionAddOn(item)}
+          //         role="checkbox"
+          //         aria-checked={isSelected}
+          //         tabIndex={0}
+          //         onKeyDown={(e) => {
+          //           if (e.key === "Enter" || e.key === " ") {
+          //             e.preventDefault();
+          //             handleSelectionAddOn(item);
+          //           }
+          //         }}
+          //       >
+          //         <div className="h-40 overflow-hidden">
+          //           <img
+          //             src={item.image[0]}
+          //             alt={item.mealName}
+          //             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          //           />
+          //         </div>
+          //         <div className="p-6 text-center">
+          //           <h3 className="text-lg font-bold text-gray-800 mb-1">{item.mealName}</h3>
+          //           <p className="text-emerald-600 font-medium">
+          //             AED {item.fareDetails.totalFare.toFixed(2)} / day
+          //           </p>
+
+          //           <div
+          //             className={`mt-3 py-1 px-3 rounded-full text-sm font-medium transition-all duration-300
+          //           ${isSelected ? "bg-emerald-100 text-emerald-700" : "bg-gray-50 text-gray-500"}
+          //         `}
+          //           >
+          //             {isSelected ? "Selected" : "Click to select"}
+          //           </div>
+
+          //           {isSelected && (
+          //             <div className="absolute top-3 right-3 bg-emerald-500 text-white p-1 rounded-full shadow-md">
+          //               <svg
+          //                 xmlns="http://www.w3.org/2000/svg"
+          //                 className="h-5 w-5"
+          //                 viewBox="0 0 20 20"
+          //                 fill="currentColor"
+          //               >
+          //                 <path
+          //                   fillRule="evenodd"
+          //                   d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+          //                   clipRule="evenodd"
+          //                 />
+          //               </svg>
+          //             </div>
+          //           )}
+          //         </div>
+          //       </div>
+          //     );
+          //   })}
+          // </div>
         );
 
       case 4:
         return (
-          <div className="max-w-2xl mx-auto">
-            <form className="space-y-6" onSubmit={handleAddressSubmit}>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
-                  <input
-                    type="text"
-                    name="street"
-                    value={formData.street}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Building Floor</label>
-                  <input
-                    type="text"
-                    name="buildingFloor"
-                    value={formData.buildingFloor}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">House/Flat Number</label>
-                  <input
-                    type="text"
-                    name="houseOrFlatNumber"
-                    value={formData.houseOrFlatNumber}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Landmark</label>
-                  <input
-                    type="text"
-                    name="landmark"
-                    value={formData.landmark}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
-                  <input
-                    type="text"
-                    name="postalCode"
-                    value={formData.postalCode}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                  <input
-                    type="text"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
-                    required
-                  />
-                </div>
-              </div>
 
-              <button
-                type="submit"
-                className="w-full bg-[#059033] text-white py-3 rounded-xl font-medium transition"
-              >
-                Submit Address
-              </button>
-            </form>
+          <div className="max-w-2xl mx-auto">
+            {sessionStorage.getItem('userType') === '1' ? (
+              <>
+                <ToastContainer />
+                <div className="mb-6 text-center">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Shipping Address</h2>
+                  <p className="text-gray-600">If you have already added your address, you can skip this step</p>
+                </div>
+                <form className="space-y-6" onSubmit={handleAddressSubmit}>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
+                      <input
+                        type="text"
+                        name="street"
+                        value={formData.street}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Building Floor</label>
+                      <input
+                        type="text"
+                        name="buildingFloor"
+                        value={formData.buildingFloor}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">House/Flat Number</label>
+                      <input
+                        type="text"
+                        name="houseOrFlatNumber"
+                        value={formData.houseOrFlatNumber}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Landmark</label>
+                      <input
+                        type="text"
+                        name="landmark"
+                        value={formData.landmark}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                      <input
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
+                      <input
+                        type="text"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
+                      <input
+                        type="text"
+                        name="postalCode"
+                        value={formData.postalCode}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                      <input
+                        type="text"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0"
+                        required />
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-4">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#059033] text-white py-3 rounded-xl font-medium transition hover:bg-[#047029]"
+                    >
+                      Submit Address
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveSelectionsToSessionStorage();
+                        handleCompleteOrder();
+                      }}
+                      className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-medium transition hover:bg-gray-300"
+                    >
+                      Skip
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="text-center py-10">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Please Login to Continue</h2>
+                  <p className="text-gray-600">You need to be logged in to access this feature</p>
+                </div>
+                <button
+                  onClick={() => window.location.href = '/Order'}
+                  className="bg-[#059033] text-white py-3 px-8 rounded-xl font-medium transition hover:bg-[#047029]"
+                >
+                  Go to Login
+                </button>
+              </div>
+            )}
           </div>
         );
     }
@@ -866,6 +1097,14 @@ const MealPlanner = () => {
     const formattedData = {
       selectedMeals: selectedMealsArray,
     };
+    toast.success("Menu added successfully!", {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     console.log("Selected Products:", formattedData);
     console.log("Start Date:", startDate);
     console.log("End Date:", endDate);
@@ -944,12 +1183,45 @@ const MealPlanner = () => {
 
         {/* Navigation */}
         <div className="flex justify-between mt-12">
-          {/* <button
-            onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
+          <button
+            onClick={handleBackClick}
             className="px-6 py-2 rounded-xl border-2 border-[#059033] text-[#059033] hover:bg-green-50"
           >
             Back
-          </button> */}
+          </button>
+          {activeStep === 4 ? (
+            sessionStorage.getItem('userType') === '1' ? (
+              <button
+                onClick={() => {
+                  saveSelectionsToSessionStorage();
+                  handleCompleteOrder(); // Call API on final step
+                  setActiveStep(Math.min(5, activeStep + 1));
+                }}
+                className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
+              >
+                Complete Order
+              </button>
+            ) : (
+              <button
+                onClick={() => window.location.href = '/Order'}
+                className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
+              >
+                Login to Complete Order
+              </button>
+            )
+          ) : (
+            <button
+              onClick={() => {
+                saveSelectionsToSessionStorage();
+                setActiveStep(Math.min(5, activeStep + 1));
+              }}
+              className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
+            >
+              Continue
+            </button>
+          )}
+        </div>
+        {/* <div className="flex justify-between mt-12">
           <button
             onClick={handleBackClick}
             className="px-6 py-2 rounded-xl border-2 border-[#059033] text-[#059033] hover:bg-green-50"
@@ -968,62 +1240,10 @@ const MealPlanner = () => {
           >
             {activeStep === 4 ? "Complete Order" : "Continue"}
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );
 };
 
 export default MealPlanner;
-
-
-
-
-// First, change your state initialization and API call
-const [meals, setMeals] = useState([]);
-
-useEffect(() => {
-  axios.get("https://api.dailyfit.ae/api/user/get-meals", { withCredentials: true })
-    .then(response => {
-      setMeals(response.data.data); // Set to response.data.data to access the meals array
-    })
-    .catch(error => {
-      console.error("Error fetching meals:", error);
-    });
-}, []);
-
-// Then update your rendering code
-{meals.map((meal) => (
-  <div key={meal._id} className="w-full md:w-1/3 flex-shrink-0 px-4">
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition duration-300">
-      <img
-        src={meal.image[0] || "https://t4.ftcdn.net/jpg/03/61/86/91/360_F_361869194_7JGmIOSj2iUNi0AYoVhVyhKvaN6PkOah.jpg"}
-        alt={meal.mealName}
-        className="w-full h-48 object-cover"
-      />
-      <div className="p-6">
-        <span className="text-sm text-green-600 font-semibold">
-          {meal.categoryDetails.length > 0 ? meal.categoryDetails[0].categoryName : "Uncategorized"}
-        </span>
-        <h3 className="text-xl font-bold mt-1 text-gray-800">{meal.mealName}</h3>
-        <div className="flex items-center mt-2">
-          {/* Since rating isn't in your API response, we can either remove this or set default */}
-          {[...Array(5)].map((_, i) => (
-            <Star
-              key={i}
-              size={16}
-              className={i < 4 ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
-            />
-          ))}
-          <span className="ml-2 text-gray-600 text-sm">4.0</span>
-        </div>
-        <div className="mt-4 flex items-center justify-between">
-          <span className="text-2xl font-bold text-gray-800">${meal.fareDetails.totalFare.toFixed(2)}</span>
-          <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
-            Add to Cart
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-))}
