@@ -2,7 +2,8 @@
 // import axios from 'axios';
 // import {
 //     ChevronDown, ChevronUp, Plus, Edit, Trash2,
-//     Home, ShoppingBag, UserCircle, Settings, LogOut
+//     Home, ShoppingBag, UserCircle, Settings, LogOut,
+//     AlertCircle, CheckCircle, XCircle, RefreshCw
 // } from 'lucide-react';
 // import logo from '../images/logo.png'
 
@@ -206,6 +207,24 @@
 //     );
 // };
 
+// // Helper component for payment status
+// const PaymentStatusBadge = ({ status }) => {
+//     const statusMap = {
+//         0: { label: 'Payment Pending', icon: AlertCircle, className: 'bg-yellow-100 text-yellow-800' },
+//         1: { label: 'Payment Successful', icon: CheckCircle, className: 'bg-green-100 text-green-800' },
+//         2: { label: 'Payment Failed', icon: XCircle, className: 'bg-red-100 text-red-800' }
+//     };
+
+//     const { label, icon: Icon, className } = statusMap[status] || statusMap[0];
+
+//     return (
+//         <div className={`flex items-center px-3 py-1 rounded-full ${className}`}>
+//             <Icon size={16} className="mr-1" />
+//             <span className="text-sm font-medium">{label}</span>
+//         </div>
+//     );
+// };
+
 // // Main User Profile Component
 // const UserProfile = () => {
 //     const [activeTab, setActiveTab] = useState('profile');
@@ -214,6 +233,7 @@
 //     const [packageDetails, setPackageDetails] = useState({});
 //     const [loading, setLoading] = useState(true);
 //     const [error, setError] = useState(null);
+//     const [processingPayment, setProcessingPayment] = useState(null);
 
 //     // New state for address management
 //     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -270,6 +290,35 @@
 //         // Fetch package details if not already fetched
 //         await fetchPackageDetails(order.orderID);
 //         setExpandedOrderId(order.orderID);
+//     };
+
+//     // Handler for retrying payment
+//     const handleRetryPayment = async (order) => {
+//         try {
+//             setProcessingPayment(order.orderID);
+//             // Call API to retry payment
+//             const response = await axios.post('https://api.dailyfit.ae/api/user/retry-payment', {
+//                 orderID: order.orderID
+//             }, { withCredentials: true });
+
+//             if (response.data && response.data.success) {
+//                 // If success, you might need to redirect to payment gateway or update status
+//                 if (response.data.paymentUrl) {
+//                     window.location.href = response.data.paymentUrl;
+//                 } else {
+//                     // Refresh profile data to get updated payment status
+//                     const profileResponse = await axios.get('https://api.dailyfit.ae/api/user/get-profile', { withCredentials: true });
+//                     setProfileData(profileResponse.data.data);
+//                 }
+//             } else {
+//                 alert("Failed to initiate payment retry. Please try again later.");
+//             }
+//         } catch (err) {
+//             console.error('Error retrying payment', err);
+//             alert("Failed to retry payment. Please try again later.");
+//         } finally {
+//             setProcessingPayment(null);
+//         }
 //     };
 
 //     // Add new address
@@ -337,6 +386,18 @@
 //         } catch (err) {
 //             console.error('Logout error', err);
 //         }
+//     };
+
+//     // Helper to get meal plan name and details
+//     const getMealPlanDetails = (order) => {
+//         if (order && order.selectedMeals && order.selectedMeals.package && order.selectedMeals.package.plan) {
+//             return {
+//                 name: order.selectedMeals.package.plan.mealPlanName || "Meal Plan",
+//                 description: order.selectedMeals.package.plan.description || "",
+//                 image: order.selectedMeals.package.plan.image && order.selectedMeals.package.plan.image[0]
+//             };
+//         }
+//         return { name: "Meal Plan", description: "", image: null };
 //     };
 
 //     // Loading state
@@ -420,45 +481,49 @@
 //                                 </button>
 //                             </div>
 //                             <div className="space-y-4">
-//                                 {profileData.savedAddress.map((address, index) => (
-//                                     <div
-//                                         key={index}
-//                                         className="border-b pb-4 last:border-b-0 flex justify-between items-center hover:bg-green-50 p-3 rounded transition"
-//                                     >
-//                                         <div>
-//                                             <p className="font-semibold text-green-900">{address.street}</p>
-//                                             <p className="text-gray-600">{address.buildingFloor}, {address.houseOrFlatNumber}</p>
-//                                             <p className="text-gray-600">{address.landmark}</p>
-//                                             <p className="text-gray-600">
-//                                                 {address.city}, {address.state} {address.postalCode}
-//                                             </p>
-//                                             <p className="text-gray-600">{address.country}</p>
-//                                             <p className="text-gray-600">Phone: {address.phone}</p>
-//                                             {address.identifier && (
-//                                                 <span className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded mt-2 inline-block">
-//                                                     {address.identifier}
-//                                                 </span>
-//                                             )}
+//                                 {profileData.savedAddress && profileData.savedAddress.length > 0 ? (
+//                                     profileData.savedAddress.map((address, index) => (
+//                                         <div
+//                                             key={index}
+//                                             className="border-b pb-4 last:border-b-0 flex justify-between items-center hover:bg-green-50 p-3 rounded transition"
+//                                         >
+//                                             <div>
+//                                                 <p className="font-semibold text-green-900">{address.street}</p>
+//                                                 <p className="text-gray-600">{address.buildingFloor}, {address.houseOrFlatNumber}</p>
+//                                                 <p className="text-gray-600">{address.landmark}</p>
+//                                                 <p className="text-gray-600">
+//                                                     {address.city}, {address.state} {address.postalCode}
+//                                                 </p>
+//                                                 <p className="text-gray-600">{address.country}</p>
+//                                                 <p className="text-gray-600">Phone: {address.phone}</p>
+//                                                 {address.identifier && (
+//                                                     <span className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded mt-2 inline-block">
+//                                                         {address.identifier}
+//                                                     </span>
+//                                                 )}
+//                                             </div>
+//                                             <div className="flex space-x-2">
+//                                                 <button
+//                                                     onClick={() => {
+//                                                         setEditingAddress(address);
+//                                                         setIsAddressModalOpen(true);
+//                                                     }}
+//                                                     className="text-green-500 hover:bg-green-100 p-2 rounded"
+//                                                 >
+//                                                     <Edit size={20} />
+//                                                 </button>
+//                                                 <button
+//                                                     onClick={() => handleDeleteAddress(address)}
+//                                                     className="text-red-500 hover:bg-red-100 p-2 rounded"
+//                                                 >
+//                                                     <Trash2 size={20} />
+//                                                 </button>
+//                                             </div>
 //                                         </div>
-//                                         <div className="flex space-x-2">
-//                                             <button
-//                                                 onClick={() => {
-//                                                     setEditingAddress(address);
-//                                                     setIsAddressModalOpen(true);
-//                                                 }}
-//                                                 className="text-green-500 hover:bg-green-100 p-2 rounded"
-//                                             >
-//                                                 <Edit size={20} />
-//                                             </button>
-//                                             <button
-//                                                 onClick={() => handleDeleteAddress(address)}
-//                                                 className="text-red-500 hover:bg-red-100 p-2 rounded"
-//                                             >
-//                                                 <Trash2 size={20} />
-//                                             </button>
-//                                         </div>
-//                                     </div>
-//                                 ))}
+//                                     ))
+//                                 ) : (
+//                                     <p className="text-gray-500">No saved addresses found.</p>
+//                                 )}
 //                             </div>
 //                         </div>
 //                     </div>
@@ -475,104 +540,141 @@
 //                             <p className="text-red-500">Something went wrong while loading your orders.</p>
 //                         ) : profileData?.orders?.length > 0 ? (
 //                             <div className="space-y-4">
-//                                 {profileData.orders.map((order, index) => (
-//                                     <div key={index} className="border rounded-lg hover:shadow-md transition">
-//                                         {/* Order Summary */}
-//                                         <div
-//                                             className="p-4 flex justify-between items-center hover:bg-green-50 cursor-pointer transition-colors"
-//                                             onClick={() => handleExpandOrder(order)}
-//                                         >
-//                                             <div>
-//                                                 <p className="font-semibold text-green-900">Order ID: {order.orderID}</p>
-//                                                 <p className="text-green-600">{order.selectedPackage.packageName}</p>
-//                                                 <div className="flex mt-2">
-//                                                     <p className="text-sm text-green-500 mr-4">
-//                                                         Start Date: {order.selectedPackage.startDate}
-//                                                     </p>
-//                                                     <p className="text-sm text-green-500">
-//                                                         End Date: {order.selectedPackage.endDate}
-//                                                     </p>
+//                                 {profileData.orders.map((order, index) => {
+//                                     const mealPlan = getMealPlanDetails(order);
+//                                     return (
+//                                         <div key={index} className="border rounded-lg hover:shadow-md transition">
+//                                             {/* Order Summary */}
+//                                             <div className="p-4 flex flex-col md:flex-row md:justify-between md:items-center hover:bg-green-50 transition-colors">
+//                                                 <div className="flex flex-col md:flex-row md:items-center gap-4 mb-3 md:mb-0 flex-grow">
+//                                                     {/* Plan Image */}
+//                                                     {mealPlan.image && (
+//                                                         <img
+//                                                             src={mealPlan.image}
+//                                                             alt={mealPlan.name}
+//                                                             className="w-16 h-16 object-contain rounded-lg"
+//                                                         />
+//                                                     )}
+
+//                                                     {/* Order Info */}
+//                                                     <div>
+//                                                         <div className="flex flex-wrap items-center gap-2 mb-1">
+//                                                             <p className="font-semibold text-green-900">Order #{order.orderID}</p>
+//                                                             <PaymentStatusBadge status={order.paymentStatus} />
+//                                                         </div>
+//                                                         <p className="text-green-600 font-medium capitalize">{mealPlan.name}</p>
+//                                                         <p className="text-gray-600">{mealPlan.description}</p>
+//                                                         <div className="flex flex-wrap gap-4 mt-2">
+//                                                             <p className="text-sm text-green-500">
+//                                                                 Start: {new Date(order.startDate).toLocaleDateString()}
+//                                                             </p>
+//                                                             <p className="text-sm text-green-500">
+//                                                                 End: {new Date(order.endDate).toLocaleDateString()}
+//                                                             </p>
+//                                                             <p className="text-sm text-green-500">
+//                                                                 Amount: AED {order.amount}
+//                                                             </p>
+//                                                         </div>
+//                                                     </div>
+//                                                 </div>
+
+//                                                 {/* Action Buttons */}
+//                                                 <div className="flex items-center gap-2">
+//                                                     {/* Retry Payment Button (only show for failed payments) */}
+//                                                     {order.paymentStatus === 2 && (
+//                                                         <button
+//                                                             onClick={() => handleRetryPayment(order)}
+//                                                             disabled={processingPayment === order.orderID}
+//                                                             className={`flex items-center px-3 py-2 rounded ${processingPayment === order.orderID
+//                                                                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+//                                                                 : 'bg-red-600 text-white hover:bg-red-700'
+//                                                                 } transition`}
+//                                                         >
+//                                                             {processingPayment === order.orderID ? (
+//                                                                 <>
+//                                                                     <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+//                                                                     Processing...
+//                                                                 </>
+//                                                             ) : (
+//                                                                 <>
+//                                                                     <RefreshCw size={16} className="mr-2" /> Retry Payment
+//                                                                 </>
+//                                                             )}
+//                                                         </button>
+//                                                     )}
+
+//                                                     {/* View Details Button */}
+//                                                     <button
+//                                                         onClick={() => handleExpandOrder(order)}
+//                                                         className="flex items-center text-green-500 hover:bg-green-100 p-2 rounded transition"
+//                                                     >
+//                                                         {expandedOrderId === order.orderID ? <ChevronUp /> : <ChevronDown />}
+//                                                     </button>
 //                                                 </div>
 //                                             </div>
-//                                             <div>
-//                                                 {expandedOrderId === order.orderID ? (
-//                                                     <ChevronUp className="text-green-500" />
-//                                                 ) : (
-//                                                     <Plus className="text-green-500" />
-//                                                 )}
-//                                             </div>
-//                                         </div>
 
-//                                         {/* Expandable Package Details */}
-//                                         {expandedOrderId === order.orderID && packageDetails[order.orderID] && (
-//                                             <div className="p-4 bg-green-50 border-t">
-//                                                 {packageDetails[order.orderID].data[0].meals.day1.mealsDetails.map((meal, mealIndex) => (
-//                                                     <div
-//                                                         key={mealIndex}
-//                                                         className="mb-4 bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500"
-//                                                     >
-//                                                         <div className="flex items-start gap-4 mb-3">
-//                                                             {meal.image.length > 0 && (
-//                                                                 <img
-//                                                                     src={meal.image[0]}
-//                                                                     alt={meal.mealName}
-//                                                                     className="w-24 h-24 object-cover rounded shadow"
-//                                                                 />
+//                                             {/* Expandable Package Details */}
+//                                             {expandedOrderId === order.orderID && packageDetails[order.orderID] &&
+//                                                 packageDetails[order.orderID].data &&
+//                                                 packageDetails[order.orderID].data[0] &&
+//                                                 packageDetails[order.orderID].data[0].meals &&
+//                                                 packageDetails[order.orderID].data[0].meals.day1 &&
+//                                                 packageDetails[order.orderID].data[0].meals.day1.mealsDetails ? (
+//                                                 <div className="p-4 bg-green-50 border-t">
+//                                                     {packageDetails[order.orderID].data[0].meals.day1.mealsDetails.map((meal, mealIndex) => (
+//                                                         <div
+//                                                             key={mealIndex}
+//                                                             className="mb-4 bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500"
+//                                                         >
+//                                                             <div className="flex items-start gap-4 mb-3">
+//                                                                 {meal.image && meal.image.length > 0 && (
+//                                                                     <img
+//                                                                         src={meal.image[0]}
+//                                                                         alt={meal.mealName}
+//                                                                         className="w-24 h-24 object-cover rounded shadow"
+//                                                                     />
+//                                                                 )}
+//                                                                 <div>
+//                                                                     <h3 className="text-lg font-semibold text-green-800">{meal.mealName || 'Unnamed Meal'}</h3>
+//                                                                     <p className="text-green-600">{meal.description || 'No description available'}</p>
+//                                                                 </div>
+//                                                             </div>
+
+//                                                             <div className="grid grid-cols-2 gap-2 mb-3">
+//                                                                 <div className="bg-green-100 p-2 rounded">
+//                                                                     <p className="text-sm text-green-700">Energy: {meal.moreDetails?.energy || 'N/A'} kcal</p>
+//                                                                     <p className="text-sm text-green-700">Protein: {meal.moreDetails?.protein || 'N/A'}g</p>
+//                                                                 </div>
+//                                                                 <div className="bg-green-100 p-2 rounded">
+//                                                                     <p className="text-sm text-green-700">Fat: {meal.moreDetails?.fat || 'N/A'}g</p>
+//                                                                     <p className="text-sm text-green-700">Carbs: {meal.moreDetails?.carbohydrates || 'N/A'}g</p>
+//                                                                 </div>
+//                                                             </div>
+
+//                                                             {meal.moreDetails && meal.moreDetails.allergens && meal.moreDetails.allergens.length > 0 && (
+//                                                                 <div className="bg-red-50 p-2 rounded">
+//                                                                     <p className="text-sm text-red-600">
+//                                                                         Allergens: {meal.moreDetails.allergens.join(', ')}
+//                                                                     </p>
+//                                                                 </div>
 //                                                             )}
-//                                                             <div>
-//                                                                 <h3 className="text-lg font-semibold text-green-800">{meal.mealName}</h3>
-//                                                                 <p className="text-green-600">{meal.description}</p>
-//                                                                 {/* <p className="text-green-600">{meal.date}</p> */}
-//                                                             </div>
 //                                                         </div>
-
-//                                                         <div className="grid grid-cols-2 gap-2 mb-3">
-//                                                             <div className="bg-green-100 p-2 rounded">
-//                                                                 <p className="text-sm text-green-700">Energy: {meal.moreDetails.energy} kcal</p>
-//                                                                 <p className="text-sm text-green-700">Protein: {meal.moreDetails.protein}g</p>
-//                                                             </div>
-//                                                             <div className="bg-green-100 p-2 rounded">
-//                                                                 <p className="text-sm text-green-700">Fat: {meal.moreDetails.fat}g</p>
-//                                                                 <p className="text-sm text-green-700">Carbs: {meal.moreDetails.carbohydrates}g</p>
-//                                                             </div>
-//                                                         </div>
-
-//                                                         {meal.moreDetails.allergens && (
-//                                                             <div className="bg-red-50 p-2 rounded">
-//                                                                 <p className="text-sm text-red-600">
-//                                                                     Allergens: {meal.moreDetails.allergens.join(', ')}
-//                                                                 </p>
-//                                                             </div>
-//                                                         )}
-//                                                     </div>
-//                                                 ))}
-//                                             </div>
-//                                         )}
-
-//                                         {/* {expandedOrderId === order.orderID && packageDetails[order.orderID] && (
-//                                             <div className="p-4 bg-green-50 border-t">
-//                                                 {packageDetails[order.orderID].data[0].meals.day1.mealsDetails.map((meal, mealIndex) => (
-//                                                     <div
-//                                                         key={mealIndex}
-//                                                         className="mb-4 bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500"
-//                                                     >
-//                                                         <h3 className="text-lg font-semibold text-green-800 mb-2">
-//                                                             {meal.mealName}
-//                                                         </h3>
-//                                                         <p className="text-green-600 mb-3">{meal.description}</p>
-//                                                     </div>
-//                                                 ))}
-//                                             </div>
-//                                         )} */}
-//                                     </div>
-//                                 ))}
+//                                                     ))}
+//                                                 </div>
+//                                             ) : expandedOrderId === order.orderID && (
+//                                                 <div className="p-4 bg-green-50 border-t">
+//                                                     <p className="text-yellow-600">Meal details are not available for this order.</p>
+//                                                 </div>
+//                                             )}
+//                                         </div>
+//                                     );
+//                                 })}
 //                             </div>
 //                         ) : (
 //                             <p className="text-gray-500">No orders found.</p>
 //                         )}
 //                     </div>
 //                 )}
-
 
 //                 {/* Address Modal */}
 //                 <AddressModal
@@ -593,7 +695,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
     ChevronDown, ChevronUp, Plus, Edit, Trash2,
-    Home, ShoppingBag, UserCircle, Settings, LogOut
+    Home, ShoppingBag, UserCircle, Settings, LogOut,
+    AlertCircle, CheckCircle, XCircle, RefreshCw
 } from 'lucide-react';
 import logo from '../images/logo.png'
 
@@ -797,6 +900,24 @@ const NavigationHeader = ({ userName, onLogout }) => {
     );
 };
 
+// Helper component for payment status
+const PaymentStatusBadge = ({ status }) => {
+    const statusMap = {
+        0: { label: 'Payment Pending', icon: AlertCircle, className: 'bg-yellow-100 text-yellow-800' },
+        1: { label: 'Payment Successful', icon: CheckCircle, className: 'bg-green-100 text-green-800' },
+        2: { label: 'Payment Failed', icon: XCircle, className: 'bg-red-100 text-red-800' }
+    };
+
+    const { label, icon: Icon, className } = statusMap[status] || statusMap[0];
+
+    return (
+        <div className={`flex items-center px-3 py-1 rounded-full ${className}`}>
+            <Icon size={16} className="mr-1" />
+            <span className="text-sm font-medium">{label}</span>
+        </div>
+    );
+};
+
 // Main User Profile Component
 const UserProfile = () => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -805,6 +926,7 @@ const UserProfile = () => {
     const [packageDetails, setPackageDetails] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [processingPayment, setProcessingPayment] = useState(null);
 
     // New state for address management
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -861,6 +983,21 @@ const UserProfile = () => {
         // Fetch package details if not already fetched
         await fetchPackageDetails(order.orderID);
         setExpandedOrderId(order.orderID);
+    };
+
+    // Handler for continuing or retrying payment
+    const handlePaymentAction = async (order) => {
+        try {
+            setProcessingPayment(order.orderID);
+            // Redirect to product-summary page with order ID
+            // window.location.href = `/product-summary?orderID=${order.orderID}`;
+            window.location.href = `/summary`;
+        } catch (err) {
+            console.error('Error processing payment action', err);
+            alert("Failed to process payment. Please try again later.");
+        } finally {
+            setProcessingPayment(null);
+        }
     };
 
     // Add new address
@@ -928,6 +1065,18 @@ const UserProfile = () => {
         } catch (err) {
             console.error('Logout error', err);
         }
+    };
+
+    // Helper to get meal plan name and details
+    const getMealPlanDetails = (order) => {
+        if (order && order.selectedMeals && order.selectedMeals.package && order.selectedMeals.package.plan) {
+            return {
+                name: order.selectedMeals.package.plan.mealPlanName || "Meal Plan",
+                description: order.selectedMeals.package.plan.description || "",
+                image: order.selectedMeals.package.plan.image && order.selectedMeals.package.plan.image[0]
+            };
+        }
+        return { name: "Meal Plan", description: "", image: null };
     };
 
     // Loading state
@@ -1070,96 +1219,158 @@ const UserProfile = () => {
                             <p className="text-red-500">Something went wrong while loading your orders.</p>
                         ) : profileData?.orders?.length > 0 ? (
                             <div className="space-y-4">
-                                {profileData.orders.map((order, index) => (
-                                    <div key={index} className="border rounded-lg hover:shadow-md transition">
-                                        {/* Order Summary */}
-                                        <div
-                                            className="p-4 flex justify-between items-center hover:bg-green-50 cursor-pointer transition-colors"
-                                            onClick={() => handleExpandOrder(order)}
-                                        >
-                                            <div>
-                                                <p className="font-semibold text-green-900">Order ID: {order.orderID}</p>
-                                                {/* Add null check for selectedPackage */}
-                                                {order.selectedPackage ? (
-                                                    <>
-                                                        <p className="text-green-600">{order.selectedPackage.packageName}</p>
-                                                        <div className="flex mt-2">
-                                                            <p className="text-sm text-green-500 mr-4">
-                                                                Start Date: {order.selectedPackage.startDate}
+                                {profileData.orders.map((order, index) => {
+                                    const mealPlan = getMealPlanDetails(order);
+                                    return (
+                                        <div key={index} className="border rounded-lg hover:shadow-md transition">
+                                            {/* Order Summary */}
+                                            <div className="p-4 flex flex-col md:flex-row md:justify-between md:items-center hover:bg-green-50 transition-colors">
+                                                <div className="flex flex-col md:flex-row md:items-center gap-4 mb-3 md:mb-0 flex-grow">
+                                                    {/* Plan Image */}
+                                                    {mealPlan.image && (
+                                                        <img
+                                                            src={mealPlan.image}
+                                                            alt={mealPlan.name}
+                                                            className="w-16 h-16 object-contain rounded-lg"
+                                                        />
+                                                    )}
+
+                                                    {/* Order Info */}
+                                                    <div>
+                                                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                            <p className="font-semibold text-green-900">Order #{order.orderID}</p>
+                                                            <PaymentStatusBadge status={order.paymentStatus} />
+                                                        </div>
+                                                        <p className="text-green-600 font-medium capitalize">{mealPlan.name}</p>
+                                                        <p className="text-gray-600">{mealPlan.description}</p>
+                                                        <div className="flex flex-wrap gap-4 mt-2">
+                                                            <p className="text-sm text-green-500">
+                                                                Start: {new Date(order.startDate).toLocaleDateString()}
                                                             </p>
                                                             <p className="text-sm text-green-500">
-                                                                End Date: {order.selectedPackage.endDate}
+                                                                End: {new Date(order.endDate).toLocaleDateString()}
+                                                            </p>
+                                                            <p className="text-sm text-green-500">
+                                                                Amount: AED {order.amount}
                                                             </p>
                                                         </div>
-                                                    </>
-                                                ) : (
-                                                    <p className="text-yellow-600"></p>
-                                                )}
-                                            </div>
-                                            <div>
-                                                {expandedOrderId === order.orderID ? (
-                                                    <ChevronUp className="text-green-500" />
-                                                ) : (
-                                                    <Plus className="text-green-500" />
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Expandable Package Details */}
-                                        {expandedOrderId === order.orderID && packageDetails[order.orderID] && 
-                                         packageDetails[order.orderID].data && 
-                                         packageDetails[order.orderID].data[0] && 
-                                         packageDetails[order.orderID].data[0].meals && 
-                                         packageDetails[order.orderID].data[0].meals.day1 && 
-                                         packageDetails[order.orderID].data[0].meals.day1.mealsDetails ? (
-                                            <div className="p-4 bg-green-50 border-t">
-                                                {packageDetails[order.orderID].data[0].meals.day1.mealsDetails.map((meal, mealIndex) => (
-                                                    <div
-                                                        key={mealIndex}
-                                                        className="mb-4 bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500"
-                                                    >
-                                                        <div className="flex items-start gap-4 mb-3">
-                                                            {meal.image && meal.image.length > 0 && (
-                                                                <img
-                                                                    src={meal.image[0]}
-                                                                    alt={meal.mealName}
-                                                                    className="w-24 h-24 object-cover rounded shadow"
-                                                                />
-                                                            )}
-                                                            <div>
-                                                                <h3 className="text-lg font-semibold text-green-800">{meal.mealName || 'Unnamed Meal'}</h3>
-                                                                <p className="text-green-600">{meal.description || 'No description available'}</p>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-2 gap-2 mb-3">
-                                                            <div className="bg-green-100 p-2 rounded">
-                                                                <p className="text-sm text-green-700">Energy: {meal.moreDetails?.energy || 'N/A'} kcal</p>
-                                                                <p className="text-sm text-green-700">Protein: {meal.moreDetails?.protein || 'N/A'}g</p>
-                                                            </div>
-                                                            <div className="bg-green-100 p-2 rounded">
-                                                                <p className="text-sm text-green-700">Fat: {meal.moreDetails?.fat || 'N/A'}g</p>
-                                                                <p className="text-sm text-green-700">Carbs: {meal.moreDetails?.carbohydrates || 'N/A'}g</p>
-                                                            </div>
-                                                        </div>
-
-                                                        {meal.moreDetails && meal.moreDetails.allergens && meal.moreDetails.allergens.length > 0 && (
-                                                            <div className="bg-red-50 p-2 rounded">
-                                                                <p className="text-sm text-red-600">
-                                                                    Allergens: {meal.moreDetails.allergens.join(', ')}
-                                                                </p>
-                                                            </div>
-                                                        )}
                                                     </div>
-                                                ))}
+                                                </div>
+
+                                                {/* Action Buttons */}
+                                                <div className="flex items-center gap-2">
+                                                    {/* Continue Payment Button (for pending payments) */}
+                                                    {order.paymentStatus === 0 && (
+                                                        <button
+                                                            onClick={() => handlePaymentAction(order)}
+                                                            disabled={processingPayment === order.orderID}
+                                                            className={`flex items-center px-3 py-2 rounded ${processingPayment === order.orderID
+                                                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                                                                : 'bg-yellow-500 text-white hover:bg-yellow-600'
+                                                                } transition`}
+                                                        >
+                                                            {processingPayment === order.orderID ? (
+                                                                <>
+                                                                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                                                                    Processing...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <ShoppingBag size={16} className="mr-2" /> Continue Payment
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    )}
+
+                                                    {/* Retry Payment Button (for failed payments) */}
+                                                    {order.paymentStatus === 2 && (
+                                                        <button
+                                                            onClick={() => handlePaymentAction(order)}
+                                                            disabled={processingPayment === order.orderID}
+                                                            className={`flex items-center px-3 py-2 rounded ${processingPayment === order.orderID
+                                                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                                                                : 'bg-red-600 text-white hover:bg-red-700'
+                                                                } transition`}
+                                                        >
+                                                            {processingPayment === order.orderID ? (
+                                                                <>
+                                                                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                                                                    Processing...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <RefreshCw size={16} className="mr-2" /> Retry Payment
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    )}
+
+                                                    {/* View Details Button */}
+                                                    <button
+                                                        onClick={() => handleExpandOrder(order)}
+                                                        className="flex items-center text-green-500 hover:bg-green-100 p-2 rounded transition"
+                                                    >
+                                                        {expandedOrderId === order.orderID ? <ChevronUp /> : <ChevronDown />}
+                                                    </button>
+                                                </div>
                                             </div>
-                                        ) : expandedOrderId === order.orderID && (
-                                            <div className="p-4 bg-green-50 border-t">
-                                                <p className="text-yellow-600">Meal details are not available for this order.</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+
+                                            {/* Expandable Package Details */}
+                                            {expandedOrderId === order.orderID && packageDetails[order.orderID] &&
+                                                packageDetails[order.orderID].data &&
+                                                packageDetails[order.orderID].data[0] &&
+                                                packageDetails[order.orderID].data[0].meals &&
+                                                packageDetails[order.orderID].data[0].meals.day1 &&
+                                                packageDetails[order.orderID].data[0].meals.day1.mealsDetails ? (
+                                                <div className="p-4 bg-green-50 border-t">
+                                                    {packageDetails[order.orderID].data[0].meals.day1.mealsDetails.map((meal, mealIndex) => (
+                                                        <div
+                                                            key={mealIndex}
+                                                            className="mb-4 bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500"
+                                                        >
+                                                            <div className="flex items-start gap-4 mb-3">
+                                                                {meal.image && meal.image.length > 0 && (
+                                                                    <img
+                                                                        src={meal.image[0]}
+                                                                        alt={meal.mealName}
+                                                                        className="w-24 h-24 object-cover rounded shadow"
+                                                                    />
+                                                                )}
+                                                                <div>
+                                                                    <h3 className="text-lg font-semibold text-green-800">{meal.mealName || 'Unnamed Meal'}</h3>
+                                                                    <p className="text-green-600">{meal.description || 'No description available'}</p>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                                                <div className="bg-green-100 p-2 rounded">
+                                                                    <p className="text-sm text-green-700">Energy: {meal.moreDetails?.energy || 'N/A'} kcal</p>
+                                                                    <p className="text-sm text-green-700">Protein: {meal.moreDetails?.protein || 'N/A'}g</p>
+                                                                </div>
+                                                                <div className="bg-green-100 p-2 rounded">
+                                                                    <p className="text-sm text-green-700">Fat: {meal.moreDetails?.fat || 'N/A'}g</p>
+                                                                    <p className="text-sm text-green-700">Carbs: {meal.moreDetails?.carbohydrates || 'N/A'}g</p>
+                                                                </div>
+                                                            </div>
+
+                                                            {meal.moreDetails && meal.moreDetails.allergens && meal.moreDetails.allergens.length > 0 && (
+                                                                <div className="bg-red-50 p-2 rounded">
+                                                                    <p className="text-sm text-red-600">
+                                                                        Allergens: {meal.moreDetails.allergens.join(', ')}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : expandedOrderId === order.orderID && (
+                                                <div className="p-4 bg-green-50 border-t">
+                                                    <p className="text-yellow-600">Meal details are not available for this order.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ) : (
                             <p className="text-gray-500">No orders found.</p>

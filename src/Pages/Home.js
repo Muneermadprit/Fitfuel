@@ -13,6 +13,7 @@ const DilyfitHomePage = () => {
   const [products, setProducts] = useState([]);
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
   const visibleProducts = 3;
+  const [isProfileVisible, setIsProfileVisible] = useState(false);
 
   useEffect(() => {
     axios.get("https://api.dailyfit.ae/api/user/get-meals", { withCredentials: true })
@@ -25,6 +26,17 @@ const DilyfitHomePage = () => {
         console.error("Error fetching meals:", error);
       });
   }, []);
+
+  useEffect(() => {
+    const userType = sessionStorage.getItem('userType');
+    setIsProfileVisible(!!userType);
+  }, []);
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    localStorage.clear();
+    window.location.href = "/"; // Redirect to home after logout
+  };
 
   const nextProduct = () => {
     if (currentProductIndex < products.length - visibleProducts) {
@@ -77,19 +89,6 @@ const DilyfitHomePage = () => {
     address: '',
     message: '',
   });
-
-  // Next/Previous handlers for product slider
-  // const nextProduct = () => {
-  //   setCurrentProductIndex((prevIndex) =>
-  //     (prevIndex + 1) % (productSliderLength - visibleProducts + 1)
-  //   );
-  // };
-
-  // const prevProduct = () => {
-  //   setCurrentProductIndex((prevIndex) =>
-  //     prevIndex === 0 ? productSliderLength - visibleProducts : prevIndex - 1
-  //   );
-  // };
 
   // Next/Previous handlers for review slider
   const nextReview = () => {
@@ -183,13 +182,29 @@ Message: ${formData.message}`;
               <a href="/contact" className="text-white no-underline hover:text-green-200 transition duration-200">Contact</a>
             </div>
             <div className="flex items-center space-x-4">
-              <a href="/Order" className="bg-white text-green-600 px-4 py-2 rounded-lg font-semibold no-underline hover:bg-green-100 transition duration-200">Login</a>
+              {!isProfileVisible ? (
+                <a href="/Order" className="bg-white text-green-600 px-4 py-2 rounded-lg font-semibold no-underline hover:bg-green-100 transition duration-200">Login</a>
+              ) : (
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition duration-200">
+                  Logout
+                </button>
+              )}
               <button className="md:hidden text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
             </div>
+            {/* <div className="flex items-center space-x-4">
+              <a href="/Order" className="bg-white text-green-600 px-4 py-2 rounded-lg font-semibold no-underline hover:bg-green-100 transition duration-200">Login</a>
+              <button className="md:hidden text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div> */}
           </div>
         </div>
       </nav>
@@ -247,7 +262,7 @@ Message: ${formData.message}`;
         contentLabel="Calorie Calculator"
         className="fixed inset-0 flex items-center justify-center  bg-opacity-60"
       >
-        <div className="bg-white p-8 rounded-2xl shadow-2xl w-96 relative text-center">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl w-96 relative text-center  mt-[100px]">
           <button
             className="absolute top-4 right-4 text-2xl font-bold text-gray-600 hover:text-gray-800 transition duration-300"
             onClick={() => setModalIsOpen(false)}
@@ -294,19 +309,6 @@ Message: ${formData.message}`;
                           </span>
                           <h3 className="text-lg md:text-xl font-bold mt-1 text-gray-800">{product.mealName}</h3>
                           <p className="text-gray-600 mt-2 text-xs md:text-sm line-clamp-2 flex-grow">{product.description}</p>
-                          {/* <div className="mt-4 flex items-center justify-between">
-                            <div className="flex flex-col md:flex-row md:items-center">
-                              <span className="text-xl md:text-2xl font-bold text-gray-800">AED{product.fareDetails.totalFare}</span>
-                              {product.fareDetails.strikeOff && (
-                                <span className="md:ml-2 text-xs md:text-sm text-gray-500 line-through">
-                                  AED{product.fareDetails.strikeOff}
-                                </span>
-                              )}
-                            </div>
-                            <button className="bg-green-600 text-white px-3 py-1 md:px-4 md:py-2 rounded-lg hover:bg-green-700 transition duration-200 text-sm md:text-base">
-                              Add to Cart
-                            </button>
-                          </div> */}
                         </div>
                       </div>
                     </div>
@@ -355,71 +357,6 @@ Message: ${formData.message}`;
         </div>
       </div>
 
-      {/* <div className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Featured Meals</h2>
-          {products.length > 0 ? (
-            <div className="relative">
-              <div className="overflow-hidden">
-                <div
-                  className="flex transition-transform duration-500 ease-in-out"
-                  style={{ transform: `translateX(-${currentProductIndex * (100 / visibleProducts)}%)` }}
-                >
-                  {products.map((product) => (
-                    <div key={product._id} className="w-full md:w-1/3 flex-shrink-0 px-4">
-                      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition duration-300">
-                        <img
-                          src={product.image[0] || "https://t4.ftcdn.net/jpg/03/61/86/91/360_F_361869194_7JGmIOSj2iUNi0AYoVhVyhKvaN6PkOah.jpg"}
-                          alt={product.mealName}
-                          className="w-full h-48 object-cover"
-                        />
-                        <div className="p-6">
-                          <span className="text-sm text-green-600 font-semibold">
-                            {product.category.join(', ')}
-                          </span>
-                          <h3 className="text-xl font-bold mt-1 text-gray-800">{product.mealName}</h3>
-                          <p className="text-gray-600 mt-2 text-sm line-clamp-2">{product.description}</p>
-                          <div className="mt-4 flex items-center justify-between">
-                            <div>
-                              <span className="text-2xl font-bold text-gray-800">AED{product.fareDetails.totalFare}</span>
-                              {product.fareDetails.strikeOff && (
-                                <span className="ml-2 text-sm text-gray-500 line-through">
-                                  AED{product.fareDetails.strikeOff}
-                                </span>
-                              )}
-                            </div>
-                            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
-                              Add to Cart
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={prevProduct}
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none"
-                disabled={currentProductIndex === 0}
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <button
-                onClick={nextProduct}
-                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none"
-                disabled={currentProductIndex >= products.length - visibleProducts}
-              >
-                <ChevronRight size={24} />
-              </button>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-600">Loading meals...</p>
-            </div>
-          )}
-        </div>
-      </div> */}
       {/* Why Choose Us */}
       <div className="py-16 bg-gray-100">
         <div className="container mx-auto px-4">

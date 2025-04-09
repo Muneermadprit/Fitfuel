@@ -78,7 +78,7 @@ const CalorieCalculator = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md border border-gray-200">
+    <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md border border-gray-200 mt-5">
       <h1 className="text-xl font-bold text-center text-gray-800 mb-4 font-Dosis">Calorie Calculator</h1>
       <div className="flex flex-col gap-4">
         {/* Personal Information Inputs */}

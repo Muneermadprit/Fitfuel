@@ -21,8 +21,8 @@ const ProductSummary = () => {
   // Navigation links
   const navLinks = [
     { label: "Home", href: "/" },
+    { label: "Profile", href: "/profile" },
     { label: "About", href: "/about" },
-    { label: "Menu", href: "/menu" },
     { label: "Contact", href: "/contact" }
   ];
 
@@ -232,7 +232,9 @@ const ProductSummary = () => {
         handler: async function (response) {
           const verifyRes = await axios.post(
             "https://api.dailyfit.ae/api/user/verify-payment",
-            response
+            response,  {
+              withCredentials: true, // ✅ Include cookies (session/token) with request
+            }
           );
           if (verifyRes.data.status) {
             alert("Payment successful!");
@@ -275,65 +277,45 @@ const ProductSummary = () => {
 
   return (
     <>
-      <header className="flex items-center justify-between px-6 py-4 bg-[#65a30d] shadow-lg rounded-b-lg relative z-50">
-        {/* Logo */}
-        <div className="flex items-center space-x-4">
-          <img src={logo} alt="DailyFit Logo" className="h-16 w-32 object-contain" />
-        </div>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex space-x-6">
-          {navLinks.map((link) => (
-            <span
-              key={link.label}
-              className="text-lg text-white hover:text-yellow-300 font-medium transition-colors cursor-pointer px-3"
-            >
-              {link.label}
-            </span>
-          ))}
+    <nav className="bg-gradient-to-r from-green-600 to-lime-600 text-white shadow-lg sticky top-0 z-50">
+            <div className="container mx-auto px-4 py-3">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                        <a href="/" className="flex items-center">
+                            <img src={logo} alt="DailyFit Logo" className="h-16 w-32 object-contain" />
+                        </a>
+                    </div>
+                    <div className="hidden md:flex space-x-6">
+                        <a href="/" className="text-white no-underline hover:text-green-200 transition duration-200">Home</a>
+                        <a href="/about" className="text-white no-underline hover:text-green-200 transition duration-200">About</a>
+                        <a href="/contact" className="text-white no-underline hover:text-green-200 transition duration-200">Contact</a>
+                        <a
+                            href="/profile"
+                            className="text-white no-underline hover:text-green-200 transition duration-200"
+                        >
+                            Profile
+                        </a>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                        <button
+                            onClick={() => {
+                                sessionStorage.clear();
+                                localStorage.clear();
+                                window.location.href = "/"; // Redirect to home
+                            }}
+                            className="bg-white text-red-600 px-4 py-2 rounded-lg font-semibold no-underline hover:bg-red-100 transition duration-200"
+                        >
+                            Logout
+                        </button>
+                        <button className="md:hidden text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </nav>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden text-white focus:outline-none"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          ☰
-        </button>
-
-        {/* Mobile Menu Overlay */}
-        <div
-          className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${menuOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
-          onClick={() => setMenuOpen(false)}
-        />
-
-        {/* Mobile Menu */}
-        <div
-          className={`fixed top-0 right-0 h-full w-3/4 max-w-sm bg-white shadow-xl z-50 transition-transform duration-500 ${menuOpen ? "translate-x-0" : "translate-x-full"}`}
-        >
-          <div className="flex items-center justify-between px-4 py-4 bg-[#65a30d]">
-            <h2 className="text-lg font-semibold text-white">Menu</h2>
-            <button
-              className="text-white hover:text-gray-300 focus:outline-none"
-              onClick={() => setMenuOpen(false)}
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          <ul className="p-6 space-y-4">
-            {navLinks.map((link) => (
-              <li key={link.label}>
-                <span
-                  className="block text-lg text-[#65a30d] hover:text-green-700 font-medium transition-colors cursor-pointer"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {link.label}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </header>
       <div className="max-w-2xl mx-auto p-6 bg-gradient-to-b from-white to-gray-50 shadow-xl rounded-2xl mt-5 border border-gray-100">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center">
@@ -377,7 +359,7 @@ const ProductSummary = () => {
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-bold">{currentPackage.packageName || "Meal Package"}</h3>
                   <span className="text-white bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-medium">
-                    ${formatCurrency(currentPackage.fareTotalPerDay)}
+                    AED {formatCurrency(currentPackage.fareTotalPerDay)}
                   </span>
                 </div>
                 <p className="text-green-50 mt-1 text-sm">{currentPackage.description || "Package description"}</p>
@@ -420,7 +402,7 @@ const ProductSummary = () => {
                         </div>
                       </div>
                       <div className="flex items-center">
-                        <span className="text-gray-900 font-bold mr-3">${formatCurrency(meal.fareDetails?.totalFare)}</span>
+                        <span className="text-gray-900 font-bold mr-3">AED {formatCurrency(meal.fareDetails?.totalFare)}</span>
                         {expanded[`${currentPackageIndex}-${mealIndex}`] ? (
                           <Minus className="w-5 h-5 text-gray-500" />
                         ) : (
@@ -521,7 +503,7 @@ const ProductSummary = () => {
                     <span className="text-gray-800 font-medium">{addOn.name}</span>
                   </div>
                   <span className="text-gray-900 font-bold bg-green-100 px-3 py-1 rounded-full">
-                    ${formatCurrency(addOn.pricePerDay)}
+                    AED {formatCurrency(addOn.pricePerDay)}
                   </span>
                 </div>
               ))}
