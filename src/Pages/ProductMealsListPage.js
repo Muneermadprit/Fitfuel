@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { TiThMenuOutline } from 'react-icons/ti';
 import FooterPage from './FooterPage';
 import axios from "axios";
 import logo from '../images/logo.png'
@@ -110,20 +108,30 @@ const MealPlanShop = () => {
                         </div>
                         <div className="flex items-center space-x-4">
                             {!isProfileVisible ? (
-                                <a href="/Order" className="bg-white text-green-600 px-4 py-2 rounded-lg font-semibold no-underline hover:bg-green-100 transition duration-200">Login</a>
+                                <a href="/Order" className="bg-white text-green-600 p-2 rounded-lg hover:bg-green-100 transition duration-200">
+                                    {/* Login Icon */}
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12H3m0 0l3.5 3.5M3 12l3.5-3.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </a>
                             ) : (
                                 <button
                                     onClick={handleLogout}
-                                    className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition duration-200">
-                                    Logout
+                                    className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition duration-200">
+                                    {/* Logout Icon */}
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-10v1m0 0A4 4 0 107 12a4 4 0 006-4z" />
+                                    </svg>
                                 </button>
                             )}
                             <button className="md:hidden text-white">
+                                {/* Hamburger Icon */}
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                                 </svg>
                             </button>
                         </div>
+
                     </div>
                 </div>
             </nav>
@@ -144,11 +152,11 @@ const MealPlanShop = () => {
                         ) : (
                             <>
                                 {/* Category buttons */}
-                                <div className="flex gap-4 mb-8 overflow-x-auto pb-2">
+                                <div className="flex gap-4 mb-8 overflow-x-auto pb-2 flex-nowrap scroll-smooth snap-x">
                                     {categories.map((category, index) => (
                                         <button
                                             key={index}
-                                            className={`px-4 py-2 text-white rounded-full whitespace-nowrap ${selectedCategory === category.id ? 'bg-[#059033]' : 'bg-[#059033]'}`}
+                                            className={`px-4 py-2 text-white rounded-full whitespace-nowrap snap-start ${selectedCategory === category.id ? 'bg-green-700' : 'bg-[#059033]'}`}
                                             onClick={() => setSelectedCategory(category.id)}
                                         >
                                             {category.name}

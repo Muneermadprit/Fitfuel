@@ -4,6 +4,8 @@ import { useLocation } from 'react-router-dom';
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Info } from 'lucide-react';
+
 
 const MealPlanner = () => {
   const location = useLocation();
@@ -97,46 +99,6 @@ const MealPlanner = () => {
 
     fetchCategories();
   }, []);
-
-
-  // const handleSelectionAddOn = async (item) => {
-  //   console.log(item._id, 'pppp')
-  //   try {
-  //     let updatedSelections = [...selectedEnhancements];
-
-  //     if (updatedSelections.some((selected) => selected._id === item._id)) {
-  //       // Item is being deselected
-  //       updatedSelections = updatedSelections.filter((selected) => selected._id !== item._id);
-  //     } else {
-  //       // Item is being selected
-  //       updatedSelections.push(item);
-  //     }
-
-  //     // Make API call using Axios
-  //     await axios.post('https://api.dailyfit.ae/api/user/add-addons', {
-  //       id: item._id,
-  //     }, { withCredentials: true });
-
-  //     // Update local state and session storage
-  //     setSelectedEnhancements(updatedSelections);
-  //     sessionStorage.setItem("selectedEnhancements", JSON.stringify(updatedSelections));
-  //   } catch (error) {
-  //     console.error('Error updating add-ons:', error);
-  //     // Optional: Handle specific error scenarios
-  //     if (error.response) {
-  //       // The request was made and the server responded with a status code
-  //       // that falls out of the range of 2xx
-  //       console.error('Server Error:', error.response.data);
-  //       console.error('Status Code:', error.response.status);
-  //     } else if (error.request) {
-  //       // The request was made but no response was received
-  //       console.error('No response received');
-  //     } else {
-  //       // Something happened in setting up the request that triggered an Error
-  //       console.error('Error setting up request:', error.message);
-  //     }
-  //   }
-  // };
 
   const handleSelection = async (packageId, identifierPackage) => {
     setSelectedPackageId(packageId);
@@ -493,6 +455,15 @@ const MealPlanner = () => {
     }
   };
   // Step indicators component
+  const [showNutritionDetails, setShowNutritionDetails] = useState({});
+
+  const toggleNutritionDetails = (mealId, e) => {
+    e.stopPropagation(); // Prevent triggering the card selection
+    setShowNutritionDetails(prev => ({
+      ...prev,
+      [mealId]: !prev[mealId]
+    }));
+  };
 
   const StepIndicator = ({ step, title, icon }) => {
     const Icon = icon;
@@ -512,7 +483,7 @@ const MealPlanner = () => {
     switch (activeStep) {
       case 1:
         return (
-          <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-6">
+          <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-4 sm:p-6">
             <ToastContainer />
             <div className="max-w-7xl mx-auto">
               {/* Header Section */}
@@ -636,30 +607,117 @@ const MealPlanner = () => {
         }
 
         return (
-          <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-6">
+
+          // <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          //   {selectedDate && mealData[selectedDate] ? (
+          //     mealData[selectedDate].map((meal) => (
+          //       <div
+          //         key={meal._id}
+          //         className={`rounded-lg md:rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white group cursor-pointer
+          //         ${selectedMeals[selectedDate] === meal._id ? 'ring-2 ring-emerald-500' : ''}`}
+          //         onClick={() => handleMealSelection(selectedDate, meal._id)}
+          //       >
+          //         <div className="h-40 md:h-52 overflow-hidden relative">
+          //           {meal.image && meal.image.length > 0 ? (
+          //             <img
+          //               src={meal.image[0]}
+          //               alt={meal.mealName}
+          //               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          //             />
+          //           ) : (
+          //             <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+          //               <span className="text-gray-400 text-sm">No image available</span>
+          //             </div>
+          //           )}
+          //           {selectedMeals[selectedDate] === meal._id && (
+          //             <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1 md:p-2 rounded-full flex items-center justify-center">
+          //               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          //                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          //               </svg>
+          //             </div>
+          //           )}
+          //         </div>
+          //         <div className="p-3 md:p-4">
+          //           <div className="flex justify-between items-start mb-2">
+          //             <h3 className="text-lg md:text-xl font-bold text-gray-800">{meal.mealName || "Unnamed Meal"}</h3>
+          //             <button
+          //               onClick={(e) => toggleNutritionDetails(meal._id, e)}
+          //               className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+          //             >
+          //               <Info size={20} className="text-green -600 hover:text-emerald-500" />
+          //             </button>
+          //           </div>
+          //           <p className="text-sm md:text-base text-gray-600 mb-2 md:mb-3 line-clamp-2">
+          //             {meal.description || "No description available"}
+          //           </p>
+
+          //           {/* Nutrition Details Panel that shows when eye icon is clicked */}
+          //           {showNutritionDetails[meal._id] && meal.moreDetails && (
+          //             <div className="mt-2 pt-2 border-t border-gray-200">
+          //               <h4 className="font-medium text-sm text-gray-700 mb-1">Nutrition Information</h4>
+          //               <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
+          //                 <div className="flex justify-between">
+          //                   <span className="text-gray-600">Energy:</span>
+          //                   <span className="font-medium">{meal.moreDetails.energy} kcal</span>
+          //                 </div>
+          //                 <div className="flex justify-between">
+          //                   <span className="text-gray-600">Protein:</span>
+          //                   <span className="font-medium">{meal.moreDetails.protein}g</span>
+          //                 </div>
+          //                 <div className="flex justify-between">
+          //                   <span className="text-gray-600">Carbs:</span>
+          //                   <span className="font-medium">{meal.moreDetails.carbohydrates}g</span>
+          //                 </div>
+          //                 <div className="flex justify-between">
+          //                   <span className="text-gray-600">Fat:</span>
+          //                   <span className="font-medium">{meal.moreDetails.fat}g</span>
+          //                 </div>
+          //               </div>
+
+          //               <h4 className="font-medium text-sm text-gray-700 mt-2 mb-1">Allergens</h4>
+          //               <div className="flex flex-wrap gap-1">
+          //                 {meal.moreDetails.allergens && meal.moreDetails.allergens.map((allergen, index) => (
+          //                   <span key={index} className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+          //                     {allergen}
+          //                   </span>
+          //                 ))}
+          //               </div>
+          //             </div>
+          //           )}
+          //         </div>
+          //       </div>
+          //     ))
+          //   ) : (
+          //     <div className="col-span-full py-6 text-center">
+          //       <p className="text-gray-500">No meals available for the selected date.</p>
+          //     </div>
+          //   )}
+          // </div>
+
+          <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-3 sm:p-4 md:p-6">
             <ToastContainer />
             <div className="max-w-7xl mx-auto">
-              <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
+              <div className="flex flex-col md:flex-row justify-between items-start gap-3 mb-4 md:mb-6">
                 <div>
-                  <h2 className="text-3xl font-bold text-gray-800 mb-2">Customize Your Meals</h2>
-                  <p className="text-gray-600">
+                  <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1 md:mb-2">Customize Your Meals</h2>
+                  <p className="text-sm md:text-base text-gray-600">
                     Select your favorite meals for each day of your plan
                   </p>
                 </div>
-                <div className="bg-emerald-50 rounded-xl p-4">
-                  <p className="text-sm font-medium text-emerald-700">
+                <div className="bg-emerald-50 rounded-xl p-3 w-full md:w-auto mt-2 md:mt-0">
+                  <p className="text-xs md:text-sm font-medium text-emerald-700">
                     You can swap pre-selected favorites for any meal that suits your taste
                   </p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-16">
-                <div className="flex gap-3 overflow-x-auto mb-8 pb-2 scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-gray-100">
+              <div className="bg-white rounded-lg md:rounded-2xl shadow-md md:shadow-xl p-4 md:p-6 mb-8">
+                <div className="flex gap-2 overflow-x-auto mb-4 md:mb-6 pb-2 scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-gray-100">
                   {selectedDates.map((date) => (
                     <button
                       key={date}
                       onClick={() => setSelectedDate(date)}
-                      className={`px-6 py-3 rounded-xl font-medium whitespace-nowrap transition-all duration-300 ${date === selectedDate
+                      className={`px-3 md:px-6 py-2 md:py-3 rounded-lg md:rounded-xl text-sm md:text-base font-medium whitespace-nowrap transition-all duration-300 ${date === selectedDate
                         ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md"
                         : "border border-gray-200 text-gray-700 hover:bg-emerald-50 hover:border-emerald-200"
                         }`}
@@ -673,16 +731,16 @@ const MealPlanner = () => {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {selectedDate && mealData[selectedDate] ? (
                     mealData[selectedDate].map((meal) => (
                       <div
                         key={meal._id}
-                        className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white group cursor-pointer
-      ${selectedMeals[selectedDate] === meal._id ? 'ring-2 ring-emerald-500' : ''}`}
+                        className={`rounded-lg md:rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white group cursor-pointer
+                ${selectedMeals[selectedDate] === meal._id ? 'ring-2 ring-emerald-500' : ''}`}
                         onClick={() => handleMealSelection(selectedDate, meal._id)}
                       >
-                        <div className="h-60 overflow-hidden relative">
+                        <div className="h-40 md:h-52 overflow-hidden relative">
                           {meal.image && meal.image.length > 0 ? (
                             <img
                               src={meal.image[0]}
@@ -691,27 +749,25 @@ const MealPlanner = () => {
                             />
                           ) : (
                             <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                              <span className="text-gray-400">No image available</span>
+                              <span className="text-gray-400 text-sm">No image available</span>
                             </div>
                           )}
                           {selectedMeals[selectedDate] === meal._id && (
-                            <div className="absolute top-3 right-3 bg-emerald-500 text-white p-2 rounded-full flex items-center justify-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1 md:p-2 rounded-full flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
                             </div>
                           )}
                         </div>
-                        <div className="p-6">
-                          <h3 className="text-xl font-bold text-gray-800 mb-2">{meal.mealName || "Unnamed Meal"}</h3>
-                          <p className="text-gray-600 mb-4 line-clamp-2">{meal.description || "No description available"}</p>
-                          <div className="flex justify-between items-center">
-                          </div>
+                        <div className="p-3 md:p-4">
+                          <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-1 md:mb-2">{meal.mealName || "Unnamed Meal"}</h3>
+                          <p className="text-sm md:text-base text-gray-600 mb-2 md:mb-4 line-clamp-2">{meal.description || "No description available"}</p>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="col-span-3 py-10 text-center">
+                    <div className="col-span-full py-6 text-center">
                       <p className="text-gray-500">No meals available for the selected date.</p>
                     </div>
                   )}
@@ -719,14 +775,14 @@ const MealPlanner = () => {
               </div>
 
               {/* Meal selection summary */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800">Your Meal Selection</h2>
-                <div className="overflow-x-auto">
+              <div className="bg-white rounded-lg md:rounded-xl shadow-md md:shadow-lg p-4 md:p-6 mb-6">
+                <h2 className="text-xl md:text-2xl font-bold mb-4 text-gray-800">Your Meal Selection</h2>
+                <div className="overflow-x-auto -mx-4 md:mx-0">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selected Meal</th>
+                        <th className="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selected Meal</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -736,14 +792,14 @@ const MealPlanner = () => {
 
                         return (
                           <tr key={date}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <td className="px-3 md:px-6 py-3 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900">
                               {new Date(date).toLocaleDateString("en-US", {
                                 weekday: "short",
                                 month: "short",
                                 day: "numeric",
                               })}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-3 md:px-6 py-3 whitespace-nowrap text-xs md:text-sm text-gray-500">
                               {mealName}
                             </td>
                           </tr>
@@ -755,10 +811,10 @@ const MealPlanner = () => {
               </div>
 
               {/* Confirm button */}
-              <div className="flex justify-center mb-16">
+              <div className="flex justify-center mb-8 md:mb-12">
                 <button
                   onClick={handleConfirmSelection}
-                  className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold text-base md:text-lg rounded-lg md:rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300"
                 >
                   Confirm Selection
                 </button>
@@ -1166,26 +1222,6 @@ const MealPlanner = () => {
             </button>
           )}
         </div>
-        {/* <div className="flex justify-between mt-12">
-          <button
-            onClick={handleBackClick}
-            className="px-6 py-2 rounded-xl border-2 border-[#059033] text-[#059033] hover:bg-green-50"
-          >
-            Back
-          </button>
-          <button
-            onClick={() => {
-              saveSelectionsToSessionStorage();
-              if (activeStep === 4) {
-                handleCompleteOrder(); // Call API on final step
-              }
-              setActiveStep(Math.min(5, activeStep + 1));
-            }}
-            className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
-          >
-            {activeStep === 4 ? "Complete Order" : "Continue"}
-          </button>
-        </div> */}
       </div>
     </div>
   );

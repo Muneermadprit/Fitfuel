@@ -162,16 +162,16 @@ export default function MealPage() {
     const handleImageUpload = (event) => {
         const file = event.target.files[0];
         if (file) {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => {
-            setImageBase64(reader.result); // Base64 format
-          };
-          reader.onerror = (error) => {
-            console.log("Error converting file: ", error);
-          };
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                setImageBase64(reader.result); // Base64 format
+            };
+            reader.onerror = (error) => {
+                console.log("Error converting file: ", error);
+            };
         }
-      };
+    };
 
     // const handleImageChange = (e) => {
     //     const files = Array.from(e.target.files);
@@ -299,8 +299,13 @@ export default function MealPage() {
                     category: formData.categoryId,
                     mealTypes: selectedMealTypes.map(typeId => {
                         const foundType = mealType.find(type => type._id === typeId);
-                        return foundType ? foundType.mealType : '';
-                    }).filter(name => name !== ''),
+                        return foundType ? foundType.identifier : '';
+                    }).filter(identifier => identifier !== '')
+                    ,
+                    // mealTypes: selectedMealTypes.map(typeId => {
+                    //     const foundType = mealType.find(type => type._id === typeId);
+                    //     return foundType ? foundType.mealType : '';
+                    // }).filter(name => name !== ''),
                     package: formData.package,
                     fareDetails: {
                         totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
@@ -325,8 +330,13 @@ export default function MealPage() {
                     category: formData.categoryId,
                     mealTypes: selectedMealTypes.map(typeId => {
                         const foundType = mealType.find(type => type._id === typeId);
-                        return foundType ? foundType.mealType : '';
-                    }).filter(name => name !== ''),
+                        return foundType ? foundType.identifier : '';
+                    }).filter(identifier => identifier !== ''),
+
+                    // mealTypes: selectedMealTypes.map(typeId => {
+                    //     const foundType = mealType.find(type => type._id === typeId);
+                    //     return foundType ? foundType.mealType : '';
+                    // }).filter(name => name !== ''),
                     package: formData.package,
                     fareDetails: {
                         totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
@@ -536,7 +546,7 @@ export default function MealPage() {
                                     type="file"
                                     multiple
                                     accept="image/*"
-                                    onChange={  handleImageUpload
+                                    onChange={handleImageUpload
                                     }
                                     className="mt-1 block w-full"
                                 />

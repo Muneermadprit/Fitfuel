@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Star, MapPin, Phone, Mail, MessageSquare, ArrowRight, Heart  } from 'lucide-react';
-
+import { ChevronLeft, ChevronRight, Star, MapPin, Phone, Mail, MessageSquare } from 'lucide-react';
 import CalorieCalculator from './Homepagesecondsection';
 import { motion } from "framer-motion";
 import fitnessVideo from '../images/fitness.mp4';
@@ -8,20 +7,13 @@ import Modal from "react-modal";
 import { useNavigate } from "react-router-dom";
 import logo from '../images/logo.png';
 import axios from "axios";
-import Courosal1 from '../images/heroimagecourosal.jpg'
-import Courosal2 from '../images/courosal2.jpg'
-import Courosal3 from '../images/Courosal3.jpg'
-import { FaCircleUser } from "react-icons/fa6";
-import { FaHome } from "react-icons/fa";
-import GreenWhiteBanner from './Homebanner'
-import NavigationBar from './navigationHome';
-
 Modal.setAppElement("#root");
 const DilyfitHomePage = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
   const visibleProducts = 3;
+  const [isProfileVisible, setIsProfileVisible] = useState(false);
 
   useEffect(() => {
     axios.get("https://api.dailyfit.ae/api/user/get-meals", { withCredentials: true })
@@ -35,6 +27,17 @@ const DilyfitHomePage = () => {
       });
   }, []);
 
+  useEffect(() => {
+    const userType = sessionStorage.getItem('userType');
+    setIsProfileVisible(!!userType);
+  }, []);
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    localStorage.clear();
+    window.location.href = "/"; // Redirect to home after logout
+  };
+
   const nextProduct = () => {
     if (currentProductIndex < products.length - visibleProducts) {
       setCurrentProductIndex(currentProductIndex + 1);
@@ -46,44 +49,6 @@ const DilyfitHomePage = () => {
       setCurrentProductIndex(currentProductIndex - 1);
     }
   };
-
-
-   // Banner data
-   const banners = [
-    { id: 1, text: "Spring Sale! 25% OFF all equipment", link: "/sale" },
-    { id: 2, text: "Free shipping on orders above AED 200", link: "/shipping" },
-    { id: 3, text: "New vitamin collections just arrived!", link: "/vitamins" }
-  ];
-
-
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const heroSlides = [
-    {
-      image:Courosal2,
-      title: "Transform Your Fitness Journey",
-      subtitle: "Premium equipment and nutrition plans tailored for your goals",
-      cta: "Shop Equipment"
-    },
-    {
-      image:Courosal1,
-      title: "Healthy Meals Delivered",
-      subtitle: "Nutritionist-approved meals to fuel your workout routine",
-      cta: "Explore Meals"
-    },
-    {
-      image:Courosal3,
-      title: "Professional Guidance",
-      subtitle: "Connect with certified trainers for personalized fitness plans",
-      cta: "Book Consultation"
-    }
-  ];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prevSlide) => (prevSlide + 1) % heroSlides.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [heroSlides.length]);
 
   // Reviews Data
   const reviews = [
@@ -124,19 +89,6 @@ const DilyfitHomePage = () => {
     address: '',
     message: '',
   });
-
-  // Next/Previous handlers for product slider
-  // const nextProduct = () => {
-  //   setCurrentProductIndex((prevIndex) =>
-  //     (prevIndex + 1) % (productSliderLength - visibleProducts + 1)
-  //   );
-  // };
-
-  // const prevProduct = () => {
-  //   setCurrentProductIndex((prevIndex) =>
-  //     prevIndex === 0 ? productSliderLength - visibleProducts : prevIndex - 1
-  //   );
-  // };
 
   // Next/Previous handlers for review slider
   const nextReview = () => {
@@ -215,79 +167,83 @@ Message: ${formData.message}`;
 
   return (
     <div className="min-h-screen bg-gray-50">
-
       {/* Navigation Bar */}
-   
-     {/* Hero Carousel Section */}
-     <div className="relative h-screen lg:max-h-[700px] max-h-[800px]  overflow-hidden">
-     <div  className='grid grid-cols-2'>
-
-     <div className="flex  z-20">
-         <a href="/" className="flex ">
-           <img src={logo} alt="DailyFit Logo" className="h-60 w-80 object-contain " />
-         </a>
-       </div>
-
-
-
- <div> <NavigationBar/></div>
-
-
-
-</div>
-        {heroSlides.map((slide, index) => (
-          <div 
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              currentSlide === index ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-          <img className="absolute  bg-cover bg-center h-full w-full" src={slide.image} />
-          <div className="absolute inset-0 bg-black opacity-60 z-10"></div>
-
-      
-            <div className='grid grid-cols-2'>
-              
+      <nav className="bg-gradient-to-r from-green-600 to-lime-600 text-white shadow-lg sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
+              <a href="/" className="flex items-center">
+                <img src={logo} alt="DailyFit Logo" className="h-16 w-32 object-contain" />
+              </a>
             </div>
-            <div className="relative h-full flex items-center z-10 mt-10">
-              <div className="container mx-auto px-6 md:px-12">
-                <div className="max-w-lg" data-aos="fade-up">
-                  <span className="inline-block py-1 px-3 bg-green-600 text-white text-sm font-semibold rounded-full mb-4">
-                    DILYFIT EXCLUSIVE
-                  </span>
-                  <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-                    {slide.title}
-                  </h1>
-                  <p className="text-xl text-white opacity-90 mb-8">
-                    {slide.subtitle}
-                  </p>
-                  <div className="flex space-x-4">
-                    <button 
-                      className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 transform hover:scale-105 flex items-center"
-                      onClick={handleShopNowClick}
-                    >
-                      {slide.cta}
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </button>
-                    <button className="bg-transparent border-2 border-white text-white font-bold py-3 px-8 rounded-full hover:bg-white hover:text-green-800 transition duration-300">
-                      Learn More
-                    </button>
-                  </div>
-                </div>
-              </div>
+            <div className="hidden md:flex space-x-6">
+              <a href="/" className="text-white no-underline hover:text-green-200 transition duration-200">Home</a>
+              <a href="/about" className="text-white no-underline hover:text-green-200 transition duration-200">About</a>
+              <a href="/contact" className="text-white no-underline hover:text-green-200 transition duration-200">Contact</a>
             </div>
-            
+            <div className="flex items-center space-x-4">
+              {!isProfileVisible ? (
+                <a href="/Order" className="bg-white text-green-600 p-2 rounded-lg hover:bg-green-100 transition duration-200">
+                  {/* Login Icon */}
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12H3m0 0l3.5 3.5M3 12l3.5-3.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </a>
+              ) : (
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition duration-200">
+                  {/* Logout Icon */}
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-10v1m0 0A4 4 0 107 12a4 4 0 006-4z" />
+                  </svg>
+                </button>
+              )}
+              <button className="md:hidden text-white">
+                {/* Hamburger Icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
           </div>
-          
-        ))}
         </div>
+      </nav>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-green-800 to-lime-600 text-white py-20">
+        <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
 
+          {/* Text Content */}
+          <div className="text-center md:text-left space-y-6">
+            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
+              Elevate Your Fitness Game
+            </h1>
+            <p className="text-lg text-gray-200">
+              High-quality fitness equipment and supplements to fuel your workout journey.
+            </p>
+            <div className="flex justify-center md:justify-start space-x-4">
+              <button className="bg-white text-green-700 px-6 py-3 rounded-full font-bold shadow-md hover:bg-green-100 transition duration-300 transform hover:scale-105" onClick={handleShopNowClick}>
+                Shop Now
+              </button>
+              <button className="border-2 border-white px-6 py-3 rounded-full font-bold shadow-md hover:bg-white hover:text-green-700 transition duration-300 transform hover:scale-105">
+                Learn More
+              </button>
+            </div>
+          </div>
 
-
+          {/* Image */}
+          <div className="flex justify-center">
+            <img
+              src="https://th.bing.com/th/id/OIP.OHv_QRoJDtQwoqYTrkKEmwHaE6?rs=1&pid=ImgDetMain"
+              alt="Fitness Equipment"
+              className="rounded-xl shadow-lg w-full max-w-md lg:max-w-lg transform hover:scale-105 transition duration-300"
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Fitness Progress Section */}
-      <div className="  text-gray-900 py-10  rounded-xl  w-full m-10 mx-auto text-center mb-4">
-       <GreenWhiteBanner/>
+      <div className="mt-16 bg-white text-gray-900 py-10 px-6 rounded-xl shadow-lg max-w-4xl mx-auto text-center mb-4">
         <h2 className="text-3xl font-bold text-green-700 mb-4">Track Your Fitness Progress</h2>
         <p className="text-lg text-gray-700 mb-6">
           Use our advanced tools to calculate your calorie intake and track your fitness journey effectively.
@@ -307,7 +263,7 @@ Message: ${formData.message}`;
         contentLabel="Calorie Calculator"
         className="fixed inset-0 flex items-center justify-center  bg-opacity-60"
       >
-        <div className="bg-white p-8 rounded-2xl shadow-2xl w-96 relative text-center">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl w-96 relative text-center  mt-[100px]">
           <button
             className="absolute top-4 right-4 text-2xl font-bold text-gray-600 hover:text-gray-800 transition duration-300"
             onClick={() => setModalIsOpen(false)}
@@ -321,9 +277,9 @@ Message: ${formData.message}`;
 
       {/* Featured Products Slider */}
 
-      <div className="py-8 md:py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-6 md:mb-12 text-gray-800">
+      <div className="py-2 md:py-8 bg-white"> {/* Reduced vertical padding on mobile */}
+        <div className="container mx-auto px-2 md:px-4"> {/* Reduced horizontal padding on mobile */}
+          <h2 className="text-xl md:text-3xl font-bold text-center mb-4 md:mb-12 text-gray-800"> {/* Tighter spacing on mobile */}
             Featured Meals
           </h2>
 
@@ -353,20 +309,9 @@ Message: ${formData.message}`;
                             {product.category.join(', ')}
                           </span>
                           <h3 className="text-lg md:text-xl font-bold mt-1 text-gray-800">{product.mealName}</h3>
-                          <p className="text-gray-600 mt-2 text-xs md:text-sm line-clamp-2 flex-grow">{product.description}</p>
-                          {/* <div className="mt-4 flex items-center justify-between">
-                            <div className="flex flex-col md:flex-row md:items-center">
-                              <span className="text-xl md:text-2xl font-bold text-gray-800">AED{product.fareDetails.totalFare}</span>
-                              {product.fareDetails.strikeOff && (
-                                <span className="md:ml-2 text-xs md:text-sm text-gray-500 line-through">
-                                  AED{product.fareDetails.strikeOff}
-                                </span>
-                              )}
-                            </div>
-                            <button className="bg-green-600 text-white px-3 py-1 md:px-4 md:py-2 rounded-lg hover:bg-green-700 transition duration-200 text-sm md:text-base">
-                              Add to Cart
-                            </button>
-                          </div> */}
+                          <p className="text-gray-600 mt-2 text-xs md:text-sm line-clamp-2 flex-grow">
+                            {product.description}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -374,22 +319,22 @@ Message: ${formData.message}`;
                 </div>
               </div>
 
-              {/* Navigation buttons with improved accessibility and mobile responsiveness */}
+              {/* Carousel navigation arrows */}
               <button
                 onClick={prevProduct}
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-1 md:p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 md:p-3 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={currentProductIndex === 0}
                 aria-label="Previous product"
               >
-                <ChevronLeft size={16} className="md:w-6 md:h-6" />
+                <ChevronLeft size={24} className="md:w-7 md:h-7" /> {/* Increased arrow size */}
               </button>
               <button
                 onClick={nextProduct}
-                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-1 md:p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 md:p-3 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={currentProductIndex >= products.length - visibleProducts}
                 aria-label="Next product"
               >
-                <ChevronRight size={16} className="md:w-6 md:h-6" />
+                <ChevronRight size={24} className="md:w-7 md:h-7" /> {/* Increased arrow size */}
               </button>
             </div>
           ) : (
@@ -398,7 +343,7 @@ Message: ${formData.message}`;
             </div>
           )}
 
-          {/* Pagination dots for mobile - optional enhancement */}
+          {/* Pagination dots for mobile */}
           {visibleProducts === 1 && products.length > 1 && (
             <div className="flex justify-center mt-4">
               {Array.from({ length: Math.ceil(products.length) }).map((_, index) => (
@@ -414,74 +359,8 @@ Message: ${formData.message}`;
           )}
         </div>
       </div>
-
-      {/* <div className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Featured Meals</h2>
-          {products.length > 0 ? (
-            <div className="relative">
-              <div className="overflow-hidden">
-                <div
-                  className="flex transition-transform duration-500 ease-in-out"
-                  style={{ transform: `translateX(-${currentProductIndex * (100 / visibleProducts)}%)` }}
-                >
-                  {products.map((product) => (
-                    <div key={product._id} className="w-full md:w-1/3 flex-shrink-0 px-4">
-                      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition duration-300">
-                        <img
-                          src={product.image[0] || "https://t4.ftcdn.net/jpg/03/61/86/91/360_F_361869194_7JGmIOSj2iUNi0AYoVhVyhKvaN6PkOah.jpg"}
-                          alt={product.mealName}
-                          className="w-full h-48 object-cover"
-                        />
-                        <div className="p-6">
-                          <span className="text-sm text-green-600 font-semibold">
-                            {product.category.join(', ')}
-                          </span>
-                          <h3 className="text-xl font-bold mt-1 text-gray-800">{product.mealName}</h3>
-                          <p className="text-gray-600 mt-2 text-sm line-clamp-2">{product.description}</p>
-                          <div className="mt-4 flex items-center justify-between">
-                            <div>
-                              <span className="text-2xl font-bold text-gray-800">AED{product.fareDetails.totalFare}</span>
-                              {product.fareDetails.strikeOff && (
-                                <span className="ml-2 text-sm text-gray-500 line-through">
-                                  AED{product.fareDetails.strikeOff}
-                                </span>
-                              )}
-                            </div>
-                            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
-                              Add to Cart
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={prevProduct}
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none"
-                disabled={currentProductIndex === 0}
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <button
-                onClick={nextProduct}
-                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none"
-                disabled={currentProductIndex >= products.length - visibleProducts}
-              >
-                <ChevronRight size={24} />
-              </button>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-600">Loading meals...</p>
-            </div>
-          )}
-        </div>
-      </div> */}
       {/* Why Choose Us */}
-      <div className="py-16 bg-gray-100">
+      <div className="py-8 md:py-16 bg-gray-100">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Why Choose Us</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -497,7 +376,7 @@ Message: ${formData.message}`;
       </div>
 
       {/* Popular Products */}
-      <div className="py-16 bg-white">
+      <div className="py-8 md:py-16 bg-white">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Popular Products</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -526,40 +405,27 @@ Message: ${formData.message}`;
                     ))}
                     <span className="ml-2 text-gray-600 text-sm">{product.rating}</span>
                   </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    {/* <span className="text-2xl font-bold text-gray-800">${product.price}</span> */}
-                    <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
-                      View Details
-                    </button>
-                  </div>
                 </div>
               </div>
             ))}
           </div>
-          <div className="text-center mt-10">
-            <a href="/products" className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition duration-200">
-              View All Products
-            </a>
-          </div>
         </div>
       </div>
-
-
       {/* Customer Reviews */}
-      <div className="py-16 bg-gray-100">
+      <div className="py-8 md:py-16 bg-gray-100">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">What Our Customers Say</h2>
           <div className="relative">
             <div className="overflow-hidden">
               <div
-                className="flex transition-transform duration-500 ease-in-out"
+                className="flex transition-transform duration-500 ease-in-out mt-5 mb-5"
                 style={{ transform: `translateX(-${currentReviewIndex * (100 / visibleReviews)}%)` }}
               >
                 {reviews.map((review) => (
                   <div key={review.id} className="w-full md:w-1/2 flex-shrink-0 px-4">
                     <div className="bg-white rounded-lg shadow-lg p-8 h-full">
                       <div className="flex items-center mb-4">
-                        <img src={review.image} alt={review.name} className="w-12 h-12 rounded-full object-cover" />
+                        <img src="https://thumbs.dreamstime.com/b/default-avatar-profile-icon-grey-photo-placeholder-illustrations-vectors-default-avatar-profile-icon-grey-photo-placeholder-99724602.jpg" alt={review.name} className="w-12 h-12 rounded-full object-cover" />
                         <div className="ml-4">
                           <h4 className="font-bold text-gray-800">{review.name}</h4>
                           <div className="flex mt-1">
@@ -584,20 +450,20 @@ Message: ${formData.message}`;
               onClick={prevReview}
               className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-purple-600 hover:text-purple-800 transition duration-200 focus:outline-none"
             >
-              <ChevronLeft size={24} />
+              <ChevronLeft size={30} />
             </button>
             <button
               onClick={nextReview}
               className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-purple-600 hover:text-purple-800 transition duration-200 focus:outline-none"
             >
-              <ChevronRight size={24} />
+              <ChevronRight size={30} />
             </button>
           </div>
         </div>
       </div>
 
       {/* Enquiry Form */}
-      <div className="py-16 bg-white">
+      <div className="py-8 md:py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto bg-gradient-to-br from-green-600 to-green-700 rounded-xl shadow-2xl overflow-hidden">
             <div className="md:flex">
@@ -694,7 +560,6 @@ Message: ${formData.message}`;
           </div>
         </div>
       </div>
-
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
