@@ -297,15 +297,11 @@ export default function MealPage() {
                     mealName: formData.mealName,
                     description: formData.description,
                     category: formData.categoryId,
-                    mealTypes: selectedMealTypes.map(typeId => {
+                    mealType: selectedMealTypes.map(typeId => {
                         const foundType = mealType.find(type => type._id === typeId);
                         return foundType ? foundType.identifier : '';
                     }).filter(identifier => identifier !== '')
                     ,
-                    // mealTypes: selectedMealTypes.map(typeId => {
-                    //     const foundType = mealType.find(type => type._id === typeId);
-                    //     return foundType ? foundType.mealType : '';
-                    // }).filter(name => name !== ''),
                     package: formData.package,
                     fareDetails: {
                         totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
@@ -328,15 +324,10 @@ export default function MealPage() {
                     mealName: formData.mealName,
                     description: formData.description,
                     category: formData.categoryId,
-                    mealTypes: selectedMealTypes.map(typeId => {
+                    mealType: selectedMealTypes.map(typeId => {
                         const foundType = mealType.find(type => type._id === typeId);
                         return foundType ? foundType.identifier : '';
                     }).filter(identifier => identifier !== ''),
-
-                    // mealTypes: selectedMealTypes.map(typeId => {
-                    //     const foundType = mealType.find(type => type._id === typeId);
-                    //     return foundType ? foundType.mealType : '';
-                    // }).filter(name => name !== ''),
                     package: formData.package,
                     fareDetails: {
                         totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
