@@ -5,12 +5,17 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Info } from 'lucide-react';
+import { updateLocale } from 'moment/moment';
+import { useNavigate } from 'react-router-dom';
+
 
 
 const MealPlanner = () => {
+  const navigate = useNavigate();
   const location = useLocation();
   const selectedPlans = location.state?.selectedPlan;
-  const [activeStep, setActiveStep] = useState(1);
+  // const [activeStep, setActiveStep] = useState(1);
+  const [ishandleSelectMeals, setIshandleSelectMeals] = useState(null);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedDates, setSelectedDates] = useState([]);
@@ -63,6 +68,9 @@ const MealPlanner = () => {
         draggable: true,
       });
       console.log("Response:", response.data);
+      setTimeout(() => {
+        window.location.href = '/summary';
+      }, 2000);
     } catch (error) {
       alert("Failed to add address. Please try again.");
       console.error("Error:", error);
@@ -98,9 +106,11 @@ const MealPlanner = () => {
     };
 
     fetchCategories();
+    fetchMealTypes();
   }, []);
 
   const handleSelection = async (packageId, identifierPackage) => {
+    console.log(packageId,identifierPackage,'jjjjjj')
     setSelectedPackageId(packageId);
     sessionStorage.setItem("package", packageId);
 
@@ -131,7 +141,7 @@ const MealPlanner = () => {
                 // Only add to formattedMeals if there are meals for this day
                 if (mealsList.length > 0) {
                   // Make sure each meal has an image property that's an array
-                  const processedMeals = mealsList.map(meal => ({
+                  const processedMeals = mealsList?.map(meal => ({
                     ...meal,
                     image: meal.image && Array.isArray(meal.image) ? meal.image : ['/placeholder-image.jpg']
                   }));
@@ -171,6 +181,50 @@ const MealPlanner = () => {
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const day = String(dateObj.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  };
+  const [mealType, setMealType] = useState([]);
+  const fetchMealTypes = async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      const response = await axios.get("https://api.dailyfit.ae/api/user/get-mealtype", { withCredentials: true });
+      setMealType(response.data.data);
+      console.log(response.data.data, 'type mael')
+    } catch (error) {
+      console.error("Error fetching meal types:", error);
+    }
+  };
+
+
+  const getMealsByType = (type) => {
+
+    console.log(type, "The type of")
+    console.log(mealData, 'The full meal data ')
+
+    const firstMeals = [];
+
+
+    mealData[selectedDate]?.forEach(meal => {
+      const type = meal.mealType[0];
+      if (!firstMeals.find(m => m.mealType[0] === type)) {
+        firstMeals.push(meal);
+      }
+    });
+    if (ishandleSelectMeals == null) {
+      selectedMeals[selectedDate] = firstMeals;
+
+    }
+
+    console.log(selectedMeals[selectedDate], "date")
+
+    console.log(firstMeals?.map(m => m._id), "First meal IDs per mealType");
+
+
+    return mealData[selectedDate]?.filter(meal => meal.mealType?.includes(type));
+  };
+
+  // Function to capitalize first letter of each word
+  const capitalize = (str) => {
+    return str.replace(/\b\w/g, char => char.toUpperCase());
   };
 
   const handleDateSelection = (date) => {
@@ -256,14 +310,40 @@ const MealPlanner = () => {
   };
 
   // New function to handle meal selection
-  const handleMealSelection = (date, mealId) => {
-    const updatedMeals = {
-      ...selectedMeals,
-      [date]: mealId
-    };
+  const handleMealSelection = (date, meal, mealType) => {
+    setIshandleSelectMeals(1)
+    console.log("📦 Selected meal:", meal, "for date:", date, "with type:", mealType);
 
-    setSelectedMeals(updatedMeals);
-    // sessionStorage.setItem("selectedMeals", JSON.stringify(updatedMeals));
+    // Get current meals for the date or initialize with an empty array
+    const currentMeals = selectedMeals[date] || [];
+
+    // Check if the meal type already exists (compare first element of the array)
+    const hasMatchingType = currentMeals.some(existingMeal =>
+      existingMeal.mealType[0] === mealType[0]
+    );
+
+    // If no matching type exists, add the new meal
+    if (!hasMatchingType) {
+      const updatedMeals = [...currentMeals, { ...meal, mealType }];
+      selectedMeals[date] = updatedMeals;
+      setSelectedMeals({ ...selectedMeals }); // Assuming this is a state setter
+      console.log("➕ Added new meal type", mealType[0]);
+      return;
+    }
+
+    // Replace only the existing meal with the same type
+    const updatedMeals = currentMeals?.map(existingMeal =>
+      existingMeal.mealType[0] === mealType[0]
+        ? { ...meal, mealType }
+        : existingMeal
+    );
+
+    setSelectedMeals(prev => ({
+      ...prev,
+      [date]: updatedMeals
+    }));
+    console.log(selectedMeals[date], "The selected meals")
+    // Assuming this is a state setter
   };
 
   const handleResetSelections = () => {
@@ -290,16 +370,22 @@ const MealPlanner = () => {
 
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(month.getFullYear(), month.getMonth(), day);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = date.toLocaleDateString('en-CA').split('T')[0];
       const isDisabled = isDateDisabled(date);
       const isSelected = selectedDates.includes(dateStr);
+      console.log({
+        day,
+        dateStr,
+        isSelected,
+        selectedDates,
+      });
 
       calendarDays.push(
         <button
           key={`${month.getMonth()}-${day}`}
           onClick={() => handleDateSelection(date)}
           disabled={isDisabled}
-          className={`w-10 h-10 rounded-full text-sm font-medium transition-colors 
+          className={`w-10 h-10 rounded-full text-sm font-medium transition-colors
             ${isDisabled
               ? "text-gray-300 cursor-not-allowed"
               : isSelected
@@ -313,12 +399,12 @@ const MealPlanner = () => {
     }
 
     return (
-      <div className="w-72">
+      <div className=" lg:w-[50%] sm:w-full xs:w-60 h-auto p-2  rounded-lg shadow-sm">
         <h3 className="text-lg font-medium mb-4 text-gray-800">
           {month.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
         </h3>
         <div className="grid grid-cols-7 gap-1 mb-2">
-          {days.map(day => (
+          {days?.map(day => (
             <div key={day} className="w-10 h-10 flex items-center justify-center text-sm font-medium text-gray-500">
               {day}
             </div>
@@ -371,13 +457,27 @@ const MealPlanner = () => {
 
     // Extract just the selectedMeals array from the parsed object
     // The structure in storage has an extra wrapper object with selectedMeals key
+    const transformData = (selectedMealsObj) => {
+      return Object.values(selectedMealsObj)?.map(mealEntry => ({
+        date: mealEntry.date,
+        meals: mealEntry.meals[0]?.map(meal => meal._id)
+      }));
+    };
+
+    // Transforming the selectedMeals
+
+
+
+
     const mealsArray = parsedSelectedMeals.selectedMeals || [];
+    const transformedData = transformData(mealsArray);
+
 
     const payload = {
       package: packageId,
       startDate: startDate,
       endDate: endDate,
-      selectedMeals: mealsArray
+      selectedMeals: transformedData
     };
 
     console.log(payload, 'cart payload');
@@ -422,7 +522,7 @@ const MealPlanner = () => {
 
   // Function to handle quantity change
   const handleQuantityChange = (item, newQuantity) => {
-    const updatedSelections = selectedEnhancements.map((selected) =>
+    const updatedSelections = selectedEnhancements?.map((selected) =>
       selected._id === item._id
         ? { ...selected, quantity: newQuantity }
         : selected
@@ -449,13 +549,20 @@ const MealPlanner = () => {
 
       // Handle successful response
       console.log('Add-ons updated successfully:', response.data);
-      toast.success('Successfully Added your Addons!')
+      toast.success('Successfully Added your Addons!');
+      setTimeout(() => {
+        setActiveStep(4);
+      }, 1000)
     } catch (error) {
       console.error('Error updating add-ons:', error.response ? error.response.data : error.message);
     }
   };
   // Step indicators component
   const [showNutritionDetails, setShowNutritionDetails] = useState({});
+  useEffect(() => {
+    console.log("🟢 selectedMeals updated", selectedMeals);
+  }, [selectedMeals]);
+
 
   const toggleNutritionDetails = (mealId, e) => {
     e.stopPropagation(); // Prevent triggering the card selection
@@ -468,6 +575,7 @@ const MealPlanner = () => {
   const StepIndicator = ({ step, title, icon }) => {
     const Icon = icon;
     return (
+
       <div className={`flex flex-col items-center ${activeStep >= step ? 'text-emerald-600' : 'text-gray-400'}`}>
         <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-2 transition-all
           ${activeStep === step ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' :
@@ -479,126 +587,212 @@ const MealPlanner = () => {
     );
   };
 
+  const [step, setStep] = useState(1); // unused
+  const [activeStep, setActiveStep] = useState(1); // actual driver
+  const handleContinue = () => {
+    if (!selectedPackageId || !selectedPlan || selectedDates.length === 0) {
+      toast.error("Please complete all selections before continuing.");
+      return;
+    }
+
+    toast.success("Plan created successfully");
+
+    setTimeout(() => {
+      setActiveStep(2); // <-- ✅ Use setActiveStep instead of setStep
+    }, 1000);
+  };
+
+
   const renderStepContent = () => {
     switch (activeStep) {
       case 1:
         return (
-          <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-4 sm:p-6">
-            <ToastContainer />
-            <div className="max-w-7xl mx-auto">
-              {/* Header Section */}
-              <div className="text-center mb-12 space-y-4">
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-800 tracking-tight">
-                  Design Your <span className="text-emerald-600">Perfect</span> Meal Plan
-                </h1>
-                <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-                  Customize your nutrition journey with our chef-crafted meal packages
-                </p>
-              </div>
+          <>
+            <div>
+              <div className="min-h-screen w-full   ">
+                <ToastContainer />
+                <div className="md:max-w-7xl w-full  ">
+                  {/* Header Section */}
+                  <div className="text-center mb-12 space-y-4">
+                    <h1 className="text-4xl md:text-5xl font-bold text-gray-800 tracking-tight">
+                      Design Your <span className="text-emerald-600">Perfect</span> Meal Plan
+                    </h1>
+                    <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+                      Customize your nutrition journey with our chef-crafted meal packages
+                    </p>
+                  </div>
 
-              {/* Package Selection Section */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                {selectedPlans && selectedPlans.packages && selectedPlans.packages.map((packageItem) => (
-                  <div key={packageItem._id}
-                    className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group">
-                    <div className="h-3 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
-                    <div className="p-8">
-                      <div className="flex items-start justify-between mb-6">
-                        <div className="p-3 bg-emerald-100 rounded-xl">
-                          <ShoppingBag className="w-6 h-6 text-emerald-600" />
-                        </div>
-                        <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                          Perfect for {packageItem.packageGroup === "Family" ? "families" : "individuals"}
-                        </span>
-                      </div>
+                  {/* Package Selection Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-3   gap-8 mb-16">
+                    {selectedPlans && selectedPlans.packages &&
+                      // First group packages by packageGroup, then sort the groups
+                      Object.entries(
+                        selectedPlans.packages.reduce((groups, packageItem) => {
+                          const group = packageItem.packageGroup;
+                          if (!groups[group]) {
+                            groups[group] = [];
+                          }
+                          groups[group].push(packageItem);
+                          return groups;
+                        }, {})
+                      )
+                        // Sort the groups in the desired order
+                        .sort(([groupNameA], [groupNameB]) => {
+                          // Define the order priority for group names
+                          const order = {
+                            'Full Package': 1,
+                            'Main Meals with Breakfast': 2,
+                            'Main Meals with FITT Snacks': 3
+                          };
 
-                      <h3 className="text-2xl font-bold mb-3 text-gray-800">{packageItem.packageGroup}</h3>
-                      <p className="text-gray-600 mb-8">{packageItem.description}</p>
+                          // Normalize group names for case-insensitive comparison
+                          const normalizedA = groupNameA.toLowerCase();
+                          const normalizedB = groupNameB.toLowerCase();
 
-                      <button
-                        onClick={() => handleSelection(packageItem._id, packageItem._id, packageItem.identifier)}
-                        className={`w-full py-4 px-6 rounded-xl text-left font-medium transition-all duration-300
-                          ${selectedPackageId === packageItem._id
-                            ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md"
-                            : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 group-hover:translate-y-1"
-                          }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span>{packageItem.packageName}</span>
-                          <ChevronRight className={`w-5 h-5 transition-transform ${selectedPackageId === packageItem._id ? 'rotate-90' : 'group-hover:translate-x-1'}`} />
-                        </div>
-                      </button>
+                          // Get order for each group (default to 4 if not in our list)
+                          const aOrder = Object.entries(order).find(([key]) =>
+                            key.toLowerCase() === normalizedA
+                          )?.[1] || 4;
+
+                          const bOrder = Object.entries(order).find(([key]) =>
+                            key.toLowerCase() === normalizedB
+                          )?.[1] || 4;
+
+                          return aOrder - bOrder;
+                        })
+                        // Then map the sorted groups
+                        ?.map(([groupName, packages]) => {
+                          // Sort packages within each group if needed (optional)
+                          const sortedPackages = [...packages].sort((a, b) => {
+                            const aName = a.packageName.toLowerCase();
+                            const bName = b.packageName.toLowerCase();
+                            const order = {
+                              'fullpackage': 1,
+                              'main meals with breakfast': 2,
+                              'main meals with fitt snacks': 3
+                            };
+                            const aOrder = order[aName] || 4;
+                            const bOrder = order[bName] || 4;
+                            return aOrder - bOrder;
+                          });
+
+                          return (
+                            <div key={groupName}
+                              className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group">
+                              <div className="h-3 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+                              <div className="p-8">
+                                <div className="flex items-start justify-between mb-6">
+                                  <div className="p-3 bg-emerald-100 rounded-xl">
+                                    <ShoppingBag className="w-6 h-6 text-emerald-600" />
+                                  </div>
+                                  <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                                    Perfect for {groupName === "Family" ? "families" : "individuals"}
+                                  </span>
+                                </div>
+
+                                <h3 className="text-2xl font-bold mb-3 text-gray-800">{groupName}</h3>
+
+                                <div className="space-y-3">
+                                  {sortedPackages?.map(packageItem => (
+                                    <button
+                                      key={packageItem._id}
+                                      onClick={() => handleSelection(packageItem._id, packageItem._id, packageItem.identifier)}
+                                      className={`w-full py-3 px-6 rounded-xl text-left font-medium transition-all duration-300
+                    ${selectedPackageId === packageItem._id
+                                          ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md"
+                                          : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                        }`}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <span>{packageItem.packageName}</span>
+                                        <ChevronRight className={`w-5 h-5 ${selectedPackageId === packageItem._id ? 'rotate-90' : ''}`} />
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                    }
+                  </div>
+
+                  {/* Duration Selection */}
+                  <div className="bg-white rounded-2xl shadow-xl p-8 mb-16">
+                    <h2 className="text-2xl font-bold mb-8 text-gray-800">Select Your Plan Duration</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {plans?.map((plan) => (
+                        <button
+                          key={plan}
+                          onClick={() => setSelectedPlan(plan)}
+                          className={`p-6 rounded-xl transition-all duration-300 group relative overflow-hidden
+                        ${selectedPlan === plan
+                              ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-lg"
+                              : "bg-gray-50 text-gray-700 hover:shadow-md"
+                            }`}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                          <div className="flex justify-between items-center">
+                            <div className="text-lg font-bold">{plan}</div>
+                            {selectedPlan === plan && <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-emerald-600">✓</div>}
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Duration Selection */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-16">
-                <h2 className="text-2xl font-bold mb-8 text-gray-800">Select Your Plan Duration</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {plans.map((plan) => (
-                    <button
-                      key={plan}
-                      onClick={() => setSelectedPlan(plan)}
-                      className={`p-6 rounded-xl transition-all duration-300 group relative overflow-hidden
-                        ${selectedPlan === plan
-                          ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-lg"
-                          : "bg-gray-50 text-gray-700 hover:shadow-md"
-                        }`}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-                      <div className="flex justify-between items-center">
-                        <div className="text-lg font-bold">{plan}</div>
-                        {selectedPlan === plan && <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-emerald-600">✓</div>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Calendar Section */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-16">
-                <div className="flex justify-between items-center mb-8">
-                  <h2 className="text-2xl font-bold text-gray-800">Choose Your Start Date</h2>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      onClick={handlePrevMonth}
-                      className="p-2 rounded-full hover:bg-emerald-100 transition-colors"
-                    >
-                      <ChevronLeft className="w-6 h-6 text-emerald-600" />
-                    </button>
-
-                    <span className="font-medium text-gray-800">
-                      {new Date(currentYear, currentMonth).toLocaleDateString('default', { month: 'long', year: 'numeric' })}
-                    </span>
-
-                    <button
-                      onClick={handleNextMonth}
-                      className="p-2 rounded-full hover:bg-emerald-100 transition-colors"
-                    >
-                      <ChevronRight className="w-6 h-6 text-emerald-600" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-8 justify-center">
-                  {renderCalendar(0)}
-                  {renderCalendar(1)}
-                </div>
-
-                {/* Reset Selections Button */}
-                <div className="flex justify-end mt-8">
-                  <button
-                    onClick={handleResetSelections}
-                    className="px-6 py-3 border-2 border-emerald-600 text-emerald-600 rounded-xl hover:bg-emerald-50 font-medium transition-all duration-300"
-                  >
-                    Reset Selections
-                  </button>
                 </div>
               </div>
             </div>
-          </div>
+
+            {/* Calendar Section */}
+            <div className="bg-white rounded-2xl shadow-xl md:p-8 p-1  mb-16">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold text-gray-800">Choose Your Start Date</h2>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={handlePrevMonth}
+                    className="p-2 rounded-full hover:bg-emerald-100 transition-colors"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-emerald-600" />
+                  </button>
+
+                  <span className="font-medium text-gray-800">
+                    {new Date(currentYear, currentMonth).toLocaleDateString('default', { month: 'long', year: 'numeric' })}
+                  </span>
+
+                  <button
+                    onClick={handleNextMonth}
+                    className="p-2 rounded-full hover:bg-emerald-100 transition-colors"
+                  >
+                    <ChevronRight className="w-6 h-6 text-emerald-600" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-8  ">
+                {renderCalendar(0)}
+                {renderCalendar(1)}
+              </div>
+
+              {/* Reset Selections Button */}
+              <div className="flex justify-end mt-8">
+                <button
+                  onClick={handleResetSelections}
+                  className="px-6 py-3 border-2 border-emerald-600 text-emerald-600 rounded-xl hover:bg-emerald-50 font-medium transition-all duration-300"
+                >
+                  Reset Selections
+                </button>
+              </div>
+            </div>
+            <div className="text-right">
+              <button
+                onClick={handleContinue} // Replace with your actual handler
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-md transition"
+              >
+                Continue
+              </button>
+            </div>
+          </>
         );
 
       case 2:
@@ -607,93 +801,6 @@ const MealPlanner = () => {
         }
 
         return (
-
-          // <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          //   {selectedDate && mealData[selectedDate] ? (
-          //     mealData[selectedDate].map((meal) => (
-          //       <div
-          //         key={meal._id}
-          //         className={`rounded-lg md:rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white group cursor-pointer
-          //         ${selectedMeals[selectedDate] === meal._id ? 'ring-2 ring-emerald-500' : ''}`}
-          //         onClick={() => handleMealSelection(selectedDate, meal._id)}
-          //       >
-          //         <div className="h-40 md:h-52 overflow-hidden relative">
-          //           {meal.image && meal.image.length > 0 ? (
-          //             <img
-          //               src={meal.image[0]}
-          //               alt={meal.mealName}
-          //               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          //             />
-          //           ) : (
-          //             <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-          //               <span className="text-gray-400 text-sm">No image available</span>
-          //             </div>
-          //           )}
-          //           {selectedMeals[selectedDate] === meal._id && (
-          //             <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1 md:p-2 rounded-full flex items-center justify-center">
-          //               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          //                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          //               </svg>
-          //             </div>
-          //           )}
-          //         </div>
-          //         <div className="p-3 md:p-4">
-          //           <div className="flex justify-between items-start mb-2">
-          //             <h3 className="text-lg md:text-xl font-bold text-gray-800">{meal.mealName || "Unnamed Meal"}</h3>
-          //             <button
-          //               onClick={(e) => toggleNutritionDetails(meal._id, e)}
-          //               className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-          //             >
-          //               <Info size={20} className="text-green -600 hover:text-emerald-500" />
-          //             </button>
-          //           </div>
-          //           <p className="text-sm md:text-base text-gray-600 mb-2 md:mb-3 line-clamp-2">
-          //             {meal.description || "No description available"}
-          //           </p>
-
-          //           {/* Nutrition Details Panel that shows when eye icon is clicked */}
-          //           {showNutritionDetails[meal._id] && meal.moreDetails && (
-          //             <div className="mt-2 pt-2 border-t border-gray-200">
-          //               <h4 className="font-medium text-sm text-gray-700 mb-1">Nutrition Information</h4>
-          //               <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
-          //                 <div className="flex justify-between">
-          //                   <span className="text-gray-600">Energy:</span>
-          //                   <span className="font-medium">{meal.moreDetails.energy} kcal</span>
-          //                 </div>
-          //                 <div className="flex justify-between">
-          //                   <span className="text-gray-600">Protein:</span>
-          //                   <span className="font-medium">{meal.moreDetails.protein}g</span>
-          //                 </div>
-          //                 <div className="flex justify-between">
-          //                   <span className="text-gray-600">Carbs:</span>
-          //                   <span className="font-medium">{meal.moreDetails.carbohydrates}g</span>
-          //                 </div>
-          //                 <div className="flex justify-between">
-          //                   <span className="text-gray-600">Fat:</span>
-          //                   <span className="font-medium">{meal.moreDetails.fat}g</span>
-          //                 </div>
-          //               </div>
-
-          //               <h4 className="font-medium text-sm text-gray-700 mt-2 mb-1">Allergens</h4>
-          //               <div className="flex flex-wrap gap-1">
-          //                 {meal.moreDetails.allergens && meal.moreDetails.allergens.map((allergen, index) => (
-          //                   <span key={index} className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
-          //                     {allergen}
-          //                   </span>
-          //                 ))}
-          //               </div>
-          //             </div>
-          //           )}
-          //         </div>
-          //       </div>
-          //     ))
-          //   ) : (
-          //     <div className="col-span-full py-6 text-center">
-          //       <p className="text-gray-500">No meals available for the selected date.</p>
-          //     </div>
-          //   )}
-          // </div>
-
           <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-3 sm:p-4 md:p-6">
             <ToastContainer />
             <div className="max-w-7xl mx-auto">
@@ -713,7 +820,7 @@ const MealPlanner = () => {
 
               <div className="bg-white rounded-lg md:rounded-2xl shadow-md md:shadow-xl p-4 md:p-6 mb-8">
                 <div className="flex gap-2 overflow-x-auto mb-4 md:mb-6 pb-2 scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-gray-100">
-                  {selectedDates.map((date) => (
+                  {selectedDates?.map((date) => (
                     <button
                       key={date}
                       onClick={() => setSelectedDate(date)}
@@ -731,85 +838,113 @@ const MealPlanner = () => {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                  {selectedDate && mealData[selectedDate] ? (
-                    mealData[selectedDate].map((meal) => (
-                      <div
-                        key={meal._id}
-                        className={`rounded-lg md:rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white group cursor-pointer
-                ${selectedMeals[selectedDate] === meal._id ? 'ring-2 ring-emerald-500' : ''}`}
-                        onClick={() => handleMealSelection(selectedDate, meal._id)}
-                      >
-                        <div className="h-40 md:h-52 overflow-hidden relative">
-                          {meal.image && meal.image.length > 0 ? (
-                            <img
-                              src={meal.image[0]}
-                              alt={meal.mealName}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                              <span className="text-gray-400 text-sm">No image available</span>
-                            </div>
-                          )}
-                          {selectedMeals[selectedDate] === meal._id && (
-                            <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1 md:p-2 rounded-full flex items-center justify-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-3 md:p-4">
-                          <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-1 md:mb-2">{meal.mealName || "Unnamed Meal"}</h3>
-                          <p className="text-sm md:text-base text-gray-600 mb-2 md:mb-4 line-clamp-2">{meal.description || "No description available"}</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="col-span-full py-6 text-center">
-                      <p className="text-gray-500">No meals available for the selected date.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+                <div className="flex flex-col gap-6">  {/* Vertical layout for meal types */}
+                  {selectedDate && mealType ? (
+                    mealType?.map((type) => {
+                      const meals = getMealsByType(type.identifier);
 
-              {/* Meal selection summary */}
-              <div className="bg-white rounded-lg md:rounded-xl shadow-md md:shadow-lg p-4 md:p-6 mb-6">
-                <h2 className="text-xl md:text-2xl font-bold mb-4 text-gray-800">Your Meal Selection</h2>
-                <div className="overflow-x-auto -mx-4 md:mx-0">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead>
-                      <tr>
-                        <th className="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selected Meal</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {selectedDates.map((date) => {
-                        const mealId = selectedMeals[date];
-                        const mealName = mealData[date]?.find(meal => meal._id === mealId)?.mealName || "No meal selected";
-
+                      if (meals?.length > 0) {
                         return (
-                          <tr key={date}>
-                            <td className="px-3 md:px-6 py-3 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900">
-                              {new Date(date).toLocaleDateString("en-US", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </td>
-                            <td className="px-3 md:px-6 py-3 whitespace-nowrap text-xs md:text-sm text-gray-500">
-                              {mealName}
-                            </td>
-                          </tr>
+                          <div key={type.identifier} className="space-y-2">
+                            {/* Meal type header */}
+                            <h3 className="text-lg font-semibold">{type.mealType}</h3>
+
+                            {/* Horizontally scrollable meal cards */}
+                            <div className="flex overflow-x-auto pb-4 gap-3 md:gap-5 snap-x scrollbar-hide">
+                              {meals?.map((meal) => (
+                                <div
+                                  key={meal._id}
+                                  className="snap-start flex-shrink-0 w-[280px] sm:w-[320px] md:w-[340px]"
+                                >
+                                  <div
+                                    className={`rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white group cursor-pointer
+          ${selectedMeals[selectedDate]?.some(m => m._id === meal._id) ? 'ring-2 ring-emerald-500' : ''}`}
+                                    onClick={() => handleMealSelection(selectedDate, meal, meal.mealType)}
+                                  >
+                                    <div className="h-40 md:h-48 overflow-hidden relative">
+                                      {meal.image && meal.image.length > 0 ? (
+                                        <img
+                                          src={meal.image[0]}
+                                          alt={meal.mealName}
+                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                          <span className="text-gray-400 text-sm">No image available</span>
+                                        </div>
+                                      )}
+                                      {selectedMeals[selectedDate]?.some(m => m._id === meal._id) && (
+                                        <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1 rounded-full flex items-center justify-center">
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                          </svg>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="p-3 md:p-4">
+                                      <div className="flex justify-between items-start mb-2">
+                                        <h3 className="text-lg font-bold text-gray-800 line-clamp-1">{meal.mealName || "Unnamed Meal"}</h3>
+                                        <button
+                                          onClick={(e) => toggleNutritionDetails(meal._id, e)}
+                                          className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                                        >
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1v-3a1 1 0 00-1-1z" clipRule="evenodd" />
+                                          </svg>
+                                        </button>
+                                      </div>
+
+                                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                                        {meal.description || "No description available"}
+                                      </p>
+
+                                      {/* Nutrition Details Panel */}
+                                      {showNutritionDetails[meal._id] && meal.moreDetails && (
+                                        <div className="mt-2 pt-2 border-t border-gray-200">
+                                          <h4 className="font-medium text-sm text-gray-700 mb-1">Nutrition Information</h4>
+                                          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
+                                            <div className="flex justify-between">
+                                              <span className="text-gray-600">Energy:</span>
+                                              <span className="font-medium">{meal.moreDetails.energy} kcal</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                              <span className="text-gray-600">Protein:</span>
+                                              <span className="font-medium">{meal.moreDetails.protein}g</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                              <span className="text-gray-600">Carbs:</span>
+                                              <span className="font-medium">{meal.moreDetails.carbohydrates}g</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                              <span className="text-gray-600">Fat:</span>
+                                              <span className="font-medium">{meal.moreDetails.fat}g</span>
+                                            </div>
+                                          </div>
+
+                                          <h4 className="font-medium text-sm text-gray-700 mt-2 mb-1">Allergens</h4>
+                                          <div className="flex flex-wrap gap-1">
+                                            {meal.moreDetails.allergens && meal.moreDetails.allergens.map((allergen, index) => (
+                                              <span key={index} className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                                {allergen}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         );
-                      })}
-                    </tbody>
-                  </table>
+                      }
+                      return null;
+                    })
+                  ) : null}
                 </div>
               </div>
-
               {/* Confirm button */}
               <div className="flex justify-center mb-8 md:mb-12">
                 <button
@@ -830,7 +965,9 @@ const MealPlanner = () => {
               Choose Your Add-ons <span className="text-sm text-gray-500">(Optional) If u dont need You can Skip!</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {addons.map((item) => {
+              {console.log(addons, "The addon list"
+              )}
+              {addons?.map((item) => {
                 const isSelected = selectedEnhancements.some((selected) => selected._id === item._id);
                 const selectedItem = selectedEnhancements.find((selected) => selected._id === item._id);
                 const quantity = selectedItem ? selectedItem.quantity || 1 : 0;
@@ -933,6 +1070,15 @@ const MealPlanner = () => {
                 </button>
               </div>
             )}
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={() => setActiveStep(4)}
+                className="py-3 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-base font-medium transition-all duration-300 shadow-md flex items-center space-x-2"
+                aria-label="Skip add-ons"
+              >
+                Skip
+              </button>
+            </div>
           </div>
         );
 
@@ -1053,8 +1199,10 @@ const MealPlanner = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        saveSelectionsToSessionStorage();
-                        handleCompleteOrder();
+                        // saveSelectionsToSessionStorage();
+                        // handleCompleteOrder();
+                        //  setActiveStep(4);
+                        navigate('/summary');
                       }}
                       className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-medium transition hover:bg-gray-300"
                     >
@@ -1090,7 +1238,7 @@ const MealPlanner = () => {
     const startDate = selectedDates[0];
     const endDate = selectedDates[selectedDates.length - 1];
 
-    const selectedMealsArray = selectedDates.map((date) => ({
+    const selectedMealsArray = selectedDates?.map((date) => ({
       date,
       meals: selectedMeals[date] ? [selectedMeals[date]] : [],
     }));
@@ -1112,52 +1260,27 @@ const MealPlanner = () => {
     sessionStorage.setItem("selectedProducts", JSON.stringify(formattedData));
     sessionStorage.setItem("startDate", startDate);
     sessionStorage.setItem("endDate", endDate);
-
-    // console.log("Selected Meals:", JSON.stringify(formattedData, null, 2));
-  };
-
-  const handleBackClick = () => {
-    // Determine the previous step based on current step
-    const previousStep = Math.max(1, activeStep - 1);
-
-    // Reset any necessary state for the previous step
-    switch (previousStep) {
-      case 1:
-        // If going back to step 1, you might want to reset some selections
-        setSelectedPackageId(null);
-        setSelectedPlan(null);
-        break;
-      case 2:
-        // If going back to step 2, reset meal selections if needed
-        setSelectedDate(null);
-        setSelectedMeals({});
-        break;
-      case 3:
-        // If going back to step 3, reset enhancements
-        setSelectedEnhancements([]);
-        break;
-    }
-
-    // Set the active step to the previous step
-    setActiveStep(previousStep);
+    setTimeout(() => {
+      setActiveStep(3);
+    }, 1600);
   };
 
 
   return (
 
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="md:max-w-6xl w-full mx-auto">
         {/* Progress Steps */}
-        <div className="flex justify-between items-center mb-12">
-          {[1, 2, 3, 4].map((step) => (
+        <div className="flex flex-wrap justify-between items-center mb-12 gap-2 w-full">
+          {[1, 2, 3, 4]?.map((step) => (
             <div key={step} className="flex items-center">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-semibold
-      ${activeStep >= step ? 'bg-[#059033] text-white' : 'bg-gray-200 text-gray-600'}`}>
+              <div className={`w-8 h-8 sm:w-10  gap-2 sm:h-10 rounded-full sm:rounded-xl flex items-center justify-center font-semibold text-sm sm:text-base
+        ${activeStep >= step ? 'bg-[#059033] text-white' : 'bg-gray-200 text-gray-600'}`}>
                 {step}
               </div>
-              {step < 4 && (
-                <div className={`w-24 h-1 mx-2 
-        ${activeStep > step ? 'bg-[#059033]' : 'bg-gray-200'}`}
+              {step <= 4 && (
+                <div className={`w-12 sm:w-16 md:w-24 h-1 mx-1 sm:mx-2
+          ${activeStep > step ? 'bg-[#059033]' : 'bg-gray-200'}`}
                 />
               )}
             </div>
@@ -1179,49 +1302,7 @@ const MealPlanner = () => {
                   'Where should we deliver your meals? '}
           </p>
         </div>
-
         {renderStepContent()}
-
-        {/* Navigation */}
-        <div className="flex justify-between mt-12">
-          <button
-            onClick={handleBackClick}
-            className="px-6 py-2 rounded-xl border-2 border-[#059033] text-[#059033] hover:bg-green-50"
-          >
-            Back
-          </button>
-          {activeStep === 4 ? (
-            sessionStorage.getItem('userType') === '1' ? (
-              <button
-                onClick={() => {
-                  saveSelectionsToSessionStorage();
-                  handleCompleteOrder(); // Call API on final step
-                  setActiveStep(Math.min(5, activeStep + 1));
-                }}
-                className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
-              >
-                Complete Order
-              </button>
-            ) : (
-              <button
-                onClick={() => window.location.href = '/Order'}
-                className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
-              >
-                Login to Complete Order
-              </button>
-            )
-          ) : (
-            <button
-              onClick={() => {
-                saveSelectionsToSessionStorage();
-                setActiveStep(Math.min(5, activeStep + 1));
-              }}
-              className="px-6 py-2 rounded-xl bg-[#059033] text-white hover:bg-green-700"
-            >
-              Continue
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );

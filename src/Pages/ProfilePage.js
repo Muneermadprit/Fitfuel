@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
     ChevronDown, ChevronUp, Plus, Edit, Trash2,
-    Home, ShoppingBag, UserCircle, Settings, LogOut,
-    AlertCircle, CheckCircle, XCircle, RefreshCw
+    Home, ShoppingBag, UserCircle, Settings, LogOut
 } from 'lucide-react';
-import logo from '../images/logo.png'
+import logo from '../images/logo.png';
+import Navigation from './mealListNavigation';
 
 // Address Modal Component
 const AddressModal = ({ isOpen, onClose, onSubmit, initialAddress = null }) => {
@@ -37,13 +37,6 @@ const AddressModal = ({ isOpen, onClose, onSubmit, initialAddress = null }) => {
     };
 
     if (!isOpen) return null;
-    const getMealPlanDetails = (order) => {
-        return {
-            name: order.selectedPackage?.packageName || "Unknown Package",
-            description: order.selectedPackage?.description || "",
-            image: null
-        };
-    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -214,24 +207,6 @@ const NavigationHeader = ({ userName, onLogout }) => {
     );
 };
 
-// Helper component for payment status
-const PaymentStatusBadge = ({ status }) => {
-    const statusMap = {
-        0: { label: 'Payment Pending', icon: AlertCircle, className: 'bg-yellow-100 text-yellow-800' },
-        1: { label: 'Payment Successful', icon: CheckCircle, className: 'bg-green-100 text-green-800' },
-        2: { label: 'Payment Failed', icon: XCircle, className: 'bg-red-100 text-red-800' }
-    };
-
-    const { label, icon: Icon, className } = statusMap[status] || statusMap[0];
-
-    return (
-        <div className={`flex items-center px-3 py-1 rounded-full ${className}`}>
-            <Icon size={16} className="mr-1" />
-            <span className="text-sm font-medium">{label}</span>
-        </div>
-    );
-};
-
 // Main User Profile Component
 const UserProfile = () => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -240,11 +215,30 @@ const UserProfile = () => {
     const [packageDetails, setPackageDetails] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [processingPayment, setProcessingPayment] = useState(null);
 
     // New state for address management
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null);
+
+    // Load RazorPay script
+    useEffect(() => {
+        const loadRazorpayScript = () => {
+            return new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                script.onload = () => {
+                    resolve(true);
+                };
+                script.onerror = () => {
+                    resolve(false);
+                };
+                document.body.appendChild(script);
+            });
+        };
+
+        // Load RazorPay script when component mounts
+        loadRazorpayScript();
+    }, []);
 
     // Fetch profile data
     useEffect(() => {
@@ -269,8 +263,8 @@ const UserProfile = () => {
         if (packageDetails[orderID]) return packageDetails[orderID];
 
         try {
-            const response = await axios.post('https://api.dailyfit.ae/api/user/get-package-details', {
-                id: orderID
+            const response = await axios.post('https://api.dailyfit.ae/api/user/get-order-meal-details', {
+                orderID: orderID
             }, { withCredentials: true });
 
             // Cache the package details
@@ -297,35 +291,6 @@ const UserProfile = () => {
         // Fetch package details if not already fetched
         await fetchPackageDetails(order.orderID);
         setExpandedOrderId(order.orderID);
-    };
-
-    // Handler for retrying payment
-    const handleRetryPayment = async (order) => {
-        try {
-            setProcessingPayment(order.orderID);
-            // Call API to retry payment
-            const response = await axios.post('https://api.dailyfit.ae/api/user/retry-payment', {
-                orderID: order.orderID
-            }, { withCredentials: true });
-
-            if (response.data && response.data.success) {
-                // If success, you might need to redirect to payment gateway or update status
-                if (response.data.paymentUrl) {
-                    window.location.href = response.data.paymentUrl;
-                } else {
-                    // Refresh profile data to get updated payment status
-                    const profileResponse = await axios.get('https://api.dailyfit.ae/api/user/get-profile', { withCredentials: true });
-                    setProfileData(profileResponse.data.data);
-                }
-            } else {
-                alert("Failed to initiate payment retry. Please try again later.");
-            }
-        } catch (err) {
-            console.error('Error retrying payment', err);
-            alert("Failed to retry payment. Please try again later.");
-        } finally {
-            setProcessingPayment(null);
-        }
     };
 
     // Add new address
@@ -384,6 +349,87 @@ const UserProfile = () => {
         }
     };
 
+    // Function to handle Pay Now button click
+    const handlePayNow = async (order) => {
+        try {
+            // First check if the order has RazorPay details
+            if (!order.RazorPayOrderDetails || !order.RazorPayOrderDetails.id) {
+                console.error('Missing RazorPay order details');
+                return;
+            }
+
+            // Initialize RazorPay payment
+            const options = {
+                key: "your_razorpay_key_id", // Replace with your actual RazorPay key
+                amount: order.RazorPayOrderDetails.amount,
+                currency: order.RazorPayOrderDetails.currency,
+                name: "DailyFit",
+                description: `Payment for Order ID: ${order.orderID}`,
+                order_id: order.RazorPayOrderDetails.id,
+                handler: function (response) {
+                    // Verify payment on your server
+                    verifyPayment(response, order.orderID);
+                },
+                prefill: {
+                    name: profileData.userName,
+                    email: profileData.userEmail,
+                    contact: profileData.phone || ""
+                },
+                theme: {
+                    color: "#22C55E" // Green color to match your theme
+                }
+            };
+
+            // Initialize and open RazorPay checkout
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+        } catch (err) {
+            console.error('Error initiating payment', err);
+        }
+    };
+
+    // Function to handle Retry Payment button click
+    const handleRetryPayment = (order) => {
+        // Simply call the handlePayNow function to retry
+        handlePayNow(order);
+    };
+
+    // Function to verify payment with your backend
+    const verifyPayment = async (paymentResponse, orderID) => {
+        try {
+            const response = await axios.post(
+                'https://api.dailyfit.ae/api/user/verify-payment',
+                {
+                    orderID: orderID,
+                    paymentID: paymentResponse.razorpay_payment_id,
+                    razorpay_order_id: paymentResponse.razorpay_order_id,
+                    razorpay_signature: paymentResponse.razorpay_signature
+                },
+                { withCredentials: true }
+            );
+
+            if (response.data.status) {
+                // Update the local state to reflect payment success
+                setProfileData(prev => ({
+                    ...prev,
+                    orders: prev.orders.map(order =>
+                        order.orderID === orderID
+                            ? { ...order, paymentStatus: 1 }
+                            : order
+                    )
+                }));
+
+                // Show success message to user
+                alert('Payment successful!');
+            } else {
+                alert('Payment verification failed. Please try again.');
+            }
+        } catch (err) {
+            console.error('Payment verification error', err);
+            alert('Payment verification failed. Please try again.');
+        }
+    };
+
     // Logout handler
     const handleLogout = async () => {
         try {
@@ -392,28 +438,6 @@ const UserProfile = () => {
             window.location.href = '/login';
         } catch (err) {
             console.error('Logout error', err);
-        }
-    };
-
-    const getMealPlanDetails = (order) => {
-        return {
-            name: order.selectedPackage?.packageName || "Unknown Package",
-            description: order.selectedPackage?.description || "",
-            image: null // You can add image logic if available in the response
-        };
-    };
-
-    const handlePaymentAction = async (order) => {
-        try {
-            setProcessingPayment(order.orderID);
-            // Redirect to product-summary page with order ID
-            // window.location.href = `/product-summary?orderID=${order.orderID}`;
-            window.location.href = `/summary`;
-        } catch (err) {
-            console.error('Error processing payment action', err);
-            alert("Failed to process payment. Please try again later.");
-        } finally {
-            setProcessingPayment(null);
         }
     };
 
@@ -441,106 +465,540 @@ const UserProfile = () => {
     }
 
     return (
-        <div className="bg-green-50 min-h-screen">
-            {/* Navigation Header */}
-            <NavigationHeader
-                userName={profileData.userName}
-                onLogout={handleLogout}
-            />
+        // <div className="bg-green-50 min-h-screen">
+        //     {/* Navigation Header */}
+        //     <Navigation />
+        //     <div className="container mx-auto px-4 py-8">
+        //         {/* Tabs Navigation */}
+        //         <div className="flex border-b mb-6 bg-white rounded-lg shadow-sm overflow-hidden">
+        //             <button
+        //                 className={`flex-1 px-4 py-3 transition-colors ${activeTab === 'profile' ? 'bg-green-500 text-white' : 'text-green-600 hover:bg-green-100'}`}
+        //                 onClick={() => setActiveTab('profile')}
+        //             >
+        //                 Profile & Addresses
+        //             </button>
+        //             <button
+        //                 className={`flex-1 px-4 py-3 transition-colors ${activeTab === 'orders' ? 'bg-green-500 text-white' : 'text-green-600 hover:bg-green-100'}`}
+        //                 onClick={() => setActiveTab('orders')}
+        //             >
+        //                 My Orders
+        //             </button>
+        //         </div>
 
-            <div className="container mx-auto px-4 py-8">
-                {/* Tabs Navigation */}
-                <div className="flex border-b mb-6 bg-white rounded-lg shadow-sm overflow-hidden">
+        //         {/* Profile & Addresses Content */}
+        //         {activeTab === 'profile' && (
+        //             <div className="space-y-6">
+        //                 {/* Personal Information Section */}
+        //                 <div className="bg-white shadow-md rounded-lg p-6 border-l-4 border-green-500">
+        //                     <h2 className="text-xl font-semibold mb-4 text-green-700">Personal Information</h2>
+        //                     <div className="grid md:grid-cols-2 gap-4">
+        //                         <div>
+        //                             <p className="font-medium text-green-600">Name</p>
+        //                             <p className="text-gray-900">{profileData.userName}</p>
+        //                         </div>
+        //                         <div>
+        //                             <p className="font-medium text-green-600">Email</p>
+        //                             <p className="text-gray-900">{profileData.userEmail}</p>
+        //                         </div>
+        //                     </div>
+        //                 </div>
+
+        //                 {/* Saved Addresses Section */}
+        //                 <div className="bg-white shadow-md rounded-lg p-6 border-l-4 border-green-500">
+        //                     <div className="flex justify-between items-center mb-4">
+        //                         <h2 className="text-xl font-semibold text-green-700">Saved Addresses</h2>
+        //                         <button
+        //                             onClick={() => {
+        //                                 setEditingAddress(null);
+        //                                 setIsAddressModalOpen(true);
+        //                             }}
+        //                             className="flex items-center text-white bg-green-500 hover:bg-green-600 px-3 py-2 rounded transition"
+        //                         >
+        //                             <Plus className="mr-2" /> Add New Address
+        //                         </button>
+        //                     </div>
+        //                     <div className="space-y-4">
+        //                         {profileData.savedAddress.map((address, index) => (
+        //                             <div
+        //                                 key={index}
+        //                                 className="border-b pb-4 last:border-b-0 flex justify-between items-center hover:bg-green-50 p-3 rounded transition"
+        //                             >
+        //                                 <div>
+        //                                     <p className="font-semibold text-green-900">{address.street}</p>
+        //                                     <p className="text-gray-600">{address.buildingFloor}, {address.houseOrFlatNumber}</p>
+        //                                     <p className="text-gray-600">{address.landmark}</p>
+        //                                     <p className="text-gray-600">
+        //                                         {address.city}, {address.state} {address.postalCode}
+        //                                     </p>
+        //                                     <p className="text-gray-600">{address.country}</p>
+        //                                     <p className="text-gray-600">Phone: {address.phone}</p>
+        //                                     {address.identifier && (
+        //                                         <span className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded mt-2 inline-block">
+        //                                             {address.identifier}
+        //                                         </span>
+        //                                     )}
+        //                                 </div>
+        //                                 <div className="flex space-x-2">
+        //                                     <button
+        //                                         onClick={() => {
+        //                                             setEditingAddress(address);
+        //                                             setIsAddressModalOpen(true);
+        //                                         }}
+        //                                         className="text-green-500 hover:bg-green-100 p-2 rounded"
+        //                                     >
+        //                                         <Edit size={20} />
+        //                                     </button>
+        //                                     <button
+        //                                         onClick={() => handleDeleteAddress(address)}
+        //                                         className="text-red-500 hover:bg-red-100 p-2 rounded"
+        //                                     >
+        //                                         <Trash2 size={20} />
+        //                                     </button>
+        //                                 </div>
+        //                             </div>
+        //                         ))}
+        //                     </div>
+        //                 </div>
+        //             </div>
+        //         )}
+
+        //         {/* Orders Content */}
+        //         {activeTab === 'orders' && (
+        //             <div className="bg-white shadow-md rounded-lg p-6 border-l-4 border-green-500">
+        //                 <h2 className="text-xl font-semibold mb-4 text-green-700">My Orders</h2>
+
+        //                 {loading ? (
+        //                     <p className="text-green-700 font-medium">Loading your orders...</p>
+        //                 ) : error ? (
+        //                     <p className="text-red-500">Something went wrong while loading your orders.</p>
+        //                 ) : profileData?.orders?.length > 0 ? (
+        //                     <div className="space-y-4">
+        //                         {profileData.orders.map((order, index) => (
+        //                             <div key={index} className="border border-gray-200 rounded-lg mb-4 overflow-hidden hover:shadow-lg transition duration-300">
+        //                                 {/* Order Summary - Improved header with better spacing and visual hierarchy */}
+        //                                 <div
+        //                                     className="p-5 flex justify-between items-center bg-white hover:bg-green-50 cursor-pointer transition-colors"
+        //                                     onClick={() => handleExpandOrder(order)}
+        //                                 >
+        //                                     <div className="flex-grow">
+        //                                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2">
+        //                                             <div className="flex items-center gap-2 mb-1 sm:mb-0">
+        //                                                 <span className="font-semibold text-lg text-green-900">Order #{order.orderID}</span>
+        //                                             </div>
+
+        //                                             {/* Enhanced Total Amount Display */}
+        //                                             <div className="flex items-center">
+        //                                                 <div className="bg-green-600 text-white px-4 py-2 rounded-l-md font-medium">
+        //                                                     TOTAL
+        //                                                 </div>
+        //                                                 <div className="bg-green-500 text-white px-4 py-2 font-bold text-lg">
+        //                                                     AED
+        //                                                 </div>
+        //                                                 <div className="bg-green-100 text-green-800 px-4 py-2 rounded-r-md font-bold text-lg">
+        //                                                     {order.amount}
+        //                                                 </div>
+        //                                             </div>
+        //                                         </div>
+        //                                         <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mt-2">
+        //                                             {order.selectedPackage?.packageName || "Package"}
+        //                                         </span>
+
+        //                                         <div className="flex flex-wrap gap-4 mt-3 text-sm">
+        //                                             <div className="flex items-center text-gray-600">
+        //                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        //                                                 </svg>
+        //                                                 <span>
+        //                                                     <span className="text-gray-500">Start:</span> {order.startDate?.slice(0, 10) || order.selectedPackage?.startDate}
+        //                                                 </span>
+        //                                             </div>
+        //                                             <div className="flex items-center text-gray-600">
+        //                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        //                                                 </svg>
+        //                                                 <span>
+        //                                                     <span className="text-gray-500">End:</span> {order.endDate?.slice(0, 10) || order.selectedPackage?.endDate}
+        //                                                 </span>
+        //                                             </div>
+        //                                         </div>
+
+        //                                         {/* Payment Status Indicators with improved styling */}
+        //                                         <div className="mt-4">
+        //                                             {order.paymentStatus === 0 && (
+        //                                                 <div className="flex items-center gap-3">
+        //                                                     <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium flex items-center">
+        //                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        //                                                         </svg>
+        //                                                         Payment Pending
+        //                                                     </span>
+        //                                                     <button
+        //                                                         onClick={(e) => {
+        //                                                             e.stopPropagation();
+        //                                                             handlePayNow(order);
+        //                                                         }}
+        //                                                         className="bg-green-500 hover:bg-green-600 text-white text-xs font-medium px-4 py-2 rounded-full transition shadow-sm flex items-center"
+        //                                                     >
+        //                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        //                                                         </svg>
+        //                                                         Pay Now
+        //                                                     </button>
+        //                                                 </div>
+        //                                             )}
+        //                                             {order.paymentStatus === 1 && (
+        //                                                 <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium inline-flex items-center">
+        //                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        //                                                     </svg>
+        //                                                     Payment Successful
+        //                                                 </span>
+        //                                             )}
+        //                                             {order.paymentStatus === 2 && (
+        //                                                 <div className="flex items-center gap-3">
+        //                                                     <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-medium inline-flex items-center">
+        //                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        //                                                         </svg>
+        //                                                         Payment Failed
+        //                                                     </span>
+        //                                                     <button
+        //                                                         onClick={(e) => {
+        //                                                             e.stopPropagation();
+        //                                                             handleRetryPayment(order);
+        //                                                         }}
+        //                                                         className="bg-green-500 hover:bg-green-600 text-white text-xs font-medium px-4 py-2 rounded-full transition shadow-sm flex items-center"
+        //                                                     >
+        //                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        //                                                         </svg>
+        //                                                         Retry Payment
+        //                                                     </button>
+        //                                                 </div>
+        //                                             )}
+        //                                         </div>
+        //                                     </div>
+        //                                     {/* Toggle icon with animation */}
+        //                                     <div className="ml-4">
+        //                                         {expandedOrderId === order.orderID ? (
+        //                                             <div className="bg-green-100 p-2 rounded-full transition-transform duration-300 transform rotate-180">
+        //                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        //                                                 </svg>
+        //                                             </div>
+        //                                         ) : (
+        //                                             <div className="bg-green-100 p-2 rounded-full transition-transform duration-300">
+        //                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        //                                                 </svg>
+        //                                             </div>
+        //                                         )}
+        //                                     </div>
+        //                                 </div>
+
+        //                                 {/* Expandable Package Details with enhanced meal cards */}
+        //                                 {expandedOrderId === order.orderID && packageDetails[order.orderID] && (
+        //                                     <div className="p-5 bg-green-50 border-t border-green-100">
+        //                                         {packageDetails[order.orderID].data[0].selectedMeals?.map((dayMeal, dayIndex) => (
+        //                                             <div key={dayIndex} className="mb-8">
+        //                                                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+        //                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        //                                                     </svg>
+        //                                                     Meals for {new Date(dayMeal.date).toLocaleDateString('en-US', {
+        //                                                         weekday: 'long',
+        //                                                         year: 'numeric',
+        //                                                         month: 'long',
+        //                                                         day: 'numeric'
+        //                                                     })}
+        //                                                 </h3>
+
+        //                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        //                                                     {dayMeal.meals.map((meal, mealIndex) => (
+        //                                                         <div
+        //                                                             key={mealIndex}
+        //                                                             className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden"
+        //                                                         >
+        //                                                             {meal.image && meal.image.length > 0 && (
+        //                                                                 <div className="relative h-48 w-full overflow-hidden">
+        //                                                                     <img
+        //                                                                         src={meal.image[0]}
+        //                                                                         alt={meal.mealName}
+        //                                                                         className="w-full h-full object-cover transition duration-300 transform hover:scale-105"
+        //                                                                     />
+        //                                                                     {meal.mealType && meal.mealType.length > 0 && (
+        //                                                                         <span className="absolute top-3 right-3 px-3 py-1 bg-green-500 text-white text-sm font-medium rounded-full shadow">
+        //                                                                             {meal.mealType[0].mealType}
+        //                                                                         </span>
+        //                                                                     )}
+        //                                                                 </div>
+        //                                                             )}
+
+        //                                                             <div className="p-4">
+        //                                                                 <h4 className="text-xl font-semibold text-green-800 mb-2">{meal.mealName}</h4>
+        //                                                                 <p className="text-gray-600 mb-4 text-sm">{meal.description}</p>
+
+        //                                                                 <div className="bg-green-50 p-3 rounded-lg mb-3">
+        //                                                                     <h5 className="font-medium text-green-800 mb-2 text-sm">Nutrition Information</h5>
+        //                                                                     <div className="grid grid-cols-2 gap-4">
+        //                                                                         <div className="flex items-center">
+        //                                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        //                                                                             </svg>
+        //                                                                             <div>
+        //                                                                                 <span className="block text-xs text-gray-500">Energy</span>
+        //                                                                                 <span className="font-medium text-green-700">{meal.moreDetails.energy} kcal</span>
+        //                                                                             </div>
+        //                                                                         </div>
+        //                                                                         <div className="flex items-center">
+        //                                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        //                                                                             </svg>
+        //                                                                             <div>
+        //                                                                                 <span className="block text-xs text-gray-500">Protein</span>
+        //                                                                                 <span className="font-medium text-green-700">{meal.moreDetails.protein}g</span>
+        //                                                                             </div>
+        //                                                                         </div>
+        //                                                                         <div className="flex items-center">
+        //                                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+        //                                                                             </svg>
+        //                                                                             <div>
+        //                                                                                 <span className="block text-xs text-gray-500">Fat</span>
+        //                                                                                 <span className="font-medium text-green-700">{meal.moreDetails.fat}g</span>
+        //                                                                             </div>
+        //                                                                         </div>
+        //                                                                         <div className="flex items-center">
+        //                                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+        //                                                                             </svg>
+        //                                                                             <div>
+        //                                                                                 <span className="block text-xs text-gray-500">Carbs</span>
+        //                                                                                 <span className="font-medium text-green-700">{meal.moreDetails.carbohydrates}g</span>
+        //                                                                             </div>
+        //                                                                         </div>
+        //                                                                     </div>
+        //                                                                 </div>
+
+        //                                                                 {meal.moreDetails.allergens && meal.moreDetails.allergens.length > 0 && (
+        //                                                                     <div className="bg-red-50 p-3 rounded-lg">
+        //                                                                         <div className="flex items-start">
+        //                                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        //                                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        //                                                                             </svg>
+        //                                                                             <div>
+        //                                                                                 <h5 className="font-medium text-red-800 text-sm">Allergens</h5>
+        //                                                                                 <p className="text-sm text-red-600">
+        //                                                                                     {meal.moreDetails.allergens.join(', ')}
+        //                                                                                 </p>
+        //                                                                             </div>
+        //                                                                         </div>
+        //                                                                     </div>
+        //                                                                 )}
+        //                                                             </div>
+        //                                                         </div>
+        //                                                     ))}
+        //                                                 </div>
+        //                                             </div>
+        //                                         ))}
+        //                                     </div>
+        //                                 )}
+        //                             </div>
+        //                         ))}
+        //                     </div>
+        //                 ) : (
+        //                     <p className="text-gray-500">No orders found.</p>
+        //                 )}
+        //             </div>
+        //         )}
+
+        //         {/* Address Modal */}
+        //         <AddressModal
+        //             isOpen={isAddressModalOpen}
+        //             onClose={() => setIsAddressModalOpen(false)}
+        //             onSubmit={editingAddress ? handleEditAddress : handleAddAddress}
+        //             initialAddress={editingAddress}
+        //         />
+        //     </div>
+        // </div>
+
+
+
+        <div className="bg-gradient-to-b from-green-50 to-green-100 min-h-screen pb-12">
+            {/* Navigation Header */}
+            <Navigation />
+
+            <div className="container mx-auto px-4 py-8 max-w-6xl">
+                {/* Page Title with subtle decoration */}
+                <div className="mb-8 text-center">
+                    <h1 className="text-3xl font-bold text-green-800 inline-block relative">
+                        My Account
+                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-green-500 rounded-full"></div>
+                    </h1>
+                </div>
+
+                {/* Tabs Navigation - Enhanced with better styling */}
+                <div className="flex mb-8 bg-white rounded-xl shadow-md overflow-hidden">
                     <button
-                        className={`flex-1 px-4 py-3 transition-colors ${activeTab === 'profile' ? 'bg-green-500 text-white' : 'text-green-600 hover:bg-green-100'}`}
+                        className={`flex-1 px-6 py-4 transition-colors font-medium ${activeTab === 'profile'
+                                ? 'bg-green-600 text-white shadow-inner'
+                                : 'text-green-700 hover:bg-green-50'
+                            }`}
                         onClick={() => setActiveTab('profile')}
                     >
-                        Profile & Addresses
+                        <div className="flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Profile & Addresses
+                        </div>
                     </button>
                     <button
-                        className={`flex-1 px-4 py-3 transition-colors ${activeTab === 'orders' ? 'bg-green-500 text-white' : 'text-green-600 hover:bg-green-100'}`}
+                        className={`flex-1 px-6 py-4 transition-colors font-medium ${activeTab === 'orders'
+                                ? 'bg-green-600 text-white shadow-inner'
+                                : 'text-green-700 hover:bg-green-50'
+                            }`}
                         onClick={() => setActiveTab('orders')}
                     >
-                        My Orders
+                        <div className="flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                            My Orders
+                        </div>
                     </button>
                 </div>
 
                 {/* Profile & Addresses Content */}
                 {activeTab === 'profile' && (
-                    <div className="space-y-6">
-                        {/* Personal Information Section */}
-                        <div className="bg-white shadow-md rounded-lg p-6 border-l-4 border-green-500">
-                            <h2 className="text-xl font-semibold mb-4 text-green-700">Personal Information</h2>
-                            <div className="grid md:grid-cols-2 gap-4">
-                                <div>
-                                    <p className="font-medium text-green-600">Name</p>
-                                    <p className="text-gray-900">{profileData.userName}</p>
+                    <div className="space-y-8">
+                        {/* Personal Information Section - Enhanced with card styling */}
+                        <div className="bg-white shadow-lg rounded-xl p-8 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
+                            <div className="flex items-center mb-6">
+                                <div className="bg-green-100 p-3 rounded-full mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
                                 </div>
-                                <div>
-                                    <p className="font-medium text-green-600">Email</p>
-                                    <p className="text-gray-900">{profileData.userEmail}</p>
+                                <h2 className="text-2xl font-bold text-green-800">Personal Information</h2>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="bg-green-50 rounded-lg p-4">
+                                    <p className="font-medium text-green-700 mb-1 text-sm">Full Name</p>
+                                    <p className="text-gray-900 font-medium text-lg">{profileData.userName}</p>
                                 </div>
+                                <div className="bg-green-50 rounded-lg p-4">
+                                    <p className="font-medium text-green-700 mb-1 text-sm">Email Address</p>
+                                    <p className="text-gray-900 font-medium text-lg">{profileData.userEmail}</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end">
+                                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                    Edit Profile
+                                </button>
                             </div>
                         </div>
 
-                        {/* Saved Addresses Section */}
-                        <div className="bg-white shadow-md rounded-lg p-6 border-l-4 border-green-500">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-semibold text-green-700">Saved Addresses</h2>
+                        {/* Saved Addresses Section - Enhanced with better card styling */}
+                        <div className="bg-white shadow-lg rounded-xl p-8 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
+                            <div className="flex justify-between items-center mb-6">
+                                <div className="flex items-center">
+                                    <div className="bg-green-100 p-3 rounded-full mr-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-green-800">Saved Addresses</h2>
+                                </div>
                                 <button
                                     onClick={() => {
                                         setEditingAddress(null);
                                         setIsAddressModalOpen(true);
                                     }}
-                                    className="flex items-center text-white bg-green-500 hover:bg-green-600 px-3 py-2 rounded transition"
+                                    className="flex items-center text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors shadow-md"
                                 >
-                                    <Plus className="mr-2" /> Add New Address
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    Add New Address
                                 </button>
                             </div>
-                            <div className="space-y-4">
-                                {profileData.savedAddress && profileData.savedAddress.length > 0 ? (
-                                    profileData.savedAddress.map((address, index) => (
-                                        <div
-                                            key={index}
-                                            className="border-b pb-4 last:border-b-0 flex justify-between items-center hover:bg-green-50 p-3 rounded transition"
-                                        >
-                                            <div>
-                                                <p className="font-semibold text-green-900">{address.street}</p>
-                                                <p className="text-gray-600">{address.buildingFloor}, {address.houseOrFlatNumber}</p>
-                                                <p className="text-gray-600">{address.landmark}</p>
-                                                <p className="text-gray-600">
-                                                    {address.city}, {address.state} {address.postalCode}
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                {profileData.savedAddress.map((address, index) => (
+                                    <div
+                                        key={index}
+                                        className="bg-green-50 rounded-xl p-5 hover:shadow-md transition-shadow duration-300 relative group border border-green-100"
+                                    >
+                                        {address.identifier && (
+                                            <span className="absolute top-3 right-3 text-sm bg-green-600 text-white px-3 py-1 rounded-full">
+                                                {address.identifier}
+                                            </span>
+                                        )}
+
+                                        <div className="mb-4 pb-3 border-b border-green-200">
+                                            <p className="font-bold text-green-800 text-lg">{address.street}</p>
+                                            <p className="text-gray-700">{address.buildingFloor}, {address.houseOrFlatNumber}</p>
+                                        </div>
+
+                                        <div className="mb-3">
+                                            {address.landmark && (
+                                                <div className="flex items-start mb-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                    </svg>
+                                                    <p className="text-gray-700">{address.landmark}</p>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-start mb-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
+                                                <p className="text-gray-700">
+                                                    {address.city}, {address.state} {address.postalCode}<br />
+                                                    {address.country}
                                                 </p>
-                                                <p className="text-gray-600">{address.country}</p>
-                                                <p className="text-gray-600">Phone: {address.phone}</p>
-                                                {address.identifier && (
-                                                    <span className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded mt-2 inline-block">
-                                                        {address.identifier}
-                                                    </span>
-                                                )}
                                             </div>
-                                            <div className="flex space-x-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingAddress(address);
-                                                        setIsAddressModalOpen(true);
-                                                    }}
-                                                    className="text-green-500 hover:bg-green-100 p-2 rounded"
-                                                >
-                                                    <Edit size={20} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteAddress(address)}
-                                                    className="text-red-500 hover:bg-red-100 p-2 rounded"
-                                                >
-                                                    <Trash2 size={20} />
-                                                </button>
+
+                                            <div className="flex items-start">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                                </svg>
+                                                <p className="text-gray-700">{address.phone}</p>
                                             </div>
                                         </div>
-                                    ))
-                                ) : (
-                                    <p className="text-gray-500">No saved addresses found.</p>
-                                )}
+
+                                        <div className="flex justify-end space-x-2 pt-2">
+                                            <button
+                                                onClick={() => {
+                                                    setEditingAddress(address);
+                                                    setIsAddressModalOpen(true);
+                                                }}
+                                                className="text-green-600 hover:bg-green-100 p-2 rounded-full"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteAddress(address)}
+                                                className="text-red-500 hover:bg-red-50 p-2 rounded-full"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -548,164 +1006,311 @@ const UserProfile = () => {
 
                 {/* Orders Content */}
                 {activeTab === 'orders' && (
-                    <div className="bg-white shadow-md rounded-lg p-6 border-l-4 border-green-500">
-                        <h2 className="text-xl font-semibold mb-4 text-green-700">My Orders</h2>
+                    <div className="bg-white shadow-lg rounded-xl p-8 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
+                        <div className="flex items-center mb-6">
+                            <div className="bg-green-100 p-3 rounded-full mr-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-2xl font-bold text-green-800">My Orders</h2>
+                        </div>
 
                         {loading ? (
-                            <p className="text-green-700 font-medium">Loading your orders...</p>
+                            <div className="text-center py-12">
+                                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
+                                <p className="mt-4 text-green-700 font-medium">Loading your orders...</p>
+                            </div>
                         ) : error ? (
-                            <p className="text-red-500">Something went wrong while loading your orders.</p>
+                            <div className="bg-red-50 p-4 rounded-lg text-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p className="text-red-700 font-medium">Something went wrong while loading your orders.</p>
+                                <button className="mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                    Try Again
+                                </button>
+                            </div>
                         ) : profileData?.orders?.length > 0 ? (
-                            <div className="space-y-4">
-                                {profileData.orders.map((order, index) => {
-                                    const mealPlan = getMealPlanDetails(order);
-                                    return (
-                                        <div key={index} className="border rounded-lg hover:shadow-md transition">
-                                            {/* Order Summary */}
-                                            <div className="p-4 flex flex-col md:flex-row md:justify-between md:items-center hover:bg-green-50 transition-colors">
-                                                <div className="flex flex-col md:flex-row md:items-center gap-4 mb-3 md:mb-0 flex-grow">
-                                                    {/* Order Info */}
-                                                    <div>
-                                                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                                                            <p className="font-semibold text-green-900">Order #{order.orderID}</p>
-                                                            <PaymentStatusBadge status={order.paymentStatus} />
+                            <div className="space-y-6">
+                                {profileData.orders.map((order, index) => (
+                                    <div key={index} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition duration-300">
+                                        {/* Order Summary Header */}
+                                        <div
+                                            className={`p-6 ${expandedOrderId === order.orderID ? 'bg-green-50' : 'bg-white'} hover:bg-green-50 cursor-pointer transition-colors`}
+                                            onClick={() => handleExpandOrder(order)}
+                                        >
+                                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                                    {/* Order ID with icon */}
+                                                    <div className="flex items-center">
+                                                        <div className="bg-green-600 text-white rounded-l-lg px-3 py-2">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                                            </svg>
                                                         </div>
-                                                        <p className="text-green-600 font-medium capitalize">{mealPlan.name}</p>
-                                                        <p className="text-gray-600">{mealPlan.description}</p>
-                                                        <div className="flex flex-wrap gap-4 mt-2">
-                                                            <p className="text-sm text-green-500">
-                                                                Start: {order.startDate}
-                                                            </p>
-                                                            <p className="text-sm text-green-500">
-                                                                End: {order.endDate}
-                                                            </p>
-                                                            <p className="text-sm text-green-500">
-                                                                Amount: AED {order.amount}
-                                                            </p>
+                                                        <div className="bg-green-100 text-green-800 rounded-r-lg px-3 py-2 font-bold">
+                                                            #{order.orderID}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Package Type */}
+                                                    <span className="inline-block bg-green-600 text-white px-4 py-1 rounded-lg text-sm font-medium">
+                                                        {order.selectedPackage?.packageName || "Package"}
+                                                    </span>
+                                                </div>
+
+                                                {/* Enhanced Total Amount Display */}
+                                                <div className="flex items-center">
+                                                    <div className="bg-green-600 text-white px-3 py-2 rounded-l-lg font-medium">
+                                                        TOTAL
+                                                    </div>
+                                                    <div className="bg-green-500 text-white px-3 py-2 font-bold text-lg">
+                                                        AED
+                                                    </div>
+                                                    <div className="bg-green-100 text-green-800 px-3 py-2 rounded-r-lg font-bold text-lg">
+                                                        {order.amount}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Date and Payment Status Row */}
+                                            <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center">
+                                                <div className="flex flex-wrap gap-6 mb-4 md:mb-0">
+                                                    <div className="flex items-center bg-green-50 px-3 py-2 rounded-lg">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                        <div>
+                                                            <span className="block text-xs text-gray-500">Start Date</span>
+                                                            <span className="font-medium text-green-800">{order.startDate?.slice(0, 10) || order.selectedPackage?.startDate}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center bg-green-50 px-3 py-2 rounded-lg">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                        <div>
+                                                            <span className="block text-xs text-gray-500">End Date</span>
+                                                            <span className="font-medium text-green-800">{order.endDate?.slice(0, 10) || order.selectedPackage?.endDate}</span>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-2">
-                                                    {/* Continue Payment Button (for pending payments) */}
+                                                {/* Payment Status with Actions */}
+                                                <div className="flex items-center gap-3">
                                                     {order.paymentStatus === 0 && (
-                                                        <button
-                                                            onClick={() => handlePaymentAction(order)}
-                                                            disabled={processingPayment === order.orderID}
-                                                            className={`flex items-center px-3 py-2 rounded ${processingPayment === order.orderID
-                                                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                                                                : 'bg-yellow-500 text-white hover:bg-yellow-600'
-                                                                } transition`}
-                                                        >
-                                                            {processingPayment === order.orderID ? (
-                                                                <>
-                                                                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                                                                    Processing...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <ShoppingBag size={16} className="mr-2" /> Continue Payment
-                                                                </>
-                                                            )}
-                                                        </button>
+                                                        <>
+                                                            <span className="bg-yellow-100 text-yellow-800 px-3 py-2 rounded-lg text-sm font-medium flex items-center">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                                Payment Pending
+                                                            </span>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handlePayNow(order);
+                                                                }}
+                                                                className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-md flex items-center"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                                </svg>
+                                                                Pay Now
+                                                            </button>
+                                                        </>
                                                     )}
-
-                                                    {/* Retry Payment Button (for failed payments) */}
+                                                    {order.paymentStatus === 1 && (
+                                                        <span className="bg-green-100 text-green-800 px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                            Payment Successful
+                                                        </span>
+                                                    )}
                                                     {order.paymentStatus === 2 && (
-                                                        <button
-                                                            onClick={() => handlePaymentAction(order)}
-                                                            disabled={processingPayment === order.orderID}
-                                                            className={`flex items-center px-3 py-2 rounded ${processingPayment === order.orderID
-                                                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                                                                : 'bg-red-600 text-white hover:bg-red-700'
-                                                                } transition`}
-                                                        >
-                                                            {processingPayment === order.orderID ? (
-                                                                <>
-                                                                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                                                                    Processing...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <RefreshCw size={16} className="mr-2" /> Retry Payment
-                                                                </>
-                                                            )}
-                                                        </button>
+                                                        <>
+                                                            <span className="bg-red-100 text-red-800 px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                                Payment Failed
+                                                            </span>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleRetryPayment(order);
+                                                                }}
+                                                                className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-md flex items-center"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                </svg>
+                                                                Retry Payment
+                                                            </button>
+                                                        </>
                                                     )}
 
-                                                    {/* View Details Button */}
-                                                    <button
-                                                        onClick={() => handleExpandOrder(order)}
-                                                        className="flex items-center text-green-500 hover:bg-green-100 p-2 rounded transition"
-                                                    >
-                                                        {expandedOrderId === order.orderID ? <ChevronUp /> : <ChevronDown />}
-                                                    </button>
+                                                    {/* Toggle icon with animation */}
+                                                    <div className="ml-2">
+                                                        {expandedOrderId === order.orderID ? (
+                                                            <div className="bg-green-200 p-2 rounded-full transition-transform duration-300 transform rotate-180">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                </svg>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="bg-green-200 p-2 rounded-full transition-transform duration-300">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                </svg>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            {/* Expandable Package Details */}
-                                            {expandedOrderId === order.orderID && packageDetails[order.orderID] &&
-                                                packageDetails[order.orderID].data &&
-                                                packageDetails[order.orderID].data[0] &&
-                                                packageDetails[order.orderID].data[0].meals &&
-                                                packageDetails[order.orderID].data[0].meals.day1 &&
-                                                packageDetails[order.orderID].data[0].meals.day1.mealsDetails ? (
-                                                <div className="p-4 bg-green-50 border-t">
-                                                    {packageDetails[order.orderID].data[0].meals.day1.mealsDetails.map((meal, mealIndex) => (
-                                                        <div
-                                                            key={mealIndex}
-                                                            className="mb-4 bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500"
-                                                        >
-                                                            <div className="flex items-start gap-4 mb-3">
-                                                                {meal.image && meal.image.length > 0 && (
-                                                                    <img
-                                                                        src={meal.image[0]}
-                                                                        alt={meal.mealName}
-                                                                        className="w-24 h-24 object-cover rounded shadow"
-                                                                    />
-                                                                )}
-                                                                <div>
-                                                                    <h3 className="text-lg font-semibold text-green-800">{meal.mealName || 'Unnamed Meal'}</h3>
-                                                                    <p className="text-green-600">{meal.description || 'No description available'}</p>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="grid grid-cols-2 gap-2 mb-3">
-                                                                <div className="bg-green-100 p-2 rounded">
-                                                                    <p className="text-sm text-green-700">Energy: {meal.moreDetails?.energy || 'N/A'} kcal</p>
-                                                                    <p className="text-sm text-green-700">Protein: {meal.moreDetails?.protein || 'N/A'}g</p>
-                                                                </div>
-                                                                <div className="bg-green-100 p-2 rounded">
-                                                                    <p className="text-sm text-green-700">Fat: {meal.moreDetails?.fat || 'N/A'}g</p>
-                                                                    <p className="text-sm text-green-700">Carbs: {meal.moreDetails?.carbohydrates || 'N/A'}g</p>
-                                                                </div>
-                                                            </div>
-
-                                                            {meal.moreDetails && meal.moreDetails.allergens && meal.moreDetails.allergens.length > 0 && (
-                                                                <div className="bg-red-50 p-2 rounded">
-                                                                    <p className="text-sm text-red-600">
-                                                                        Allergens: {meal.moreDetails.allergens.join(', ')}
-                                                                    </p>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : expandedOrderId === order.orderID && (
-                                                <div className="p-4 bg-green-50 border-t">
-                                                    <p className="text-yellow-600">Meal details are not available for this order.</p>
-                                                </div>
-                                            )}
                                         </div>
-                                    );
-                                })}
+
+                                        {/* Expandable Package Details with enhanced meal cards */}
+                                        {expandedOrderId === order.orderID && packageDetails[order.orderID] && (
+                                            <div className="p-6 bg-green-50 border-t-2 border-green-100">
+                                                {packageDetails[order.orderID].data[0].selectedMeals?.map((dayMeal, dayIndex) => (
+                                                    <div key={dayIndex} className="mb-8 last:mb-0">
+                                                        <div className="flex items-center mb-4 bg-white p-3 rounded-lg shadow-sm">
+                                                            <div className="mr-3 bg-green-500 text-white p-2 rounded-full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                                </svg>
+                                                            </div>
+                                                            <h3 className="text-lg font-semibold text-green-800">
+                                                                Meals for {new Date(dayMeal.date).toLocaleDateString('en-US', {
+                                                                    weekday: 'long',
+                                                                    year: 'numeric',
+                                                                    month: 'long',
+                                                                    day: 'numeric'
+                                                                })}
+                                                            </h3>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                            {dayMeal.meals.map((meal, mealIndex) => (
+                                                                <div
+                                                                    key={mealIndex}
+                                                                    className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-green-100"
+                                                                >
+                                                                    {meal.image && meal.image.length > 0 && (
+                                                                        <div className="relative h-56 w-full overflow-hidden">
+                                                                            <img
+                                                                                src={meal.image[0]}
+                                                                                alt={meal.mealName}
+                                                                                className="w-full h-full object-cover transition duration-300 transform hover:scale-105"
+                                                                            />
+                                                                            {meal.mealType && meal.mealType.length > 0 && (
+                                                                                <span className="absolute top-3 right-3 px-3 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg shadow-md">
+                                                                                    {meal.mealType[0].mealType}
+                                                                                </span>
+                                                                            )}
+                                                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white p-4">
+                                                                                <h4 className="text-xl font-bold">{meal.mealName}</h4>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div className="p-5">
+                                                                        {(!meal.image || meal.image.length === 0) && (
+                                                                            <h4 className="text-xl font-bold text-green-800 mb-3">{meal.mealName}</h4>
+                                                                        )}
+
+                                                                        <p className="text-gray-600 mb-4">{meal.description}</p>
+
+                                                                        {/* Nutrition Information */}
+                                                                        <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl mb-4">
+                                                                            <h5 className="font-semibold text-green-800 mb-3 flex items-center">
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                                                </svg>
+                                                                                Nutrition Information
+                                                                            </h5>
+
+                                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                                                <div className="bg-white p-3 rounded-lg text-center">
+                                                                                    <span className="block text-xs text-gray-500 mb-1">Energy</span>
+                                                                                    <span className="font-bold text-green-700 text-lg">{meal.moreDetails.energy}</span>
+                                                                                    <span className="block text-xs text-gray-500">kcal</span>
+                                                                                </div>
+                                                                                <div className="bg-white p-3 rounded-lg text-center">
+                                                                                    <span className="block text-xs text-gray-500 mb-1">Protein</span>
+                                                                                    <span className="font-bold text-green-700 text-lg">{meal.moreDetails.protein}</span>
+                                                                                    <span className="block text-xs text-gray-500">grams</span>
+                                                                                </div>
+                                                                                <div className="bg-white p-3 rounded-lg text-center">
+                                                                                    <span className="block text-xs text-gray-500 mb-1">Fat</span>
+                                                                                    <span className="font-bold text-green-700 text-lg">{meal.moreDetails.fat}</span>
+                                                                                    <span className="block text-xs text-gray-500">grams</span>
+                                                                                </div>
+                                                                                <div className="bg-white p-3 rounded-lg text-center">
+                                                                                    <span className="block text-xs text-gray-500 mb-1">Carbs</span>
+                                                                                    <span className="font-bold text-green-700 text-lg">{meal.moreDetails.carbohydrates}</span>
+                                                                                    <span className="block text-xs text-gray-500">grams</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Allergens Information */}
+                                                                        {meal.moreDetails.allergens && meal.moreDetails.allergens.length > 0 && (
+                                                                            <div className="bg-red-50 p-4 rounded-xl">
+                                                                                <div className="flex items-start">
+                                                                                    <div className="bg-red-100 p-2 rounded-full mr-3 flex-shrink-0">
+                                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                                                        </svg>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <h5 className="font-semibold text-red-800 mb-1">Allergens</h5>
+                                                                                        <div className="flex flex-wrap gap-2">
+                                                                                            {meal.moreDetails.allergens.map((allergen, i) => (
+                                                                                                <span key={i} className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                                                                                                    {allergen}
+                                                                                                </span>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         ) : (
-                            <p className="text-gray-500">No orders found.</p>
+                            <div className="text-center py-12 bg-green-50 rounded-xl">
+                                <div className="bg-white p-4 inline-block rounded-full mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-green-800 mb-2">No Orders Yet</h3>
+                                <p className="text-gray-600 mb-6">You haven't placed any orders yet. Start exploring our meal packages!</p>
+                                <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors shadow-md font-medium flex items-center justify-center mx-auto">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    Browse Packages
+                                </button>
+                            </div>
                         )}
                     </div>
                 )}
 
-                {/* Address Modal */}
+                {/* Address Modal Component would remain unchanged */}
                 <AddressModal
                     isOpen={isAddressModalOpen}
                     onClose={() => setIsAddressModalOpen(false)}

@@ -16,12 +16,22 @@ import { FaHome } from "react-icons/fa";
 import GreenWhiteBanner from './Homebanner'
 import NavigationBar from './navigationHome';
 
+
+
+
 Modal.setAppElement("#root");
 const DilyfitHomePage = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
   const visibleProducts = 3;
+
+
+
+
+
+  
 
   useEffect(() => {
     axios.get("https://api.dailyfit.ae/api/user/get-meals", { withCredentials: true })

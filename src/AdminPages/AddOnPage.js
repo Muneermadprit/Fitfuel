@@ -79,6 +79,7 @@ export default function AddOnPage() {
 
 
     const handleSubmit = async (e) => {
+        alert("handle ubmit clicked")
         e.preventDefault();
         const mealName = selectedPackage.mealName?.trim();
 
@@ -90,6 +91,44 @@ export default function AddOnPage() {
             return;
         }
 
+        const form = new FormData();
+
+                // Append basic fields
+                form.append('mealName', selectedPackage.mealName);
+                form.append('description', selectedPackage.description);
+                form.append('category', selectedPackage.categoryId);
+
+                // Append mealTypes
+                selectedMealTypes.forEach(typeId => {
+                    const foundType = mealType.find(type => type._id === typeId);
+                    if (foundType) {
+                        form.append('mealTypes', foundType.identifier); // Assuming identifier is needed
+                    }
+                });
+
+                // Append other fields
+                form.append('package', selectedPackage.package);
+
+                form.append('fareDetails[totalFare]', parseFloat(selectedPackage.fareDetails.totalFare) || 0);
+                form.append('fareDetails[strikeOff]', parseFloat(selectedPackage.fareDetails.strikeOff) || 0);
+                form.append('fareDetails[discount]', parseFloat(selectedPackage.fareDetails.discount) || 0);
+
+                form.append('moreDetails[energy]', parseInt(selectedPackage.moreDetails.energy) || 0);
+                form.append('moreDetails[protein]', parseInt(selectedPackage.moreDetails.protein) || 0);
+                form.append('moreDetails[fat]', parseInt(selectedPackage.moreDetails.fat) || 0);
+                form.append('moreDetails[carbohydrates]', 
+                    parseInt(selectedPackage.moreDetails.carbohydrates) || 0);
+                form.append('moreDetails[allergens]', selectedPackage.moreDetails.allergens);
+
+                // Append multiple image files
+                for (let i = 0; i < selectedPackage.files.length; i++) {
+                    form.append('files', selectedPackage.files[i]); // input field should have name="files" and multiple
+                }
+
+               
+
+
+        console.log(selectedPackage,"The package selected")
         // Make sure all nested objects exist
         const mealData = {
             mealName: selectedPackage.mealName,
@@ -118,10 +157,17 @@ export default function AddOnPage() {
                     identifier: selectedPackage.identifier,
                     ...mealData
                 };
+             
                 await axios.patch(`https://api.dailyfit.ae/api/admin/update-addon`, updatedMealData, { withCredentials: true });
                 toast.success("Add-on updated successfully!");
             } else {
-                await axios.post(`https://api.dailyfit.ae/api/admin/create-addon`, mealData, { withCredentials: true });
+                console.log(mealData,"The data inside meals addon")
+                await axios.post(`https://api.dailyfit.ae/api/admin/create-addon`,form, {
+                    withCredentials: true,
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
                 toast.success("Add-on added successfully!");
             }
             setIsCanvasOpen(false);
@@ -188,33 +234,34 @@ export default function AddOnPage() {
 
     const handleImageUpload = (e) => {
         const files = e.target.files;
-
         if (files.length === 0) return;
-
+    
         const imageArray = [...(selectedPackage.image || [])];
-
+    
         Array.from(files).forEach(file => {
             if (!file.type.match('image.*')) {
                 toast.error('Please select image files only');
                 return;
             }
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const base64String = event.target.result;
-                // Prevent duplicate images
-                if (!imageArray.includes(base64String)) {
-                    const newImageArray = [...imageArray, base64String];
-                    setSelectedPackage(prev => ({
-                        ...prev,
-                        image: newImageArray
-                    }));
-                }
-            };
-            reader.readAsDataURL(file);
+    
+            // Prevent duplicates (based on name + size)
+            const isDuplicate = imageArray.some(f => f.name === file.name && f.size === file.size);
+            if (!isDuplicate) {
+                const fileData = {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                };
+    
+                const newImageArray = [...imageArray, fileData];
+                setSelectedPackage(prev => ({
+                    ...prev,
+                    image: newImageArray
+                }));
+            }
         });
     };
-
+    
     // Remove an image from the array
     const removeImage = (index) => {
         const newImageArray = [...selectedPackage.image];
@@ -570,7 +617,7 @@ export default function AddOnPage() {
                                         type="file"
                                         accept="image/*"
                                         multiple
-                                        onChange={handleImageUpload}
+                                        onChange={(e) => setSelectedPackage({ ...selectedPackage, files: e.target.files })}
                                         className="mb-2"
                                     />
                                     <p className="text-xs text-gray-500 mb-2">
@@ -606,7 +653,7 @@ export default function AddOnPage() {
                             <div className="flex justify-end space-x-4 p-4 bg-white shadow-inner rounded-b-lg">
                                 <button
                                     type="submit"
-                                    className="w-32 py-3 bg-purple-500 text-white rounded-xl hover:bg-purple-600 backdrop-blur-md shadow-md transition duration-300 text-lg"
+                                    className="w-32 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 backdrop-blur-md shadow-md transition duration-300 text-lg"
                                 >
                                     {isEditing ? 'Update' : 'Save'}
                                 </button>
