@@ -841,8 +841,8 @@ const UserProfile = () => {
                 <div className="flex mb-8 bg-white rounded-xl shadow-md overflow-hidden">
                     <button
                         className={`flex-1 px-6 py-4 transition-colors font-medium ${activeTab === 'profile'
-                                ? 'bg-green-600 text-white shadow-inner'
-                                : 'text-green-700 hover:bg-green-50'
+                            ? 'bg-green-600 text-white shadow-inner'
+                            : 'text-green-700 hover:bg-green-50'
                             }`}
                         onClick={() => setActiveTab('profile')}
                     >
@@ -855,8 +855,8 @@ const UserProfile = () => {
                     </button>
                     <button
                         className={`flex-1 px-6 py-4 transition-colors font-medium ${activeTab === 'orders'
-                                ? 'bg-green-600 text-white shadow-inner'
-                                : 'text-green-700 hover:bg-green-50'
+                            ? 'bg-green-600 text-white shadow-inner'
+                            : 'text-green-700 hover:bg-green-50'
                             }`}
                         onClick={() => setActiveTab('orders')}
                     >

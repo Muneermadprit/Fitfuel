@@ -9,12 +9,10 @@ import { updateLocale } from 'moment/moment';
 import { useNavigate } from 'react-router-dom';
 
 
-
 const MealPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedPlans = location.state?.selectedPlan;
-  // const [activeStep, setActiveStep] = useState(1);
   const [ishandleSelectMeals, setIshandleSelectMeals] = useState(null);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -27,6 +25,7 @@ const MealPlanner = () => {
   const [selectedPackageId, setSelectedPackageId] = useState(null);
   // New state to track selected meals for each day
   const [selectedMeals, setSelectedMeals] = useState({});
+  const [activeStep, setActiveStep] = useState(1);
 
   const plans = [
     "MONTHLY (6 days per week)",
@@ -68,9 +67,6 @@ const MealPlanner = () => {
         draggable: true,
       });
       console.log("Response:", response.data);
-      setTimeout(() => {
-        window.location.href = '/summary';
-      }, 2000);
     } catch (error) {
       alert("Failed to add address. Please try again.");
       console.error("Error:", error);
@@ -110,18 +106,24 @@ const MealPlanner = () => {
   }, []);
 
   const handleSelection = async (packageId, identifierPackage) => {
-    console.log(packageId,identifierPackage,'jjjjjj')
+
+
     setSelectedPackageId(packageId);
     sessionStorage.setItem("package", packageId);
 
     try {
       const response = await axios.post(
         "https://api.dailyfit.ae/api/user/get-package-details",
-        { packageId, identifierPackage },
+        {
+          "key": "identifier",
+          "value": identifierPackage
+        },
         { withCredentials: true }
       );
 
+
       if (response.data && response.data.data) {
+        console.log(response.data, "The data api response")
         const packages = response.data.data;
         const formattedMeals = {};
 
@@ -214,7 +216,7 @@ const MealPlanner = () => {
 
     }
 
-    console.log(selectedMeals[selectedDate], "date")
+    console.log(selectedDate, "date")
 
     console.log(firstMeals?.map(m => m._id), "First meal IDs per mealType");
 
@@ -342,9 +344,19 @@ const MealPlanner = () => {
       ...prev,
       [date]: updatedMeals
     }));
+
     console.log(selectedMeals[date], "The selected meals")
+
+
     // Assuming this is a state setter
+
   };
+
+
+
+
+
+
 
   const handleResetSelections = () => {
     setSelectedOptions({});
@@ -399,11 +411,11 @@ const MealPlanner = () => {
     }
 
     return (
-      <div className=" lg:w-[50%] sm:w-full xs:w-60 h-auto p-2  rounded-lg shadow-sm">
+      <div className=" lg:w-[50%] sm:w-full xs:w-60 h-auto  rounded-lg ">
         <h3 className="text-lg font-medium mb-4 text-gray-800">
           {month.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
         </h3>
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 gap-1 mb-2 ">
           {days?.map(day => (
             <div key={day} className="w-10 h-10 flex items-center justify-center text-sm font-medium text-gray-500">
               {day}
@@ -549,10 +561,7 @@ const MealPlanner = () => {
 
       // Handle successful response
       console.log('Add-ons updated successfully:', response.data);
-      toast.success('Successfully Added your Addons!');
-      setTimeout(() => {
-        setActiveStep(4);
-      }, 1000)
+      toast.success('Successfully Added your Addons!')
     } catch (error) {
       console.error('Error updating add-ons:', error.response ? error.response.data : error.message);
     }
@@ -571,6 +580,18 @@ const MealPlanner = () => {
       [mealId]: !prev[mealId]
     }));
   };
+  const handleContinue = () => {
+    if (!selectedPackageId || !selectedPlan || selectedDates.length === 0) {
+      toast.error("Please complete all selections before continuing.");
+      return;
+    }
+
+    toast.success("Plan created successfully");
+
+    setTimeout(() => {
+      setActiveStep(2); // <-- ✅ Use setActiveStep instead of setStep
+    }, 1000);
+  };
 
   const StepIndicator = ({ step, title, icon }) => {
     const Icon = icon;
@@ -587,20 +608,6 @@ const MealPlanner = () => {
     );
   };
 
-  const [step, setStep] = useState(1); // unused
-  const [activeStep, setActiveStep] = useState(1); // actual driver
-  const handleContinue = () => {
-    if (!selectedPackageId || !selectedPlan || selectedDates.length === 0) {
-      toast.error("Please complete all selections before continuing.");
-      return;
-    }
-
-    toast.success("Plan created successfully");
-
-    setTimeout(() => {
-      setActiveStep(2); // <-- ✅ Use setActiveStep instead of setStep
-    }, 1000);
-  };
 
 
   const renderStepContent = () => {
@@ -608,6 +615,7 @@ const MealPlanner = () => {
       case 1:
         return (
           <>
+
             <div>
               <div className="min-h-screen w-full   ">
                 <ToastContainer />
@@ -696,7 +704,7 @@ const MealPlanner = () => {
                                   {sortedPackages?.map(packageItem => (
                                     <button
                                       key={packageItem._id}
-                                      onClick={() => handleSelection(packageItem._id, packageItem._id, packageItem.identifier)}
+                                      onClick={() => handleSelection(packageItem._id, packageItem.identifier)}
                                       className={`w-full py-3 px-6 rounded-xl text-left font-medium transition-all duration-300
                     ${selectedPackageId === packageItem._id
                                           ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md"
@@ -740,15 +748,20 @@ const MealPlanner = () => {
                       ))}
                     </div>
                   </div>
+
+
                 </div>
               </div>
+
+
             </div>
 
+
             {/* Calendar Section */}
-            <div className="bg-white rounded-2xl shadow-xl md:p-8 p-1  mb-16">
-              <div className="flex justify-between items-center mb-8">
+            <div className="rounded-2xl shadow-xl  mb-16 p-4 ">
+              <div className="flex justify-between items-center mb-8 ">
                 <h2 className="text-2xl font-bold text-gray-800">Choose Your Start Date</h2>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-4 ">
                   <button
                     onClick={handlePrevMonth}
                     className="p-2 rounded-full hover:bg-emerald-100 transition-colors"
@@ -769,7 +782,7 @@ const MealPlanner = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row gap-8  ">
+              <div className="flex flex-col md:flex-row gap-8 md:p-8  ">
                 {renderCalendar(0)}
                 {renderCalendar(1)}
               </div>
@@ -818,7 +831,7 @@ const MealPlanner = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg md:rounded-2xl shadow-md md:shadow-xl p-4 md:p-6 mb-8">
+              <div className="bg-white rounded-lg md:rounded-2xl shadow-md md:shadow-xl  md:p-6 mb-8">
                 <div className="flex gap-2 overflow-x-auto mb-4 md:mb-6 pb-2 scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-gray-100">
                   {selectedDates?.map((date) => (
                     <button
@@ -850,11 +863,11 @@ const MealPlanner = () => {
                             <h3 className="text-lg font-semibold">{type.mealType}</h3>
 
                             {/* Horizontally scrollable meal cards */}
-                            <div className="flex overflow-x-auto pb-4 gap-3 md:gap-5 snap-x scrollbar-hide">
+                            <div className="grid grid-cols-2 md:grid-cols-4 pb-4 gap-3 md:gap-5 ">
                               {meals?.map((meal) => (
                                 <div
                                   key={meal._id}
-                                  className="snap-start flex-shrink-0 w-[280px] sm:w-[320px] md:w-[340px]"
+                                  className="snap-start flex-shrink-0 w-full sm:w-full md:w-full"
                                 >
                                   <div
                                     className={`rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white group cursor-pointer
@@ -901,7 +914,7 @@ const MealPlanner = () => {
 
                                       {/* Nutrition Details Panel */}
                                       {showNutritionDetails[meal._id] && meal.moreDetails && (
-                                        <div className="mt-2 pt-2 border-t border-gray-200">
+                                        <div className="mt-2 pt-2 border-t border-gray-200 absolute xs:z-50 md: bg-white shadow-2xl p-2 rounded-sm">
                                           <h4 className="font-medium text-sm text-gray-700 mb-1">Nutrition Information</h4>
                                           <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
                                             <div className="flex justify-between">
@@ -944,7 +957,11 @@ const MealPlanner = () => {
                     })
                   ) : null}
                 </div>
+
               </div>
+
+
+
               {/* Confirm button */}
               <div className="flex justify-center mb-8 md:mb-12">
                 <button
@@ -964,7 +981,7 @@ const MealPlanner = () => {
             <h2 className="text-xl font-semibold text-gray-800 mb-6">
               Choose Your Add-ons <span className="text-sm text-gray-500">(Optional) If u dont need You can Skip!</span>
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {console.log(addons, "The addon list"
               )}
               {addons?.map((item) => {
@@ -1199,10 +1216,9 @@ const MealPlanner = () => {
                     <button
                       type="button"
                       onClick={() => {
+                        navigate('/summary');
                         // saveSelectionsToSessionStorage();
                         // handleCompleteOrder();
-                        //  setActiveStep(4);
-                        navigate('/summary');
                       }}
                       className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-medium transition hover:bg-gray-300"
                     >
@@ -1263,6 +1279,34 @@ const MealPlanner = () => {
     setTimeout(() => {
       setActiveStep(3);
     }, 1600);
+
+    // console.log("Selected Meals:", JSON.stringify(formattedData, null, 2));
+  };
+
+  const handleBackClick = () => {
+    // Determine the previous step based on current step
+    const previousStep = Math.max(1, activeStep - 1);
+
+    // Reset any necessary state for the previous step
+    switch (previousStep) {
+      case 1:
+        // If going back to step 1, you might want to reset some selections
+        setSelectedPackageId(null);
+        setSelectedPlan(null);
+        break;
+      case 2:
+        // If going back to step 2, reset meal selections if needed
+        setSelectedDate(null);
+        setSelectedMeals({});
+        break;
+      case 3:
+        // If going back to step 3, reset enhancements
+        setSelectedEnhancements([]);
+        break;
+    }
+
+    // Set the active step to the previous step
+    setActiveStep(previousStep);
   };
 
 
@@ -1302,6 +1346,7 @@ const MealPlanner = () => {
                   'Where should we deliver your meals? '}
           </p>
         </div>
+
         {renderStepContent()}
       </div>
     </div>

@@ -116,7 +116,7 @@ export default function DietPlanBannerExtended() {
   ];
 
   return (
-    <div className="relative w-full overflow-hidden px-4 bg-gradient-to-br from-green-50 via-white to-green-50">
+    <div className="relative w-full overflow-hidden md:px-4 px-1 bg-gradient-to-br from-green-50 via-white to-green-50">
         {/* Nutrition Science Section */}
         <motion.div variants={itemVariants} className="mb-24">
           <div className="text-center mb-16">
@@ -241,7 +241,7 @@ export default function DietPlanBannerExtended() {
         </motion.div>
 
         {/* Main content area */}
-        <div className="grid md:grid-cols-2 gap-12 items-center  mb-24">
+        <div className="grid md:grid-cols-2 gap-12   w-full h-full items-center  mb-24">
           {/* Left side - Features */}
           <motion.div variants={itemVariants} className="space-y-6">
             <motion.div 
@@ -279,13 +279,13 @@ export default function DietPlanBannerExtended() {
             <motion.div 
               variants={hoverCard}
               whileHover="hover"
-              className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl border border-green-50 transition-all duration-300"
+              className="bg-white rounded-3xl  shadow-xl hover:shadow-2xl border border-green-50 transition-all duration-300"
             >
               <div className="flex items-start">
                 <div className="bg-gradient-to-br from-green-100 to-green-50 p-3 rounded-xl mr-5 shadow-inner">
                   <Clock className="text-green-600" size={24} />
                 </div>
-                <div>
+                <div >
                   <h3 className="font-semibold text-2xl text-gray-800 mb-3">Time-Optimized</h3>
                   <p className="text-gray-600 leading-relaxed">Simple recipes with 30-min meal prep, smart grocery lists, and batch cooking guides to save 10+ hours weekly.</p>
                 </div>
@@ -294,7 +294,7 @@ export default function DietPlanBannerExtended() {
           </motion.div>
 
           {/* Right side - Image */}
-          <div className="w-full h-full mt-10">
+          <div className="w-full h-full mt-10 ">
           <CalorieCalculator/>
           </div>
           

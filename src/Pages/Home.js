@@ -24,8 +24,23 @@ const DilyfitHomePage = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
 
+  const [visibleProducts, setVisibleProducts] = useState(3);
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
-  const visibleProducts = 3;
+  useEffect(() => {
+    const handleResize = () => {
+      const screenWidth = window.innerWidth;
+      if (screenWidth < 768) {
+        setVisibleProducts(1); // Mobile view
+      } else {
+        setVisibleProducts(3); // Tablet/Desktop
+      }
+    };
+  
+    handleResize(); // Call once on mount
+    window.addEventListener('resize', handleResize);
+  
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
 
 
@@ -279,9 +294,7 @@ Message: ${formData.message}`;
                       {slide.cta}
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </button>
-                    <button className="bg-transparent border-2 border-white text-white font-bold py-3 px-8 rounded-full hover:bg-white hover:text-green-800 transition duration-300">
-                      Learn More
-                    </button>
+                    
                   </div>
                 </div>
               </div>
@@ -347,10 +360,10 @@ Message: ${formData.message}`;
                   {products.map((product) => (
                     <div
                       key={product._id}
-                      className="w-full px-2 md:px-4 flex-shrink-0"
+                      className="w-full px-2 md:px-4 flex-shrink-0  grid-cols-1"
                       style={{ width: `${100 / visibleProducts}%` }}
                     >
-                      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition duration-300 h-full flex flex-col">
+                      <div className=" rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition duration-300 h-full grid grid-col-1 ">
                         <div className="aspect-w-16 aspect-h-9 relative">
                           <img
                             src={product.image[0] || "https://t4.ftcdn.net/jpg/03/61/86/91/360_F_361869194_7JGmIOSj2iUNi0AYoVhVyhKvaN6PkOah.jpg"}

@@ -221,16 +221,17 @@ export default function EnhancedNavbar() {
                 className="text-white p-2"
                 aria-label="Toggle menu"
               >
-                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                {isMenuOpen ? <X size={24} /> : <Menu size={40} />}
               </button>
             </div>
           </div>
         </div>
         
         {/* Mobile Menu Dropdown - Only for mobile */}
-        <div className={`md:hidden transition-all duration-300 overflow-hidden ${
-          isMenuOpen ? 'max-h-screen opacity-100 border-t border-white/20 mt-2' : 'max-h-0 opacity-0'
-        }`}>
+        <div className={`md:hidden transition-all duration-300 overflow-hidden  absolute ${
+  isMenuOpen ? 'max-h-screen opacity-100 border-t border-white/20 mt-2' : 'max-h-0 opacity-0'
+}`}>
+
           <div className="container mx-auto px-4">
             <div className="py-2">
               <div className="flex items-center justify-between bg-white/10 rounded-lg p-3 mb-3">

@@ -96,22 +96,9 @@ const Navigation = () => {
 
           {/* Actions Group */}
           <div className="flex items-center space-x-2 sm:space-x-4">
-            {/* Search Button */}
-            <button className={`p-1 sm:p-2 rounded-full transition-colors ${
-              isScrolled ? 'text-white hover:bg-green-500' : 'text-green-700 hover:bg-green-100'
-            }`}>
-              <Search size={18} className="sm:h-5 sm:w-5" />
-            </button>
+          
             
-            {/* Cart Button */}
-            <a href="/cart" className={`relative p-1 sm:p-2 rounded-full transition-colors no-underline ${
-              isScrolled ? 'text-white hover:bg-green-500' : 'text-green-700 hover:bg-green-100'
-            }`}>
-              <ShoppingBag size={18} className="sm:h-5 sm:w-5" />
-              <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                2
-              </span>
-            </a>
+          
 
             {/* Account Menu */}
             {!isLoggedIn ? (
@@ -149,13 +136,7 @@ const Navigation = () => {
                         <User className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                         My Profile
                       </a>
-                      <a 
-                        href="/orders" 
-                        className="group flex items-center px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-green-50 no-underline"
-                      >
-                        <ShoppingBag className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
-                        My Orders
-                      </a>
+                     
                       <div className="border-t border-gray-100 my-1"></div>
                       <button
                         onClick={handleLogout}

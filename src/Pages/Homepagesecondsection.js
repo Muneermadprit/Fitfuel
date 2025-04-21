@@ -73,7 +73,7 @@ const CalorieCalculator = () => {
   };
 
   return (
-    <div className="relative min-h-screen   flex items-center justify-center p-4">
+    <div className="relative min-h-screen   flex items-center justify-center ">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -172,7 +172,7 @@ const CalorieCalculator = () => {
                 onChange={() => setAcceptedTerms(!acceptedTerms)}
                 className="h-5 w-5 text-lime-600 rounded focus:ring-lime-500"
               />
-              <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
+              <label htmlFor="terms" className="ml-2 p-2 text-sm text-gray-600">
                 I agree to the terms and conditions
               </label>
             </div>
