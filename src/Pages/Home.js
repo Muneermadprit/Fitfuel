@@ -549,21 +549,20 @@ Message: ${formData.message}`;
                     ))}
                     <span className="ml-2 text-gray-600 text-sm">{product.rating}</span>
                   </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    {/* <span className="text-2xl font-bold text-gray-800">${product.price}</span> */}
+                  {/* <div className="mt-4 flex items-center justify-between">
                     <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
                       View Details
                     </button>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             ))}
           </div>
-          <div className="text-center mt-10">
+          {/* <div className="text-center mt-10">
             <a href="/products" className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition duration-200">
               View All Products
             </a>
-          </div>
+          </div> */}
         </div>
       </div>
 

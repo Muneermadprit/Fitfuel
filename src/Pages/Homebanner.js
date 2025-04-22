@@ -215,7 +215,7 @@ export default function DietPlanBannerExtended() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            <motion.button
+            {/* <motion.button
               className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-semibold rounded-full shadow-lg hover:shadow-green-200/50 transition-all duration-300 flex items-center justify-center"
               whileHover={{ 
                 scale: 1.05,
@@ -236,7 +236,7 @@ export default function DietPlanBannerExtended() {
             >
               <Phone className="mr-2" size={16} />
               Speak to a Nutritionist
-            </motion.button>
+            </motion.button> */}
           </motion.div>
         </motion.div>
 
@@ -500,13 +500,13 @@ export default function DietPlanBannerExtended() {
                       </li>
                     ))}
                   </ul>
-                  <button className={`w-full py-4 rounded-xl font-semibold transition-all duration-300 ${
+                  {/* <button className={`w-full py-4 rounded-xl font-semibold transition-all duration-300 ${
                     plan.popular 
                       ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:shadow-lg hover:shadow-green-200' 
                       : 'bg-green-100 text-green-700 hover:bg-green-200'
                   }`}>
                     Select Plan
-                  </button>
+                  </button> */}
                 </div>
               </motion.div>
             ))}
@@ -559,7 +559,7 @@ export default function DietPlanBannerExtended() {
               Take our 2-minute assessment and receive your personalized nutrition plan within 24 hours
             </p>
             
-            <motion.button
+            {/* <motion.button
               className="px-10 py-5 bg-white text-green-600 font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 text-lg flex items-center mx-auto"
               whileHover={{ 
                 scale: 1.05,
@@ -569,7 +569,7 @@ export default function DietPlanBannerExtended() {
             >
               Get Your Custom Plan
               <ArrowRight className="ml-3" size={20} />
-            </motion.button>
+            </motion.button> */}
             
             <div className="mt-8 flex flex-wrap justify-center gap-6 text-white/80">
               <div className="flex items-center">
