@@ -562,6 +562,9 @@ const MealPlanner = () => {
       // Handle successful response
       console.log('Add-ons updated successfully:', response.data);
       toast.success('Successfully Added your Addons!')
+      setTimeout(() => {
+        setActiveStep(4);
+      }, 1000)
     } catch (error) {
       console.error('Error updating add-ons:', error.response ? error.response.data : error.message);
     }

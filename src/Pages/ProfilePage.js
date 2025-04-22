@@ -435,7 +435,7 @@ const UserProfile = () => {
         try {
             await axios.post('https://api.dailyfit.ae/api/user/logout', {}, { withCredentials: true });
             // Redirect to login page or clear user session
-            window.location.href = '/login';
+            window.location.href = '/Order';
         } catch (err) {
             console.error('Logout error', err);
         }

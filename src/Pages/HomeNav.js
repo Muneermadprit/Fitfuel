@@ -195,7 +195,7 @@ export default function EnhancedNavbar() {
               <div className="h-6 w-px bg-white/30 mx-1"></div>
               
               <a 
-                href="/login" 
+                href="/Order" 
                 className="flex items-center space-x-2 bg-white text-green-600 px-4 py-2 rounded-lg font-medium hover:bg-green-100 transition duration-200 transform hover:scale-105"
               >
                 <User size={18} />
@@ -306,7 +306,7 @@ export default function EnhancedNavbar() {
               </a>
               
               <div className="pt-2 flex flex-col space-y-2">
-                <a href="/login" className="flex items-center justify-center bg-white text-green-600 py-3 px-4 rounded-lg font-medium">
+                <a href="/Order" className="flex items-center justify-center bg-white text-green-600 py-3 px-4 rounded-lg font-medium">
                   <User size={18} className="mr-2" />
                   <span>Login to Account</span>
                 </a>
