@@ -808,6 +808,7 @@ const UserProfile = () => {
                                         {/* Expandable Package Details with enhanced meal cards */}
                                         {expandedOrderId === order.orderID && packageDetails[order.orderID] && (
                                             <div className="p-6 bg-green-50 border-t-2 border-green-100">
+                                                {/* Existing Meals Section */}
                                                 {packageDetails[order.orderID].data[0].selectedMeals?.map((dayMeal, dayIndex) => (
                                                     <div key={dayIndex} className="mb-8 last:mb-0">
                                                         <div className="flex items-center mb-4 bg-white p-3 rounded-lg shadow-sm">
@@ -918,6 +919,58 @@ const UserProfile = () => {
                                                         </div>
                                                     </div>
                                                 ))}
+
+                                                {/* New Addon Products Section */}
+                                                {packageDetails[order.orderID].data[0].addons && packageDetails[order.orderID].data[0].addons.length > 0 && (
+                                                    <div className="mt-10 mb-4">
+                                                        <div className="flex items-center mb-6 bg-white p-3 rounded-lg shadow-sm">
+                                                            <div className="mr-3 bg-purple-500 text-white p-2 rounded-full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                            </div>
+                                                            <h3 className="text-lg font-semibold text-purple-800">
+                                                                Addon Products
+                                                            </h3>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                            {packageDetails[order.orderID].data[0].addons.map((addon, addonIndex) => (
+                                                                <div
+                                                                    key={addonIndex}
+                                                                    className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-purple-100"
+                                                                >
+                                                                    {addon.image && addon.image.length > 0 && addon.image[0] !== "" ? (
+                                                                        <div className="relative h-48 w-full overflow-hidden">
+                                                                            <img
+                                                                                src={addon.image[0]}
+                                                                                alt={addon.mealName}
+                                                                                className="w-full h-full object-cover transition duration-300 transform hover:scale-105"
+                                                                            />
+                                                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white p-4">
+                                                                                <h4 className="text-xl font-bold">{addon.mealName}</h4>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="h-48 w-full bg-gradient-to-r from-purple-100 to-purple-200 flex items-center justify-center">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                                            </svg>
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div className="p-5">
+                                                                        {(!addon.image || addon.image.length === 0 || addon.image[0] === "") && (
+                                                                            <h4 className="text-xl font-bold text-purple-800 mb-3">{addon.mealName}</h4>
+                                                                        )}
+
+                                                                        <p className="text-gray-600">{addon.description}</p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
