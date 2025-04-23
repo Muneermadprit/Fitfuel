@@ -162,51 +162,6 @@ const AddressModal = ({ isOpen, onClose, onSubmit, initialAddress = null }) => {
     );
 };
 
-// Navigation Header Component
-const NavigationHeader = ({ userName, onLogout }) => {
-    return (
-        <nav className="bg-gradient-to-r from-green-600 to-lime-600 text-white shadow-lg sticky top-0 z-50">
-            <div className="container mx-auto px-4 py-3">
-                <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                        <a href="/" className="flex items-center">
-                            <img src={logo} alt="DailyFit Logo" className="h-16 w-32 object-contain" />
-                        </a>
-                    </div>
-                    <div className="hidden md:flex space-x-6">
-                        <a href="/" className="text-white no-underline hover:text-green-200 transition duration-200">Home</a>
-                        <a href="/about" className="text-white no-underline hover:text-green-200 transition duration-200">About</a>
-                        <a href="/contact" className="text-white no-underline hover:text-green-200 transition duration-200">Contact</a>
-                        <a
-                            href="/profile"
-                            className="text-white no-underline hover:text-green-200 transition duration-200"
-                        >
-                            Profile
-                        </a>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <button
-                            onClick={() => {
-                                sessionStorage.clear();
-                                localStorage.clear();
-                                window.location.href = "/"; // Redirect to home
-                            }}
-                            className="bg-white text-red-600 px-4 py-2 rounded-lg font-semibold no-underline hover:bg-red-100 transition duration-200"
-                        >
-                            Logout
-                        </button>
-                        <button className="md:hidden text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </nav>
-    );
-};
-
 // Main User Profile Component
 const UserProfile = () => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -215,6 +170,7 @@ const UserProfile = () => {
     const [packageDetails, setPackageDetails] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [paymentStatusFilter, setPaymentStatusFilter] = useState(-1);
 
     // New state for address management
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -569,12 +525,6 @@ const UserProfile = () => {
                                         key={index}
                                         className="bg-green-50 rounded-xl p-5 hover:shadow-md transition-shadow duration-300 relative group border border-green-100"
                                     >
-                                        {address.identifier && (
-                                            <span className="absolute top-3 right-3 text-sm bg-green-600 text-white px-3 py-1 rounded-full">
-                                                {address.identifier}
-                                            </span>
-                                        )}
-
                                         <div className="mb-4 pb-3 border-b border-green-200">
                                             <p className="font-bold text-green-800 text-lg">{address.street}</p>
                                             <p className="text-gray-700">{address.buildingFloor}, {address.houseOrFlatNumber}</p>
@@ -608,28 +558,6 @@ const UserProfile = () => {
                                                 <p className="text-gray-700">{address.phone}</p>
                                             </div>
                                         </div>
-
-                                        <div className="flex justify-end space-x-2 pt-2">
-                                            <button
-                                                onClick={() => {
-                                                    setEditingAddress(address);
-                                                    setIsAddressModalOpen(true);
-                                                }}
-                                                className="text-green-600 hover:bg-green-100 p-2 rounded-full"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteAddress(address)}
-                                                className="text-red-500 hover:bg-red-50 p-2 rounded-full"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -640,13 +568,34 @@ const UserProfile = () => {
                 {/* Orders Content */}
                 {activeTab === 'orders' && (
                     <div className="bg-white shadow-lg rounded-xl p-8 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
-                        <div className="flex items-center mb-6">
-                            <div className="bg-green-100 p-3 rounded-full mr-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                                </svg>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                            <div className="flex items-center">
+                                <div className="bg-green-100 p-3 rounded-full mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                    </svg>
+                                </div>
+                                <h2 className="text-2xl font-bold text-green-800">My Orders</h2>
                             </div>
-                            <h2 className="text-2xl font-bold text-green-800">My Orders</h2>
+
+                            {/* Payment Status Filter Dropdown */}
+                            <div className="relative">
+                                <select
+                                    className="appearance-none bg-green-50 border border-green-200 text-green-700 py-2 px-4 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent cursor-pointer font-medium"
+                                    onChange={(e) => setPaymentStatusFilter(parseInt(e.target.value))}
+                                    value={paymentStatusFilter}
+                                >
+                                    <option value="-1">All Orders</option>
+                                    <option value="0">Payment Pending</option>
+                                    <option value="1">Payment Successful</option>
+                                    <option value="2">Payment Failed</option>
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-green-700">
+                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
 
                         {loading ? (
@@ -666,315 +615,283 @@ const UserProfile = () => {
                             </div>
                         ) : profileData?.orders?.length > 0 ? (
                             <div className="space-y-6">
-                                {profileData.orders.map((order, index) => (
-                                    <div key={index} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition duration-300">
-                                        {/* Order Summary Header */}
-                                        <div
-                                            className={`p-6 ${expandedOrderId === order.orderID ? 'bg-green-50' : 'bg-white'} hover:bg-green-50 cursor-pointer transition-colors`}
-                                            onClick={() => handleExpandOrder(order)}
-                                        >
-                                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                                                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                                                    {/* Order ID with icon */}
-                                                    <div className="flex items-center">
-                                                        <div className="bg-green-600 text-white rounded-l-lg px-3 py-2">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                                                            </svg>
-                                                        </div>
-                                                        <div className="bg-green-100 text-green-800 rounded-r-lg px-3 py-2 font-bold">
-                                                            #{order.orderID}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Package Type */}
-                                                    <span className="inline-block bg-green-600 text-white px-4 py-1 rounded-lg text-sm font-medium">
-                                                        {order.selectedPackage?.packageName || "Package"}
-                                                    </span>
-                                                </div>
-
-                                                {/* Enhanced Total Amount Display */}
-                                                <div className="flex items-center">
-                                                    <div className="bg-green-600 text-white px-3 py-2 rounded-l-lg font-medium">
-                                                        TOTAL
-                                                    </div>
-                                                    <div className="bg-green-500 text-white px-3 py-2 font-bold text-lg">
-                                                        AED
-                                                    </div>
-                                                    <div className="bg-green-100 text-green-800 px-3 py-2 rounded-r-lg font-bold text-lg">
-                                                        {order.amount}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Date and Payment Status Row */}
-                                            <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center">
-                                                <div className="flex flex-wrap gap-6 mb-4 md:mb-0">
-                                                    <div className="flex items-center bg-green-50 px-3 py-2 rounded-lg">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                        </svg>
-                                                        <div>
-                                                            <span className="block text-xs text-gray-500">Start Date</span>
-                                                            <span className="font-medium text-green-800">{order.startDate?.slice(0, 10) || order.selectedPackage?.startDate}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center bg-green-50 px-3 py-2 rounded-lg">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                        </svg>
-                                                        <div>
-                                                            <span className="block text-xs text-gray-500">End Date</span>
-                                                            <span className="font-medium text-green-800">{order.endDate?.slice(0, 10) || order.selectedPackage?.endDate}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Payment Status with Actions */}
-                                                <div className="flex items-center gap-3">
-                                                    {order.paymentStatus === 0 && (
-                                                        <>
-                                                            <span className="bg-yellow-100 text-yellow-800 px-3 py-2 rounded-lg text-sm font-medium flex items-center">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                {profileData.orders
+                                    .filter(order => paymentStatusFilter === -1 || order.paymentStatus === paymentStatusFilter)
+                                    .map((order, index) => (
+                                        <div key={index} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition duration-300">
+                                            {/* Order Summary Header */}
+                                            <div
+                                                className={`p-6 ${expandedOrderId === order.orderID ? 'bg-green-50' : 'bg-white'} hover:bg-green-50 cursor-pointer transition-colors`}
+                                                onClick={() => handleExpandOrder(order)}
+                                            >
+                                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                                        {/* Order ID with icon */}
+                                                        <div className="flex items-center">
+                                                            <div className="bg-green-600 text-white rounded-l-lg px-3 py-2">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                                                                 </svg>
-                                                                Payment Pending
-                                                            </span>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handlePayNow(order);
-                                                                }}
-                                                                className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-md flex items-center"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                                                </svg>
-                                                                Pay Now
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                    {order.paymentStatus === 1 && (
-                                                        <span className="bg-green-100 text-green-800 px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                            </svg>
-                                                            Payment Successful
+                                                            </div>
+                                                            <div className="bg-green-100 text-green-800 rounded-r-lg px-3 py-2 font-bold">
+                                                                #{order.orderID}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Package Type */}
+                                                        <span className="inline-block bg-green-600 text-white px-4 py-1 rounded-lg text-sm font-medium">
+                                                            {order.selectedPackage?.packageName || "Package"}
                                                         </span>
-                                                    )}
-                                                    {order.paymentStatus === 2 && (
-                                                        <>
-                                                            <span className="bg-red-100 text-red-800 px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                </svg>
-                                                                Payment Failed
-                                                            </span>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleRetryPayment(order);
-                                                                }}
-                                                                className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-md flex items-center"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                                </svg>
-                                                                Retry Payment
-                                                            </button>
-                                                        </>
-                                                    )}
+                                                    </div>
 
-                                                    {/* Toggle icon with animation */}
-                                                    <div className="ml-2">
-                                                        {expandedOrderId === order.orderID ? (
-                                                            <div className="bg-green-200 p-2 rounded-full transition-transform duration-300 transform rotate-180">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                                </svg>
+                                                    {/* Enhanced Total Amount Display */}
+                                                    <div className="flex items-center">
+                                                        <div className="bg-green-600 text-white px-3 py-2 rounded-l-lg font-medium">
+                                                            TOTAL
+                                                        </div>
+                                                        <div className="bg-green-500 text-white px-3 py-2 font-bold text-lg">
+                                                            AED
+                                                        </div>
+                                                        <div className="bg-green-100 text-green-800 px-3 py-2 rounded-r-lg font-bold text-lg">
+                                                            {order.amount}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Date and Payment Status Row */}
+                                                <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center">
+                                                    <div className="flex flex-wrap gap-6 mb-4 md:mb-0">
+                                                        <div className="flex items-center bg-green-50 px-3 py-2 rounded-lg">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                            </svg>
+                                                            <div>
+                                                                <span className="block text-xs text-gray-500">Start Date</span>
+                                                                <span className="font-medium text-green-800">{order.startDate?.slice(0, 10) || order.selectedPackage?.startDate}</span>
                                                             </div>
-                                                        ) : (
-                                                            <div className="bg-green-200 p-2 rounded-full transition-transform duration-300">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                                </svg>
+                                                        </div>
+                                                        <div className="flex items-center bg-green-50 px-3 py-2 rounded-lg">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                            </svg>
+                                                            <div>
+                                                                <span className="block text-xs text-gray-500">End Date</span>
+                                                                <span className="font-medium text-green-800">{order.endDate?.slice(0, 10) || order.selectedPackage?.endDate}</span>
                                                             </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <div>
+                                                            <div className="flex items-center">
+                                                                {order.bagIncluded ? (
+                                                                    <>
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                        </svg>
+                                                                        <span className="font-medium text-green-600">Bag Included</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6  18L18 6M6 6l12 12" />
+                                                                        </svg>
+                                                                        <span className="font-medium text-gray-500">Bag Not Included</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Payment Status with Actions */}
+                                                    <div className="flex items-center gap-3">
+                                                        {order.paymentStatus === 0 && (
+                                                            <>
+                                                                <span className="bg-yellow-100 text-yellow-800 px-3 py-2 rounded-lg text-sm font-medium flex items-center">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                    </svg>
+                                                                    Payment Pending
+                                                                </span>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handlePayNow(order);
+                                                                    }}
+                                                                    className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-md flex items-center"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                                    </svg>
+                                                                    Pay Now
+                                                                </button>
+                                                            </>
                                                         )}
+                                                        {order.paymentStatus === 1 && (
+                                                            <span className="bg-green-100 text-green-800 px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                                Payment Successful
+                                                            </span>
+                                                        )}
+                                                        {order.paymentStatus === 2 && (
+                                                            <>
+                                                                <span className="bg-red-100 text-red-800 px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                    </svg>
+                                                                    Payment Failed
+                                                                </span>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleRetryPayment(order);
+                                                                    }}
+                                                                    className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-md flex items-center"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                    </svg>
+                                                                    Retry Payment
+                                                                </button>
+                                                            </>
+                                                        )}
+
+                                                        {/* Toggle icon with animation */}
+                                                        <div className="ml-2">
+                                                            {expandedOrderId === order.orderID ? (
+                                                                <div className="bg-green-200 p-2 rounded-full transition-transform duration-300 transform rotate-180">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                    </svg>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="bg-green-200 p-2 rounded-full transition-transform duration-300">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                    </svg>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Expandable Package Details with enhanced meal cards */}
-                                        {expandedOrderId === order.orderID && packageDetails[order.orderID] && (
-                                            <div className="p-6 bg-green-50 border-t-2 border-green-100">
-                                                {/* Existing Meals Section */}
-                                                {packageDetails[order.orderID].data[0].selectedMeals?.map((dayMeal, dayIndex) => (
-                                                    <div key={dayIndex} className="mb-8 last:mb-0">
-                                                        <div className="flex items-center mb-4 bg-white p-3 rounded-lg shadow-sm">
-                                                            <div className="mr-3 bg-green-500 text-white p-2 rounded-full">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                                </svg>
-                                                            </div>
-                                                            <h3 className="text-lg font-semibold text-green-800">
-                                                                Meals for {new Date(dayMeal.date).toLocaleDateString('en-US', {
+                                            {/* Expandable Package Details with enhanced meal cards */}
+                                            {expandedOrderId === order.orderID && packageDetails[order.orderID] && (
+                                                <div className="space-y-6">
+                                                    {/* Meals Section */}
+                                                    {packageDetails[order.orderID].data[0].selectedMeals?.map((dayMeal, index) => (
+                                                        <details key={index} className="bg-white border rounded-lg shadow">
+                                                            <summary className="sticky top-0 z-10 bg-green-100 p-4 text-lg font-semibold cursor-pointer">
+                                                                🍽️ Meals for {new Date(dayMeal.date).toLocaleDateString('en-US', {
                                                                     weekday: 'long',
-                                                                    year: 'numeric',
                                                                     month: 'long',
                                                                     day: 'numeric'
                                                                 })}
-                                                            </h3>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                            {dayMeal.meals.map((meal, mealIndex) => (
-                                                                <div
-                                                                    key={mealIndex}
-                                                                    className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-green-100"
-                                                                >
-                                                                    {meal.image && meal.image.length > 0 && (
-                                                                        <div className="relative h-56 w-full overflow-hidden">
+                                                            </summary>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-green-50">
+                                                                {dayMeal.meals.map((meal, idx) => (
+                                                                    <div key={idx} className="relative rounded-xl overflow-hidden border shadow hover:shadow-lg transition">
+                                                                        {meal.image?.[0] && (
                                                                             <img
                                                                                 src={meal.image[0]}
                                                                                 alt={meal.mealName}
-                                                                                className="w-full h-full object-cover transition duration-300 transform hover:scale-105"
+                                                                                className="h-48 w-full object-cover"
                                                                             />
-                                                                            {meal.mealType && meal.mealType.length > 0 && (
-                                                                                <span className="absolute top-3 right-3 px-3 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg shadow-md">
-                                                                                    {meal.mealType[0].mealType}
-                                                                                </span>
+                                                                        )}
+
+                                                                        {/* Displaying the Meal Type Tag */}
+                                                                        {meal.mealType?.[0]?.mealType && (
+                                                                            <span className="absolute top-3 right-3 px-3 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg shadow-md">
+                                                                                {meal.mealType[0].mealType}
+                                                                            </span>
+                                                                        )}
+
+                                                                        <div className="p-4 space-y-2">
+                                                                            <h4 className="text-lg font-bold">{meal.mealName}</h4>
+                                                                            <p className="text-sm text-gray-600">{meal.description}</p>
+
+                                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-sm">
+                                                                                <div>
+                                                                                    <span className="text-green-700 font-semibold">
+                                                                                        {meal.moreDetails.energy}
+                                                                                    </span>
+                                                                                    <br />kcal
+                                                                                </div>
+                                                                                <div>
+                                                                                    <span className="text-green-700 font-semibold">
+                                                                                        {meal.moreDetails.protein}
+                                                                                    </span>
+                                                                                    <br />Protein
+                                                                                </div>
+                                                                                <div>
+                                                                                    <span className="text-green-700 font-semibold">
+                                                                                        {meal.moreDetails.fat}
+                                                                                    </span>
+                                                                                    <br />Fat
+                                                                                </div>
+                                                                                <div>
+                                                                                    <span className="text-green-700 font-semibold">
+                                                                                        {meal.moreDetails.carbohydrates}
+                                                                                    </span>
+                                                                                    <br />Carbs
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {meal.moreDetails.allergens?.length > 0 && (
+                                                                                <div className="bg-red-100 p-2 rounded text-xs text-red-800">
+                                                                                    ⚠️ Allergens: {meal.moreDetails.allergens.join(', ')}
+                                                                                </div>
                                                                             )}
-                                                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white p-4">
-                                                                                <h4 className="text-xl font-bold">{meal.mealName}</h4>
-                                                                            </div>
                                                                         </div>
-                                                                    )}
-
-                                                                    <div className="p-5">
-                                                                        {(!meal.image || meal.image.length === 0) && (
-                                                                            <h4 className="text-xl font-bold text-green-800 mb-3">{meal.mealName}</h4>
-                                                                        )}
-
-                                                                        <p className="text-gray-600 mb-4">{meal.description}</p>
-
-                                                                        {/* Nutrition Information */}
-                                                                        <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl mb-4">
-                                                                            <h5 className="font-semibold text-green-800 mb-3 flex items-center">
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                                                                </svg>
-                                                                                Nutrition Information
-                                                                            </h5>
-
-                                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                                                <div className="bg-white p-3 rounded-lg text-center">
-                                                                                    <span className="block text-xs text-gray-500 mb-1">Energy</span>
-                                                                                    <span className="font-bold text-green-700 text-lg">{meal.moreDetails.energy}</span>
-                                                                                    <span className="block text-xs text-gray-500">kcal</span>
-                                                                                </div>
-                                                                                <div className="bg-white p-3 rounded-lg text-center">
-                                                                                    <span className="block text-xs text-gray-500 mb-1">Protein</span>
-                                                                                    <span className="font-bold text-green-700 text-lg">{meal.moreDetails.protein}</span>
-                                                                                    <span className="block text-xs text-gray-500">grams</span>
-                                                                                </div>
-                                                                                <div className="bg-white p-3 rounded-lg text-center">
-                                                                                    <span className="block text-xs text-gray-500 mb-1">Fat</span>
-                                                                                    <span className="font-bold text-green-700 text-lg">{meal.moreDetails.fat}</span>
-                                                                                    <span className="block text-xs text-gray-500">grams</span>
-                                                                                </div>
-                                                                                <div className="bg-white p-3 rounded-lg text-center">
-                                                                                    <span className="block text-xs text-gray-500 mb-1">Carbs</span>
-                                                                                    <span className="font-bold text-green-700 text-lg">{meal.moreDetails.carbohydrates}</span>
-                                                                                    <span className="block text-xs text-gray-500">grams</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Allergens Information */}
-                                                                        {meal.moreDetails.allergens && meal.moreDetails.allergens.length > 0 && (
-                                                                            <div className="bg-red-50 p-4 rounded-xl">
-                                                                                <div className="flex items-start">
-                                                                                    <div className="bg-red-100 p-2 rounded-full mr-3 flex-shrink-0">
-                                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                                                                        </svg>
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <h5 className="font-semibold text-red-800 mb-1">Allergens</h5>
-                                                                                        <div className="flex flex-wrap gap-2">
-                                                                                            {meal.moreDetails.allergens.map((allergen, i) => (
-                                                                                                <span key={i} className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
-                                                                                                    {allergen}
-                                                                                                </span>
-                                                                                            ))}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
                                                                     </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ))}
-
-                                                {/* New Addon Products Section */}
-                                                {packageDetails[order.orderID].data[0].addons && packageDetails[order.orderID].data[0].addons.length > 0 && (
-                                                    <div className="mt-10 mb-4">
-                                                        <div className="flex items-center mb-6 bg-white p-3 rounded-lg shadow-sm">
-                                                            <div className="mr-3 bg-purple-500 text-white p-2 rounded-full">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                </svg>
+                                                                ))}
                                                             </div>
-                                                            <h3 className="text-lg font-semibold text-purple-800">
-                                                                Addon Products
-                                                            </h3>
-                                                        </div>
+                                                        </details>
+                                                    ))}
 
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                            {packageDetails[order.orderID].data[0].addons.map((addon, addonIndex) => (
-                                                                <div
-                                                                    key={addonIndex}
-                                                                    className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-purple-100"
-                                                                >
-                                                                    {addon.image && addon.image.length > 0 && addon.image[0] !== "" ? (
-                                                                        <div className="relative h-48 w-full overflow-hidden">
-                                                                            <img
-                                                                                src={addon.image[0]}
-                                                                                alt={addon.mealName}
-                                                                                className="w-full h-full object-cover transition duration-300 transform hover:scale-105"
-                                                                            />
-                                                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white p-4">
-                                                                                <h4 className="text-xl font-bold">{addon.mealName}</h4>
+                                                    {/* Addons Section */}
+                                                    {packageDetails[order.orderID].data[0].addons?.length > 0 && (
+                                                        <details className="bg-white border rounded-lg shadow">
+                                                            <summary className="sticky top-0 z-10 bg-purple-100 p-4 text-lg font-semibold cursor-pointer">
+                                                                ➕ Addon Products
+                                                            </summary>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-purple-50">
+                                                                {packageDetails[order.orderID].data[0].addons.map((addon, idx) => (
+                                                                    <div key={idx} className="rounded-xl overflow-hidden border shadow hover:shadow-lg transition">
+                                                                        {addon.image?.[0] && addon.image[0] !== "" ? (
+                                                                            <img src={addon.image[0]} alt={addon.mealName} className="h-48 w-full object-cover" />
+                                                                        ) : (
+                                                                            <div className="h-48 bg-purple-100 flex items-center justify-center text-purple-400">
+                                                                                📷 No Image
                                                                             </div>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="h-48 w-full bg-gradient-to-r from-purple-100 to-purple-200 flex items-center justify-center">
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                                            </svg>
-                                                                        </div>
-                                                                    )}
-
-                                                                    <div className="p-5">
-                                                                        {(!addon.image || addon.image.length === 0 || addon.image[0] === "") && (
-                                                                            <h4 className="text-xl font-bold text-purple-800 mb-3">{addon.mealName}</h4>
                                                                         )}
-
-                                                                        <p className="text-gray-600">{addon.description}</p>
+                                                                        <div className="p-4 space-y-2">
+                                                                            <h4 className="text-lg font-bold text-purple-700">{addon.mealName}</h4>
+                                                                            <p className="text-sm text-gray-600">{addon.description}</p>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                                                ))}
+                                                            </div>
+                                                        </details>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                {/* No results message when filtered */}
+                                {profileData.orders.length > 0 &&
+                                    profileData.orders.filter(order => paymentStatusFilter === -1 || order.paymentStatus === paymentStatusFilter).length === 0 && (
+                                        <div className="text-center py-8 bg-green-50 rounded-xl">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                            </svg>
+                                            <h3 className="text-xl font-semibold text-green-800 mb-2">No Orders Match Your Filter</h3>
+                                            <p className="text-gray-600">Try changing your filter selection to see more orders.</p>
+                                        </div>
+                                    )}
                             </div>
                         ) : (
                             <div className="text-center py-12 bg-green-50 rounded-xl">

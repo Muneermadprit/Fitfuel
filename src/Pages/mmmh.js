@@ -1,1008 +1,894 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ShoppingBag, Calendar, MapPin, Gift } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
-import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import axios from 'axios';
+import {
+    ChevronDown, ChevronUp, Plus, Edit, Trash2,
+    Home, ShoppingBag, UserCircle, Settings, LogOut
+} from 'lucide-react';
+import logo from '../images/logo.png';
+import Navigation from './mealListNavigation';
 
-const MealPlanner = () => {
-  // Adding missing state variables
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedDates, setSelectedDates] = useState([]);
-  const [activeStep, setActiveStep] = useState(1);
-  const [selectedPackageId, setSelectedPackageId] = useState(null);
-  const [selectedPlans, setSelectedPlans] = useState({ packages: [] });
-  const [mealData, setMealData] = useState({});
-  const [selectedMeals, setSelectedMeals] = useState({});
-  const [addons, setAddons] = useState([]);
-  const [selectedOptions, setSelectedOptions] = useState({});
+// Address Modal Component
+const AddressModal = ({ isOpen, onClose, onSubmit, initialAddress = null }) => {
+    const [address, setAddress] = useState(initialAddress || {
+        street: '',
+        buildingFloor: '',
+        houseOrFlatNumber: '',
+        landmark: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: '',
+        phone: '',
+        identifier: ''
+    });
 
-  const plans = [
-    "MONTHLY (6 days per week)",
-    "MONTHLY (5 days per week)",
-    "WEEKLY (6 days)",
-    "WEEKLY (5 days)"
-  ];
-
-  const [formData, setFormData] = useState({
-    street: "",
-    buildingFloor: "",
-    houseOrFlatNumber: "",
-    landmark: "",
-    city: "",
-    state: "",
-    postalCode: "",
-    country: "",
-    phone: "",
-    identifier: "Home",
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleAddressSubmit = async (e) => {
-    e.preventDefault();
-    const payload = { address: formData };
-
-    try {
-      const response = await axios.post("https://api.dailyfit.ae/api/user/add-address", payload, { withCredentials: true });
-      toast.success("Address added successfully!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
-      console.log("Response:", response.data);
-    } catch (error) {
-      alert("Failed to add address. Please try again.");
-      console.error("Error:", error);
-    }
-  };
-
-  const [selectedPackage, setSelectedPackage] = useState({
-    packageId: null,
-    planId: null
-  });
-
-  const isSelected = (packageId, planId) => {
-    return selectedPackage.packageId === packageId && selectedPackage.planId === planId;
-  };
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await axios.get("https://api.dailyfit.ae/api/user/get-addons", { withCredentials: true });
-        setAddons(response.data.data);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      }
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setAddress(prev => ({
+            ...prev,
+            [name]: value
+        }));
     };
 
-    fetchCategories();
-  }, []);
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(address);
+        onClose();
+    };
 
-  const handleSelection = async (packageId, identifierPackage) => {
-    setSelectedPackageId(packageId);
-    sessionStorage.setItem("package", packageId);
+    if (!isOpen) return null;
 
-    try {
-      const response = await axios.post(
-        "https://api.dailyfit.ae/api/user/get-package-details",
-        { packageId, identifierPackage },
-        { withCredentials: true }
-      );
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg w-full max-w-md mx-4">
+                <h2 className="text-xl font-semibold mb-4 text-green-700">
+                    {initialAddress ? 'Edit Address' : 'Add New Address'}
+                </h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <input
+                            type="text"
+                            name="street"
+                            value={address.street}
+                            onChange={handleChange}
+                            placeholder="Street"
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                            required
+                        />
+                        <input
+                            type="text"
+                            name="buildingFloor"
+                            value={address.buildingFloor}
+                            onChange={handleChange}
+                            placeholder="Building/Floor"
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                        />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <input
+                            type="text"
+                            name="houseOrFlatNumber"
+                            value={address.houseOrFlatNumber}
+                            onChange={handleChange}
+                            placeholder="House/Flat Number"
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                        />
+                        <input
+                            type="text"
+                            name="landmark"
+                            value={address.landmark}
+                            onChange={handleChange}
+                            placeholder="Landmark"
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                        />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <input
+                            type="text"
+                            name="city"
+                            value={address.city}
+                            onChange={handleChange}
+                            placeholder="City"
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                            required
+                        />
+                        <input
+                            type="text"
+                            name="state"
+                            value={address.state}
+                            onChange={handleChange}
+                            placeholder="State"
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                            required
+                        />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <input
+                            type="text"
+                            name="postalCode"
+                            value={address.postalCode}
+                            onChange={handleChange}
+                            placeholder="Postal Code"
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                            required
+                        />
+                        <input
+                            type="text"
+                            name="country"
+                            value={address.country}
+                            onChange={handleChange}
+                            placeholder="Country"
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                            required
+                        />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <input
+                            type="tel"
+                            name="phone"
+                            value={address.phone}
+                            onChange={handleChange}
+                            placeholder="Phone Number"
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                            required
+                        />
+                        <input
+                            type="text"
+                            name="identifier"
+                            value={address.identifier}
+                            onChange={handleChange}
+                            placeholder="Address Type (Home, Work)"
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                        />
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                        >
+                            Save Address
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
 
-      if (response.data && response.data.data) {
-        const packages = response.data.data;
-        const formattedMeals = {};
+// Main User Profile Component
+const UserProfile = () => {
+    const [activeTab, setActiveTab] = useState('profile');
+    const [profileData, setProfileData] = useState(null);
+    const [expandedOrderId, setExpandedOrderId] = useState(null);
+    const [packageDetails, setPackageDetails] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-        packages.forEach((pkg) => {
-          // Check if pkg.meals exists and is an object
-          if (pkg.meals && typeof pkg.meals === 'object') {
-            Object.entries(pkg.meals).forEach(([day, dayData]) => {
-              // Check if the dayData has a date property
-              if (dayData.date) {
-                const date = dayData.date;
+    // New state for address management
+    const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+    const [editingAddress, setEditingAddress] = useState(null);
 
-                // Use mealsDetails if available, otherwise use meals
-                const mealsList = dayData.mealsDetails && dayData.mealsDetails.length > 0
-                  ? dayData.mealsDetails
-                  : (dayData.meals && dayData.meals.length > 0 ? dayData.meals : []);
-
-                // Only add to formattedMeals if there are meals for this day
-                if (mealsList.length > 0) {
-                  // Make sure each meal has an image property that's an array
-                  const processedMeals = mealsList.map(meal => ({
-                    ...meal,
-                    image: meal.image && Array.isArray(meal.image) ? meal.image : ['/placeholder-image.jpg']
-                  }));
-
-                  formattedMeals[date] = processedMeals;
-                }
-              }
+    // Load RazorPay script
+    useEffect(() => {
+        const loadRazorpayScript = () => {
+            return new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                script.onload = () => {
+                    resolve(true);
+                };
+                script.onerror = () => {
+                    resolve(false);
+                };
+                document.body.appendChild(script);
             });
-          }
-        });
+        };
 
-        console.log("Formatted Meals:", formattedMeals); // Debug log
+        // Load RazorPay script when component mounts
+        loadRazorpayScript();
+    }, []);
 
-        setMealData(formattedMeals);
-        const availableDates = Object.keys(formattedMeals);
-
-        if (availableDates.length > 0) {
-          setSelectedDate(availableDates[0]);
-
-          // Initialize selected meals with first product for each day
-          const initialSelectedMeals = {};
-          availableDates.forEach(date => {
-            if (formattedMeals[date] && formattedMeals[date].length > 0) {
-              initialSelectedMeals[date] = formattedMeals[date][0]._id;
+    // Fetch profile data
+    useEffect(() => {
+        const fetchProfileData = async () => {
+            try {
+                setLoading(true);
+                const response = await axios.get('https://api.dailyfit.ae/api/user/get-profile', { withCredentials: true });
+                setProfileData(response.data.data);
+                setLoading(false);
+            } catch (err) {
+                setError(err);
+                setLoading(false);
             }
-          });
+        };
 
-          setSelectedMeals(initialSelectedMeals);
+        fetchProfileData();
+    }, []);
+
+    // Fetch package details
+    const fetchPackageDetails = async (orderID) => {
+        // Only fetch if not already cached
+        if (packageDetails[orderID]) return packageDetails[orderID];
+
+        try {
+            const response = await axios.post('https://api.dailyfit.ae/api/user/get-order-meal-details', {
+                orderID: orderID
+            }, { withCredentials: true });
+
+            // Cache the package details
+            setPackageDetails(prev => ({
+                ...prev,
+                [orderID]: response.data
+            }));
+
+            return response.data;
+        } catch (err) {
+            console.error('Error fetching package details', err);
+            return null;
         }
-      }
-    } catch (error) {
-      console.error("API Error:", error);
-    }
-  };
+    };
 
-  // Fixed handleDateSelection function
-  const formatDate = (dateObj) => {
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-  
-  const handleDateSelection = (date) => {
-    console.log('Raw selected date:', date);
-  
-    // Strip time part completely to avoid timezone shifting
-    const cleanDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const selectedDateStr = formatDate(cleanDate);
-  
-    if (isDateDisabled(cleanDate)) {
-      console.log('Date is disabled');
-      return;
-    }
-  
-    if (selectedDates.includes(selectedDateStr)) {
-      setSelectedDates([]);
-      setSelectedDate(null);
-      sessionStorage.removeItem('startDate');
-      sessionStorage.removeItem('endDate');
-      return;
-    }
-  
-    let newSelectedDates = [];
-  
-    if (selectedPlan?.includes("MONTHLY")) {
-      const daysToSelect = selectedPlan.includes("5 days") ? 20 : 24;
-      let currentDate = new Date(cleanDate);
-      let validDates = [];
-  
-      while (validDates.length < daysToSelect) {
-        const dateStr = formatDate(currentDate);
-        if (!isDateDisabled(currentDate)) {
-          validDates.push(dateStr);
+    // Handler for expanding order details
+    const handleExpandOrder = async (order) => {
+        // If clicking the same order, collapse it
+        if (expandedOrderId === order.orderID) {
+            setExpandedOrderId(null);
+            return;
         }
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-  
-      newSelectedDates = validDates;
-      sessionStorage.setItem('startDate', validDates[0]);
-      sessionStorage.setItem('endDate', validDates[validDates.length - 1]);
-  
-    } else if (selectedPlan?.includes("WEEKLY")) {
-      const daysToSelect = selectedPlan.includes("5 days") ? 5 : 6;
-      let currentDate = new Date(cleanDate);
-      let validDates = [];
-  
-      while (validDates.length < daysToSelect) {
-        const dateStr = formatDate(currentDate);
-        if (!isDateDisabled(currentDate)) {
-          validDates.push(dateStr);
+
+        // Fetch package details if not already fetched
+        await fetchPackageDetails(order.orderID);
+        setExpandedOrderId(order.orderID);
+    };
+
+    // Add new address
+    const handleAddAddress = async (newAddress) => {
+        try {
+            await axios.post('https://api.dailyfit.ae/api/user/add-address', {
+                address: newAddress
+            }, { withCredentials: true });
+
+            // Update profile data with new address
+            setProfileData(prev => ({
+                ...prev,
+                savedAddress: [...prev.savedAddress, newAddress]
+            }));
+        } catch (err) {
+            console.error('Error adding address', err);
         }
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-  
-      newSelectedDates = validDates;
-      sessionStorage.setItem('startDate', validDates[0]);
-      sessionStorage.setItem('endDate', validDates[validDates.length - 1]);
-  
-    } else {
-      // One-day selection fallback
-      newSelectedDates = [selectedDateStr];
-      sessionStorage.setItem('startDate', selectedDateStr);
-      sessionStorage.setItem('endDate', selectedDateStr);
+    };
+
+    // Edit existing address
+    const handleEditAddress = async (updatedAddress) => {
+        try {
+            await axios.post('https://api.dailyfit.ae/api/user/edit-address', {
+                address: updatedAddress
+            }, { withCredentials: true });
+
+            // Update profile data
+            setProfileData(prev => ({
+                ...prev,
+                savedAddress: prev.savedAddress.map(addr =>
+                    addr.identifier === updatedAddress.identifier ? updatedAddress : addr
+                )
+            }));
+        } catch (err) {
+            console.error('Error editing address', err);
+        }
+    };
+
+    // Delete address
+    const handleDeleteAddress = async (addressToDelete) => {
+        try {
+            await axios.delete('https://api.dailyfit.ae/api/user/delete-address', {
+                data: { identifier: addressToDelete.identifier },
+                withCredentials: true
+            });
+
+            // Update profile data
+            setProfileData(prev => ({
+                ...prev,
+                savedAddress: prev.savedAddress.filter(addr =>
+                    addr.identifier !== addressToDelete.identifier
+                )
+            }));
+        } catch (err) {
+            console.error('Error deleting address', err);
+        }
+    };
+
+    // Function to handle Pay Now button click
+    const handlePayNow = async (order) => {
+        try {
+            // First check if the order has RazorPay details
+            if (!order.RazorPayOrderDetails || !order.RazorPayOrderDetails.id) {
+                console.error('Missing RazorPay order details');
+                return;
+            }
+
+            // Initialize RazorPay payment
+            const options = {
+                key: "your_razorpay_key_id", // Replace with your actual RazorPay key
+                amount: order.RazorPayOrderDetails.amount,
+                currency: order.RazorPayOrderDetails.currency,
+                name: "DailyFit",
+                description: `Payment for Order ID: ${order.orderID}`,
+                order_id: order.RazorPayOrderDetails.id,
+                handler: function (response) {
+                    // Verify payment on your server
+                    verifyPayment(response, order.orderID);
+                },
+                prefill: {
+                    name: profileData.userName,
+                    email: profileData.userEmail,
+                    contact: profileData.phone || ""
+                },
+                theme: {
+                    color: "#22C55E" // Green color to match your theme
+                }
+            };
+
+            // Initialize and open RazorPay checkout
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+        } catch (err) {
+            console.error('Error initiating payment', err);
+        }
+    };
+
+    // Function to handle Retry Payment button click
+    const handleRetryPayment = (order) => {
+        // Simply call the handlePayNow function to retry
+        handlePayNow(order);
+    };
+
+    // Function to verify payment with your backend
+    const verifyPayment = async (paymentResponse, orderID) => {
+        try {
+            const response = await axios.post(
+                'https://api.dailyfit.ae/api/user/verify-payment',
+                {
+                    orderID: orderID,
+                    paymentID: paymentResponse.razorpay_payment_id,
+                    razorpay_order_id: paymentResponse.razorpay_order_id,
+                    razorpay_signature: paymentResponse.razorpay_signature
+                },
+                { withCredentials: true }
+            );
+
+            if (response.data.status) {
+                // Update the local state to reflect payment success
+                setProfileData(prev => ({
+                    ...prev,
+                    orders: prev.orders.map(order =>
+                        order.orderID === orderID
+                            ? { ...order, paymentStatus: 1 }
+                            : order
+                    )
+                }));
+
+                // Show success message to user
+                alert('Payment successful!');
+            } else {
+                alert('Payment verification failed. Please try again.');
+            }
+        } catch (err) {
+            console.error('Payment verification error', err);
+            alert('Payment verification failed. Please try again.');
+        }
+    };
+
+    // Logout handler
+    const handleLogout = async () => {
+        try {
+            await axios.post('https://api.dailyfit.ae/api/user/logout', {}, { withCredentials: true });
+            // Redirect to login page or clear user session
+            window.location.href = '/Order';
+        } catch (err) {
+            console.error('Logout error', err);
+        }
+    };
+
+    // Loading state
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-green-50">
+                <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-green-500"></div>
+            </div>
+        );
     }
-  
-    console.log("✅ Final date range selected:", newSelectedDates);
-  
-    setSelectedDates(newSelectedDates);
-    setSelectedDate(newSelectedDates[0]);
-  };
-  
 
-  // Fixed isDateDisabled function to properly handle weekend restrictions
-  const isDateDisabled = (date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const twoDaysFromNow = new Date(today);
-    twoDaysFromNow.setDate(today.getDate() + 2);
-
-    // Date formatting for comparison
-    const comparableDate = new Date(date);
-    comparableDate.setHours(0, 0, 0, 0);
-    
-    // Cannot select dates less than 2 days from now
-    if (comparableDate <= twoDaysFromNow) return true;
-    
-    const dayOfWeek = comparableDate.getDay(); // 0 is Sunday, 6 is Saturday
-    
-    // For 5-day plans: exclude Saturday (6) and Sunday (0)
-    if (selectedPlan?.includes("5 days") && (dayOfWeek === 0 || dayOfWeek === 6)) {
-      return true;
-    }
-    
-    // For 6-day plans: exclude Sunday (0) only
-    if (selectedPlan?.includes("6 days") && dayOfWeek === 0) {
-      return true;
-    }
-    
-    return false;
-  };
-
-  // Add missing handleMealSelection function
-  const handleMealSelection = (date, mealId) => {
-    setSelectedMeals(prev => ({
-      ...prev,
-      [date]: mealId
-    }));
-  };
-
-  // Add missing handleConfirmSelection function
-  const handleConfirmSelection = () => {
-    saveSelectionsToSessionStorage();
-    setActiveStep(3); // Move to the next step
-  };
-
-  // Add missing saveSelectionsToSessionStorage function
-  const saveSelectionsToSessionStorage = () => {
-    sessionStorage.setItem('selectedMeals', JSON.stringify(selectedMeals));
-    sessionStorage.setItem('selectedPlan', selectedPlan);
-    
-    // Ensure start and end dates are saved
-    if (selectedDates.length > 0) {
-      sessionStorage.setItem('startDate', selectedDates[0]);
-      sessionStorage.setItem('endDate', selectedDates[selectedDates.length - 1]);
-    }
-  };
-
-  // Add missing handleCompleteOrder function
-  const handleCompleteOrder = async () => {
-    try {
-      // Implement order completion logic here
-      toast.success("Your order has been placed successfully!");
-    } catch (error) {
-      toast.error("Error placing order. Please try again.");
-      console.error("Order error:", error);
-    }
-  };
-
-  // Add missing handleBackClick function
-  const handleBackClick = () => {
-    if (activeStep > 1) {
-      setActiveStep(activeStep - 1);
-    }
-  };
-
-  const handleResetSelections = () => {
-    setSelectedOptions({});
-    setSelectedPlan(null);
-    setSelectedDates([]);
-    setSelectedMeals({});
-
-    sessionStorage.removeItem('startDate');
-    sessionStorage.removeItem('endDate');
-    sessionStorage.removeItem('selectedMeals');
-  };
-
-  const renderCalendar = (monthOffset) => {
-    const month = new Date(currentYear, currentMonth + monthOffset, 1);
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-    const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1).getDay();
-
-    const calendarDays = [];
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      calendarDays.push(<div key={`empty-${i}`} className="w-10 h-10" />);
+    // Error state
+    if (error) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-green-50 text-red-500">
+                <p>Error loading profile: {error.message}</p>
+            </div>
+        );
     }
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(month.getFullYear(), month.getMonth(), day);
-      const dateStr = date.toISOString().split('T')[0];
-      const isDisabled = isDateDisabled(date);
-      const isSelected = selectedDates.includes(dateStr);
-
-      calendarDays.push(
-        <button
-          key={`${month.getMonth()}-${day}`}
-          onClick={() => handleDateSelection(date)}
-          disabled={isDisabled}
-          className={`w-10 h-10 rounded-full text-sm font-medium transition-colors 
-            ${isDisabled
-              ? "text-gray-300 cursor-not-allowed"
-              : isSelected
-                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md"
-                : "hover:bg-emerald-50 hover:text-emerald-600"
-            }`}
-        >
-          {day}
-        </button>
-      );
+    // Ensure profileData exists
+    if (!profileData) {
+        return null;
     }
 
     return (
-      <div className="w-72">
-        <h3 className="text-lg font-medium mb-4 text-gray-800">
-          {month.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
-        </h3>
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {days.map(day => (
-            <div key={day} className="w-10 h-10 flex items-center justify-center text-sm font-medium text-gray-500">
-              {day}
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-1">
-          {calendarDays}
-        </div>
-      </div>
-    );
-  };
+        <div className="bg-gradient-to-b from-green-50 to-green-100 min-h-screen pb-12">
+            {/* Navigation Header */}
+            <Navigation />
 
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(currentYear + 1);
-    } else {
-      setCurrentMonth(currentMonth + 1);
-    }
-  };
-
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(currentYear - 1);
-    } else {
-      setCurrentMonth(currentMonth - 1);
-    }
-  };
-
-  useEffect(() => {
-    if (selectedDates.length > 0 && !selectedDate) {
-      setSelectedDate(selectedDates[0]);
-    }
-  }, [selectedDates, selectedDate]);
-
-  const renderStepContent = () => {
-    switch (activeStep) {
-      case 1:
-        return (
-          <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-6">
-            <ToastContainer />
-            <div className="max-w-7xl mx-auto">
-              {/* Header Section */}
-              <div className="text-center mb-12 space-y-4">
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-800 tracking-tight">
-                  Design Your <span className="text-emerald-600">Perfect</span> Meal Plan
-                </h1>
-                <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-                  Customize your nutrition journey with our chef-crafted meal packages
-                </p>
-              </div>
-
-              {/* Package Selection Section */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                {selectedPlans && selectedPlans.packages && selectedPlans.packages.map((packageItem) => (
-                  <div key={packageItem._id}
-                    className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group">
-                    <div className="h-3 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
-                    <div className="p-8">
-                      <div className="flex items-start justify-between mb-6">
-                        <div className="p-3 bg-emerald-100 rounded-xl">
-                          <ShoppingBag className="w-6 h-6 text-emerald-600" />
+            <div className="container mx-auto px-4 py-8 max-w-6xl">
+                {/* Tabs Navigation - Enhanced with better styling */}
+                <div className="flex mb-8 bg-white rounded-xl shadow-md overflow-hidden">
+                    <button
+                        className={`flex-1 px-6 py-4 transition-colors font-medium ${activeTab === 'profile'
+                            ? 'bg-green-600 text-white shadow-inner'
+                            : 'text-green-700 hover:bg-green-50'
+                            }`}
+                        onClick={() => setActiveTab('profile')}
+                    >
+                        <div className="flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Profile & Addresses
                         </div>
-                        <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                          Perfect for {packageItem.packageGroup === "Family" ? "families" : "individuals"}
-                        </span>
-                      </div>
-
-                      <h3 className="text-2xl font-bold mb-3 text-gray-800">{packageItem.packageGroup}</h3>
-                      <p className="text-gray-600 mb-8">{packageItem.description}</p>
-
-                      <button
-                        onClick={() => handleSelection(packageItem._id, packageItem._id, packageItem.identifier)}
-                        className={`w-full py-4 px-6 rounded-xl text-left font-medium transition-all duration-300
-                          ${selectedPackageId === packageItem._id
-                            ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md"
-                            : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 group-hover:translate-y-1"
-                          }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span>{packageItem.packageName}</span>
-                          <ChevronRight className={`w-5 h-5 transition-transform ${selectedPackageId === packageItem._id ? 'rotate-90' : 'group-hover:translate-x-1'}`} />
+                    </button>
+                    <button
+                        className={`flex-1 px-6 py-4 transition-colors font-medium ${activeTab === 'orders'
+                            ? 'bg-green-600 text-white shadow-inner'
+                            : 'text-green-700 hover:bg-green-50'
+                            }`}
+                        onClick={() => setActiveTab('orders')}
+                    >
+                        <div className="flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                            My Orders
                         </div>
-                      </button>
+                    </button>
+                </div>
+
+                {/* Profile & Addresses Content */}
+                {activeTab === 'profile' && (
+                    <div className="space-y-8">
+                        {/* Personal Information Section - Enhanced with card styling */}
+                        <div className="bg-white shadow-lg rounded-xl p-8 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
+                            <div className="flex items-center mb-6">
+                                <div className="bg-green-100 p-3 rounded-full mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </div>
+                                <h2 className="text-2xl font-bold text-green-800">Personal Information</h2>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="bg-green-50 rounded-lg p-4">
+                                    <p className="font-medium text-green-700 mb-1 text-sm">Full Name</p>
+                                    <p className="text-gray-900 font-medium text-lg">{profileData.userName}</p>
+                                </div>
+                                <div className="bg-green-50 rounded-lg p-4">
+                                    <p className="font-medium text-green-700 mb-1 text-sm">Email Address</p>
+                                    <p className="text-gray-900 font-medium text-lg">{profileData.userEmail}</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end">
+                                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                    Edit Profile
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Saved Addresses Section - Enhanced with better card styling */}
+                        <div className="bg-white shadow-lg rounded-xl p-8 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
+                            <div className="flex justify-between items-center mb-6">
+                                <div className="flex items-center">
+                                    <div className="bg-green-100 p-3 rounded-full mr-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-green-800">Saved Addresses</h2>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setEditingAddress(null);
+                                        setIsAddressModalOpen(true);
+                                    }}
+                                    className="flex items-center text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors shadow-md"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    Add New Address
+                                </button>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                {profileData.savedAddress.map((address, index) => (
+                                    <div
+                                        key={index}
+                                        className="bg-green-50 rounded-xl p-5 hover:shadow-md transition-shadow duration-300 relative group border border-green-100"
+                                    >
+                                        <div className="mb-4 pb-3 border-b border-green-200">
+                                            <p className="font-bold text-green-800 text-lg">{address.street}</p>
+                                            <p className="text-gray-700">{address.buildingFloor}, {address.houseOrFlatNumber}</p>
+                                        </div>
+
+                                        <div className="mb-3">
+                                            {address.landmark && (
+                                                <div className="flex items-start mb-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                    </svg>
+                                                    <p className="text-gray-700">{address.landmark}</p>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-start mb-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
+                                                <p className="text-gray-700">
+                                                    {address.city}, {address.state} {address.postalCode}<br />
+                                                    {address.country}
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-start">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                                </svg>
+                                                <p className="text-gray-700">{address.phone}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Duration Selection */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-16">
-                <h2 className="text-2xl font-bold mb-8 text-gray-800">Select Your Plan Duration</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {plans.map((plan) => (
-                    <button
-                      key={plan}
-                      onClick={() => setSelectedPlan(plan)}
-                      className={`p-6 rounded-xl transition-all duration-300 group relative overflow-hidden
-                        ${selectedPlan === plan
-                          ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-lg"
-                          : "bg-gray-50 text-gray-700 hover:shadow-md"
-                        }`}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-                      <div className="flex justify-between items-center">
-                        <div className="text-lg font-bold">{plan}</div>
-                        {selectedPlan === plan && <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-emerald-600">✓</div>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Calendar Section */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-16">
-                <div className="flex justify-between items-center mb-8">
-                  <h2 className="text-2xl font-bold text-gray-800">Choose Your Start Date</h2>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      onClick={handlePrevMonth}
-                      className="p-2 rounded-full hover:bg-emerald-100 transition-colors"
-                    >
-                      <ChevronLeft className="w-6 h-6 text-emerald-600" />
-                    </button>
-
-                    <span className="font-medium text-gray-800">
-                      {new Date(currentYear, currentMonth).toLocaleDateString('default', { month: 'long', year: 'numeric' })}
-                    </span>
-
-                    <button
-                      onClick={handleNextMonth}
-                      className="p-2 rounded-full hover:bg-emerald-100 transition-colors"
-                    >
-                      <ChevronRight className="w-6 h-6 text-emerald-600" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-8 justify-center">
-                  {renderCalendar(0)}
-                  {renderCalendar(1)}
-                </div>
-
-                {/* Selected Date Range Display */}
-                {selectedDates.length > 0 && (
-                  <div className="mt-8 p-4 bg-emerald-50 rounded-xl">
-                    <h3 className="font-medium text-emerald-800 mb-2">Selected Date Range:</h3>
-                    <p className="text-emerald-700">
-                      From: {new Date(selectedDates[0]).toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric"
-                      })}
-                    </p>
-                    <p className="text-emerald-700">
-                      To: {new Date(selectedDates[selectedDates.length - 1]).toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric"
-                      })}
-                    </p>
-                  </div>
                 )}
 
-                {/* Reset Selections Button */}
-                <div className="flex justify-end mt-8">
-                  <button
-                    onClick={handleResetSelections}
-                    className="px-6 py-3 border-2 border-emerald-600 text-emerald-600 rounded-xl hover:bg-emerald-50 font-medium transition-all duration-300"
-                  >
-                    Reset Selections
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 2:
-        if (!selectedDate && selectedDates.length > 0) {
-          setSelectedDate(selectedDates[0]);
-        }
-
-        return (
-          <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-6">
-            <ToastContainer />
-            <div className="max-w-7xl mx-auto">
-              <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
-                <div>
-                  <h2 className="text-3xl font-bold text-gray-800 mb-2">Customize Your Meals</h2>
-                  <p className="text-gray-600">
-                    Select your favorite meals for each day of your plan
-                  </p>
-                </div>
-                <div className="bg-emerald-50 rounded-xl p-4">
-                  <p className="text-sm font-medium text-emerald-700">
-                    You can swap pre-selected favorites for any meal that suits your taste
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-16">
-                <div className="flex gap-3 overflow-x-auto mb-8 pb-2 scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-gray-100">
-                  {selectedDates.map((date) => (
-                    <button
-                      key={date}
-                      onClick={() => setSelectedDate(date)}
-                      className={`px-6 py-3 rounded-xl font-medium whitespace-nowrap transition-all duration-300 ${date === selectedDate
-                        ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md"
-                        : "border border-gray-200 text-gray-700 hover:bg-emerald-50 hover:border-emerald-200"
-                        }`}
-                    >
-                      {new Date(date).toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-                  {selectedDate && mealData[selectedDate] ? (
-                    mealData[selectedDate].map((meal) => (
-                      <div
-                        key={meal._id}
-                        className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white group cursor-pointer
-      ${selectedMeals[selectedDate] === meal._id ? 'ring-2 ring-emerald-500' : ''}`}
-                        onClick={() => handleMealSelection(selectedDate, meal._id)}
-                      >
-                        <div className="h-60 overflow-hidden relative">
-                          {meal.image && meal.image.length > 0 ? (
-                            <img
-                              src={meal.image[0]}
-                              alt={meal.mealName}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                              <span className="text-gray-400">No image available</span>
+                {/* Orders Content */}
+                {activeTab === 'orders' && (
+                    <div className="bg-white shadow-lg rounded-xl p-8 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
+                        <div className="flex items-center mb-6">
+                            <div className="bg-green-100 p-3 rounded-full mr-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                </svg>
                             </div>
-                          )}
-                          {selectedMeals[selectedDate] === meal._id && (
-                            <div className="absolute top-3 right-3 bg-emerald-500 text-white p-2 rounded-full flex items-center justify-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          )}
+                            <h2 className="text-2xl font-bold text-green-800">My Orders</h2>
                         </div>
-                        <div className="p-6">
-                          <h3 className="text-xl font-bold text-gray-800 mb-2">{meal.mealName || "Unnamed Meal"}</h3>
-                          <p className="text-gray-600 mb-4 line-clamp-2">{meal.description || "No description available"}</p>
-                          <div className="flex justify-between items-center">
-                            <div>
-                              {meal.fareDetails ? (
-                                <>
-                                  <span className="line-through text-red-500 text-sm">
-                                    ${meal.fareDetails.strikeOff}
-                                  </span>{" "}
-                                  <span className="text-lg font-bold text-emerald-600">
-                                    ${meal.fareDetails.totalFare}
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="text-lg font-bold text-emerald-600">Price unavailable</span>
-                              )}
+
+                        {loading ? (
+                            <div className="text-center py-12">
+                                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
+                                <p className="mt-4 text-green-700 font-medium">Loading your orders...</p>
                             </div>
-                            {meal.fareDetails && meal.fareDetails.discount ? (
-                              <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-sm font-medium">
-                                Save ${meal.fareDetails.discount}
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="col-span-3 py-10 text-center">
-                      <p className="text-gray-500">No meals available for the selected date.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+                        ) : error ? (
+                            <div className="bg-red-50 p-4 rounded-lg text-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p className="text-red-700 font-medium">Something went wrong while loading your orders.</p>
+                                <button className="mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                    Try Again
+                                </button>
+                            </div>
+                        ) : profileData?.orders?.length > 0 ? (
+                            <div className="space-y-6">
+                                {profileData.orders.map((order, index) => (
+                                    <div key={index} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition duration-300">
+                                        {/* Order Summary Header */}
+                                        <div
+                                            className={`p-6 ${expandedOrderId === order.orderID ? 'bg-green-50' : 'bg-white'} hover:bg-green-50 cursor-pointer transition-colors`}
+                                            onClick={() => handleExpandOrder(order)}
+                                        >
+                                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                                    {/* Order ID with icon */}
+                                                    <div className="flex items-center">
+                                                        <div className="bg-green-600 text-white rounded-l-lg px-3 py-2">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div className="bg-green-100 text-green-800 rounded-r-lg px-3 py-2 font-bold">
+                                                            #{order.orderID}
+                                                        </div>
+                                                    </div>
 
-              {/* Meal selection summary */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800">Your Meal Selection</h2>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead>
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selected Meal</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {selectedDates.map((date) => {
-                        const mealId = selectedMeals[date];
-                        const mealName = mealData[date]?.find(meal => meal._id === mealId)?.mealName || "No meal selected";
+                                                    {/* Package Type */}
+                                                    <span className="inline-block bg-green-600 text-white px-4 py-1 rounded-lg text-sm font-medium">
+                                                        {order.selectedPackage?.packageName || "Package"}
+                                                    </span>
+                                                </div>
 
-                        return (
-                          <tr key={date}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {new Date(date).toLocaleDateString("en-US", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {mealName}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                                                {/* Enhanced Total Amount Display */}
+                                                <div className="flex items-center">
+                                                    <div className="bg-green-600 text-white px-3 py-2 rounded-l-lg font-medium">
+                                                        TOTAL
+                                                    </div>
+                                                    <div className="bg-green-500 text-white px-3 py-2 font-bold text-lg">
+                                                        AED
+                                                    </div>
+                                                    <div className="bg-green-100 text-green-800 px-3 py-2 rounded-r-lg font-bold text-lg">
+                                                        {order.amount}
+                                                    </div>
+                                                </div>
+                                            </div>
 
-              {/* Date range summary */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800">Your Plan Details</h2>
-                <div className="flex flex-col md:flex-row justify-between gap-6">
-                  <div className="bg-gray-50 p-4 rounded-xl flex gap-3 items-center md:flex-1">
-                    <Calendar className="text-emerald-600 w-6 h-6" />
-                    <div>
-              
+                                            {/* Date and Payment Status Row */}
+                                            <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center">
+                                                <div className="flex flex-wrap gap-6 mb-4 md:mb-0">
+                                                    <div className="flex items-center bg-green-50 px-3 py-2 rounded-lg">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                        <div>
+                                                            <span className="block text-xs text-gray-500">Start Date</span>
+                                                            <span className="font-medium text-green-800">{order.startDate?.slice(0, 10) || order.selectedPackage?.startDate}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center bg-green-50 px-3 py-2 rounded-lg">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                        <div>
+                                                            <span className="block text-xs text-gray-500">End Date</span>
+                                                            <span className="font-medium text-green-800">{order.endDate?.slice(0, 10) || order.selectedPackage?.endDate}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <div>
+                                                        <div className="flex items-center">
+                                                            {order.bagIncluded ? (
+                                                                <>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                    <span className="font-medium text-green-600">Bag Included</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                    </svg>
+                                                                    <span className="font-medium text-gray-500">Bag Not Included</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
 
+                                                {/* Payment Status with Actions */}
+                                                <div className="flex items-center gap-3">
+                                                    {order.paymentStatus === 0 && (
+                                                        <>
+                                                            <span className="bg-yellow-100 text-yellow-800 px-3 py-2 rounded-lg text-sm font-medium flex items-center">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                                Payment Pending
+                                                            </span>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handlePayNow(order);
+                                                                }}
+                                                                className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-md flex items-center"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                                </svg>
+                                                                Pay Now
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {order.paymentStatus === 1 && (
+                                                        <span className="bg-green-100 text-green-800 px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                            Payment Successful
+                                                        </span>
+                                                    )}
+                                                    {order.paymentStatus === 2 && (
+                                                        <>
+                                                            <span className="bg-red-100 text-red-800 px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                                Payment Failed
+                                                            </span>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleRetryPayment(order);
+                                                                }}
+                                                                className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-md flex items-center"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                </svg>
+                                                                Retry Payment
+                                                            </button>
+                                                        </>
+                                                    )}
 
-<p className="text-sm text-gray-500">Date Range</p>
-                      <p className="font-medium text-gray-700">
-                        {selectedDates.length > 0 ? (
-                          <>
-                            {new Date(selectedDates[0]).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })} - {new Date(selectedDates[selectedDates.length - 1]).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </>
+                                                    {/* Toggle icon with animation */}
+                                                    <div className="ml-2">
+                                                        {expandedOrderId === order.orderID ? (
+                                                            <div className="bg-green-200 p-2 rounded-full transition-transform duration-300 transform rotate-180">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                </svg>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="bg-green-200 p-2 rounded-full transition-transform duration-300">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                </svg>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Expandable Package Details with enhanced meal cards */}
+                                        {expandedOrderId === order.orderID && packageDetails[order.orderID] && (
+                                            <div className="space-y-6">
+                                                {/* Meals Section */}
+                                                {packageDetails[order.orderID].data[0].selectedMeals?.map((dayMeal, index) => (
+                                                    <details key={index} className="bg-white border rounded-lg shadow">
+                                                        <summary className="sticky top-0 z-10 bg-green-100 p-4 text-lg font-semibold cursor-pointer">
+                                                            🍽️ Meals for {new Date(dayMeal.date).toLocaleDateString('en-US', {
+                                                                weekday: 'long',
+                                                                month: 'long',
+                                                                day: 'numeric'
+                                                            })}
+                                                        </summary>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-green-50">
+                                                            {dayMeal.meals.map((meal, idx) => (
+                                                                <div key={idx} className="relative rounded-xl overflow-hidden border shadow hover:shadow-lg transition">
+                                                                    {meal.image?.[0] && (
+                                                                        <img
+                                                                            src={meal.image[0]}
+                                                                            alt={meal.mealName}
+                                                                            className="h-48 w-full object-cover"
+                                                                        />
+                                                                    )}
+
+                                                                    {/* Displaying the Meal Type Tag */}
+                                                                    {meal.mealType?.[0]?.mealType && (
+                                                                        <span className="absolute top-3 right-3 px-3 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg shadow-md">
+                                                                            {meal.mealType[0].mealType}
+                                                                        </span>
+                                                                    )}
+
+                                                                    <div className="p-4 space-y-2">
+                                                                        <h4 className="text-lg font-bold">{meal.mealName}</h4>
+                                                                        <p className="text-sm text-gray-600">{meal.description}</p>
+
+                                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-sm">
+                                                                            <div>
+                                                                                <span className="text-green-700 font-semibold">
+                                                                                    {meal.moreDetails.energy}
+                                                                                </span>
+                                                                                <br />kcal
+                                                                            </div>
+                                                                            <div>
+                                                                                <span className="text-green-700 font-semibold">
+                                                                                    {meal.moreDetails.protein}
+                                                                                </span>
+                                                                                <br />Protein
+                                                                            </div>
+                                                                            <div>
+                                                                                <span className="text-green-700 font-semibold">
+                                                                                    {meal.moreDetails.fat}
+                                                                                </span>
+                                                                                <br />Fat
+                                                                            </div>
+                                                                            <div>
+                                                                                <span className="text-green-700 font-semibold">
+                                                                                    {meal.moreDetails.carbohydrates}
+                                                                                </span>
+                                                                                <br />Carbs
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {meal.moreDetails.allergens?.length > 0 && (
+                                                                            <div className="bg-red-100 p-2 rounded text-xs text-red-800">
+                                                                                ⚠️ Allergens: {meal.moreDetails.allergens.join(', ')}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+
+                                                        </div>
+                                                    </details>
+                                                ))}
+
+                                                {/* Addons Section */}
+                                                {packageDetails[order.orderID].data[0].addons?.length > 0 && (
+                                                    <details className="bg-white border rounded-lg shadow">
+                                                        <summary className="sticky top-0 z-10 bg-purple-100 p-4 text-lg font-semibold cursor-pointer">
+                                                            ➕ Addon Products
+                                                        </summary>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-purple-50">
+                                                            {packageDetails[order.orderID].data[0].addons.map((addon, idx) => (
+                                                                <div key={idx} className="rounded-xl overflow-hidden border shadow hover:shadow-lg transition">
+                                                                    {addon.image?.[0] && addon.image[0] !== "" ? (
+                                                                        <img src={addon.image[0]} alt={addon.mealName} className="h-48 w-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="h-48 bg-purple-100 flex items-center justify-center text-purple-400">
+                                                                            📷 No Image
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="p-4 space-y-2">
+                                                                        <h4 className="text-lg font-bold text-purple-700">{addon.mealName}</h4>
+                                                                        <p className="text-sm text-gray-600">{addon.description}</p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </details>
+                                                )}
+                                            </div>
+
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
-                          "No dates selected"
+                            <div className="text-center py-12 bg-green-50 rounded-xl">
+                                <div className="bg-white p-4 inline-block rounded-full mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-green-800 mb-2">No Orders Yet</h3>
+                                <p className="text-gray-600 mb-6">You haven't placed any orders yet. Start exploring our meal packages!</p>
+                                <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors shadow-md font-medium flex items-center justify-center mx-auto">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    Browse Packages
+                                </button>
+                            </div>
                         )}
-                      </p>
                     </div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-xl flex gap-3 items-center md:flex-1">
-                    <ShoppingBag className="text-emerald-600 w-6 h-6" />
-                    <div>
-                      <p className="text-sm text-gray-500">Plan Type</p>
-                      <p className="font-medium text-gray-700">{selectedPlan || "No plan selected"}</p>
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-xl flex gap-3 items-center md:flex-1">
-                    <Gift className="text-emerald-600 w-6 h-6" />
-                    <div>
-                      <p className="text-sm text-gray-500">Total Meals</p>
-                      <p className="font-medium text-gray-700">{selectedDates.length} meals</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                )}
 
-              {/* Action buttons */}
-              <div className="flex justify-between items-center">
-                <button
-                  onClick={handleBackClick}
-                  className="px-6 py-3 flex items-center gap-2 text-emerald-600 font-medium rounded-xl hover:bg-emerald-50 transition-colors"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  Back to Selection
-                </button>
-                <button
-                  onClick={handleConfirmSelection}
-                  className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
-                  disabled={!selectedPlan || selectedDates.length === 0}
-                >
-                  Continue to Checkout
-                </button>
-              </div>
+                {/* Address Modal Component would remain unchanged */}
+                <AddressModal
+                    isOpen={isAddressModalOpen}
+                    onClose={() => setIsAddressModalOpen(false)}
+                    onSubmit={editingAddress ? handleEditAddress : handleAddAddress}
+                    initialAddress={editingAddress}
+                />
             </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white p-6">
-            <ToastContainer />
-            <div className="max-w-7xl mx-auto">
-              <div className="text-center mb-12 space-y-4">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-800 tracking-tight">
-                  Delivery Information
-                </h1>
-                <p className="text-gray-600 max-w-2xl mx-auto">
-                  Please provide your delivery details to complete your order
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Address Form */}
-                <div className="md:col-span-2">
-                  <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-                    <h2 className="text-2xl font-bold mb-6 text-gray-800">Delivery Address</h2>
-                    <form onSubmit={handleAddressSubmit} className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
-                            Street
-                          </label>
-                          <input
-                            type="text"
-                            name="street"
-                            id="street"
-                            value={formData.street}
-                            onChange={handleChange}
-                            required
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                            placeholder="Street name"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="buildingFloor" className="block text-sm font-medium text-gray-700 mb-1">
-                            Building/Floor
-                          </label>
-                          <input
-                            type="text"
-                            name="buildingFloor"
-                            id="buildingFloor"
-                            value={formData.buildingFloor}
-                            onChange={handleChange}
-                            required
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                            placeholder="Building name or number"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="houseOrFlatNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                            House/Flat Number
-                          </label>
-                          <input
-                            type="text"
-                            name="houseOrFlatNumber"
-                            id="houseOrFlatNumber"
-                            value={formData.houseOrFlatNumber}
-                            onChange={handleChange}
-                            required
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                            placeholder="Apartment or house number"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="landmark" className="block text-sm font-medium text-gray-700 mb-1">
-                            Landmark
-                          </label>
-                          <input
-                            type="text"
-                            name="landmark"
-                            id="landmark"
-                            value={formData.landmark}
-                            onChange={handleChange}
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                            placeholder="Nearby landmark (optional)"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                            City
-                          </label>
-                          <input
-                            type="text"
-                            name="city"
-                            id="city"
-                            value={formData.city}
-                            onChange={handleChange}
-                            required
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                            placeholder="City"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                            State/Province
-                          </label>
-                          <input
-                            type="text"
-                            name="state"
-                            id="state"
-                            value={formData.state}
-                            onChange={handleChange}
-                            required
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                            placeholder="State/Province"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-1">
-                            Postal Code
-                          </label>
-                          <input
-                            type="text"
-                            name="postalCode"
-                            id="postalCode"
-                            value={formData.postalCode}
-                            onChange={handleChange}
-                            required
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                            placeholder="Postal code"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                            Country
-                          </label>
-                          <input
-                            type="text"
-                            name="country"
-                            id="country"
-                            value={formData.country}
-                            onChange={handleChange}
-                            required
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                            placeholder="Country"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                            Phone Number
-                          </label>
-                          <input
-                            type="tel"
-                            name="phone"
-                            id="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            required
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                            placeholder="Phone number"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-1">
-                            Address Label
-                          </label>
-                          <select
-                            name="identifier"
-                            id="identifier"
-                            value={formData.identifier}
-                            onChange={handleChange}
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                          >
-                            <option value="Home">Home</option>
-                            <option value="Work">Work</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="pt-4">
-                        <button
-                          type="submit"
-                          className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
-                        >
-                          Save Address
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-
-                {/* Order Summary */}
-                <div className="md:col-span-1">
-                  <div className="bg-white rounded-2xl shadow-xl p-8 sticky top-8">
-                    <h2 className="text-2xl font-bold mb-6 text-gray-800">Order Summary</h2>
-                    <div className="space-y-4 mb-6">
-                      <div className="flex justify-between pb-4 border-b border-gray-100">
-                        <span className="text-gray-600">Plan</span>
-                        <span className="font-medium text-gray-800">{selectedPlan || "Not selected"}</span>
-                      </div>
-                      <div className="flex justify-between pb-4 border-b border-gray-100">
-                        <span className="text-gray-600">Duration</span>
-                        <span className="font-medium text-gray-800">{selectedDates.length} days</span>
-                      </div>
-                      <div className="flex justify-between pb-4 border-b border-gray-100">
-                        <span className="text-gray-600">Starting Date</span>
-                        <span className="font-medium text-gray-800">
-                          {selectedDates.length > 0
-                            ? new Date(selectedDates[0]).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })
-                            : "Not selected"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between pb-4 border-b border-gray-100">
-                        <span className="text-gray-600">Subtotal</span>
-                        <span className="font-medium text-gray-800">$499.00</span>
-                      </div>
-                      <div className="flex justify-between pb-4 border-b border-gray-100">
-                        <span className="text-gray-600">Delivery</span>
-                        <span className="font-medium text-emerald-600">Free</span>
-                      </div>
-                      <div className="flex justify-between text-lg font-bold">
-                        <span>Total</span>
-                        <span>$499.00</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleCompleteOrder}
-                      className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
-                    >
-                      <MapPin className="w-5 h-5" />
-                      Complete Order
-                    </button>
-                    <button
-                      onClick={handleBackClick}
-                      className="w-full mt-4 py-3 border-2 border-emerald-600 text-emerald-600 font-medium rounded-xl hover:bg-emerald-50 transition-all duration-300 flex items-center justify-center gap-2"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                      Back to Meal Selection
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return <div>Unknown step</div>;
-    }
-  };
-
-  return (
-    <div className="bg-gray-50 min-h-screen">
-      {renderStepContent()}
-    </div>
-  );
+        </div>
+    );
 };
 
-export default MealPlanner;
+export default UserProfile;

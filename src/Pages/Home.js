@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Star, MapPin, Phone, Mail, MessageSquare, ArrowRight, Heart  } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, MapPin, Phone, Mail, MessageSquare, ArrowRight, Heart } from 'lucide-react';
 
 import CalorieCalculator from './Homepagesecondsection';
 import { motion } from "framer-motion";
@@ -35,10 +35,10 @@ const DilyfitHomePage = () => {
         setVisibleProducts(3); // Tablet/Desktop
       }
     };
-  
+
     handleResize(); // Call once on mount
     window.addEventListener('resize', handleResize);
-  
+
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -46,7 +46,7 @@ const DilyfitHomePage = () => {
 
 
 
-  
+
 
   useEffect(() => {
     axios.get("https://api.dailyfit.ae/api/user/get-meals", { withCredentials: true })
@@ -73,8 +73,8 @@ const DilyfitHomePage = () => {
   };
 
 
-   // Banner data
-   const banners = [
+  // Banner data
+  const banners = [
     { id: 1, text: "Spring Sale! 25% OFF all equipment", link: "/sale" },
     { id: 2, text: "Free shipping on orders above AED 200", link: "/shipping" },
     { id: 3, text: "New vitamin collections just arrived!", link: "/vitamins" }
@@ -84,19 +84,19 @@ const DilyfitHomePage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const heroSlides = [
     {
-      image:Courosal2,
+      image: Courosal2,
       title: "Transform Your Fitness Journey",
       subtitle: "Premium equipment and nutrition plans tailored for your goals",
       cta: "Shop Equipment"
     },
     {
-      image:Courosal1,
+      image: Courosal1,
       title: "Healthy Meals Delivered",
       subtitle: "Nutritionist-approved meals to fuel your workout routine",
       cta: "Explore Meals"
     },
     {
-      image:Courosal3,
+      image: Courosal3,
       title: "Professional Guidance",
       subtitle: "Connect with certified trainers for personalized fitness plans",
       cta: "Book Consultation"
@@ -123,7 +123,7 @@ const DilyfitHomePage = () => {
     { id: 1, title: 'Premium Quality', description: 'All our products are sourced from top manufacturers ensuring durability and performance', icon: '🏆' },
     { id: 2, title: 'Expert Support', description: 'Our fitness experts are available 24/7 to answer all your questions and provide guidance', icon: '👨‍⚕️' },
     { id: 3, title: 'Fast Delivery', description: 'We ensure quick delivery of all products to help you start your fitness journey without delay', icon: '🚚' },
-    { id: 4, title: 'Money Back Guarantee', description: 'Not satisfied with your purchase? Get 100% refund within 30 days', icon: '💰' },
+    { id: 4, title: 'Custom Plans', description: 'Get personalized workout and diet plans tailored to your fitness goals and lifestyle', icon: '📋' },
   ];
 
 
@@ -242,37 +242,36 @@ Message: ${formData.message}`;
     <div className="min-h-screen bg-gray-50">
 
       {/* Navigation Bar */}
-   
-     {/* Hero Carousel Section */}
-     <div className="relative h-screen lg:max-h-[700px] max-h-[800px]  overflow-hidden">
-     <div  className='grid grid-cols-2'>
 
-     <div className="flex  z-20">
-         <a href="/" className="flex ">
-           <img src={logo} alt="DailyFit Logo" className="h-60 w-80 object-contain " />
-         </a>
-       </div>
+      {/* Hero Carousel Section */}
+      <div className="relative h-screen lg:max-h-[700px] max-h-[800px]  overflow-hidden">
+        <div className='grid grid-cols-2'>
 
-
-
- <div> <NavigationBar/></div>
+          <div className="flex  z-20">
+            <a href="/" className="flex ">
+              <img src={logo} alt="DailyFit Logo" className="h-60 w-80 object-contain " />
+            </a>
+          </div>
 
 
 
-</div>
+          <div> <NavigationBar /></div>
+
+
+
+        </div>
         {heroSlides.map((slide, index) => (
-          <div 
+          <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              currentSlide === index ? 'opacity-100' : 'opacity-0'
-            }`}
+            className={`absolute inset-0 transition-opacity duration-1000 ${currentSlide === index ? 'opacity-100' : 'opacity-0'
+              }`}
           >
-          <img className="absolute  bg-cover bg-center h-full w-full" src={slide.image} />
-          <div className="absolute inset-0 bg-black opacity-60 z-10"></div>
+            <img className="absolute  bg-cover bg-center h-full w-full" src={slide.image} />
+            <div className="absolute inset-0 bg-black opacity-60 z-10"></div>
 
-      
+
             <div className='grid grid-cols-2'>
-              
+
             </div>
             <div className="relative h-full flex items-center z-10 mt-10">
               <div className="container mx-auto px-6 md:px-12">
@@ -287,40 +286,22 @@ Message: ${formData.message}`;
                     {slide.subtitle}
                   </p>
                   <div className="flex space-x-4">
-                    <button 
+                    <button
                       className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 transform hover:scale-105 flex items-center"
                       onClick={handleShopNowClick}
                     >
                       {slide.cta}
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </button>
-                    
+
                   </div>
                 </div>
               </div>
             </div>
-            
+
           </div>
-          
+
         ))}
-        </div>
-
-
-
-
-      {/* Fitness Progress Section */}
-      <div className="  text-gray-900 py-10  rounded-xl  w-full m-10 mx-auto text-center mb-4">
-       <GreenWhiteBanner/>
-        <h2 className="text-3xl font-bold text-green-700 mb-4">Track Your Fitness Progress</h2>
-        <p className="text-lg text-gray-700 mb-6">
-          Use our advanced tools to calculate your calorie intake and track your fitness journey effectively.
-        </p>
-        <button
-          className="bg-green-700 text-white px-6 py-3 rounded-full font-bold shadow-md hover:bg-green-800 transition duration-300 transform hover:scale-105"
-          onClick={() => setModalIsOpen(true)}
-        >
-          Open Calorie Calculator
-        </button>
       </div>
 
       {/* Modal */}

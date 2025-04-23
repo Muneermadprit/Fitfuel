@@ -24,34 +24,34 @@ const NavigationBar = () => {
         <div className="container mx-auto">
           <div className="flex justify-between items-center">
             {/* Logo Area could go here */}
-            
+
             {/* Desktop Navigation */}
             <div className="hidden md:flex space-x-8">
               <a href="/" className="text-white text-xl no-underline group relative overflow-hidden py-2 px-4">
                 <span className="flex items-center space-x-2 relative z-10">
-                <TbHome />
+                  <TbHome />
                   <span className="font-semibold tracking-wide">Home</span>
                 </span>
                 <span className="absolute bottom-0 left-0 w-0 h-1 bg-green-200 group-hover:w-full transition-all duration-300"></span>
               </a>
-              
+
               <a href="/about" className="text-white text-xl no-underline group relative overflow-hidden py-2 px-4">
                 <span className="flex items-center space-x-2 relative z-10">
-                <RiInformation2Fill />
+                  <RiInformation2Fill />
                   <span className="font-semibold tracking-wide">About</span>
                 </span>
                 <span className="absolute bottom-0 left-0 w-0 h-1 bg-green-200 group-hover:w-full transition-all duration-300"></span>
               </a>
-              
+
               <a href="/contact" className="text-white text-xl no-underline group relative overflow-hidden py-2 px-4">
                 <span className="flex items-center space-x-2 relative z-10">
-                <MdContactSupport />
+                  <MdContactSupport />
                   <span className="font-semibold tracking-wide">Contact</span>
                 </span>
                 <span className="absolute bottom-0 left-0 w-0 h-1 bg-green-200 group-hover:w-full transition-all duration-300"></span>
               </a>
             </div>
-            
+
             {/* User and Mobile Menu */}
             <div className="flex items-center space-x-4">
               <a href={isLoggedIn ? "/profile" : "/Order"} className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold no-underline hover:bg-green-500 transition duration-200 flex items-center space-x-2 shadow-lg transform hover:scale-105">
@@ -62,8 +62,8 @@ const NavigationBar = () => {
                   {isLoggedIn ? "Profile" : "Account"}
                 </span>
               </a>
-              
-              <button 
+
+              <button
                 onClick={toggleMobileMenu}
                 className="md:hidden text-white bg-green-500 p-2 rounded-lg hover:bg-green-400 transition duration-200"
               >
@@ -75,9 +75,9 @@ const NavigationBar = () => {
           </div>
         </div>
       </nav>
-      
+
       {/* Mobile Menu - Controlled by React state */}
-      <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} bg-green-600 text-white rounded-b-xl md:hidden shadow-xl absolute `}>
+      <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} bg-green-600 text-white rounded-b-xl md:hidden shadow-xl absolute z-50`}>
         <div className="container mx-auto py-3 px-4">
           <div className="flex flex-col space-y-4">
             <a href="/" className="text-white text-xl no-underline py-2 px-3 rounded-lg hover:bg-green-500 transition duration-200 flex items-center space-x-3">
@@ -99,7 +99,7 @@ const NavigationBar = () => {
               </svg>
               <span>Contact</span>
             </a>
-            
+
             {/* Adding User/Account link to mobile menu as well */}
             <a href={isLoggedIn ? "/profile" : "/Order"} className="text-white text-xl no-underline py-2 px-3 rounded-lg hover:bg-green-500 transition duration-200 flex items-center space-x-3">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

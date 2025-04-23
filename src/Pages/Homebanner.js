@@ -65,7 +65,7 @@ export default function DietPlanBannerExtended() {
       title: "Essential Balance",
       description: "Perfect for beginners seeking sustainable weight management",
       features: ["Personalized meal plan", "Grocery shopping lists", "Basic nutritional guidance"],
-      price: "$49/month",
+      price: "AED 49/month",
       popular: false,
       icon: <Leaf className="text-green-500" size={20} />
     },
@@ -73,7 +73,7 @@ export default function DietPlanBannerExtended() {
       title: "Advanced Wellness",
       description: "Comprehensive nutrition for targeted fitness and health goals",
       features: ["Custom macro-balanced meals", "Weekly meal prep guides", "Fitness integration", "Progress tracking"],
-      price: "$89/month",
+      price: "AED 89/month",
       popular: true,
       icon: <Activity className="text-green-500" size={20} />
     },
@@ -81,7 +81,7 @@ export default function DietPlanBannerExtended() {
       title: "Premium Transformation",
       description: "Elite program with maximum support and personalization",
       features: ["Chef-designed gourmet recipes", "1-on-1 nutritionist coaching", "Detailed health analytics", "Custom supplement guide", "Mobile app access"],
-      price: "$149/month",
+      price: "AED 149/month",
       popular: false,
       icon: <Sun className="text-green-500" size={20} />
     }

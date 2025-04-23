@@ -9,7 +9,7 @@ import NavigationWithNoUnderlines from "./mealListNavigation";
 const ProductSummary = () => {
   const [cartData, setCartData] = useState(null);
   const [expanded, setExpanded] = useState({});
-  const [coolBag, setCoolBag] = useState(false);
+  const [coolBag, setCoolBag] = useState(true);
   const [selectedAddOns, setSelectedAddOns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
