@@ -1211,6 +1211,11 @@ const MealPlanner = () => {
                   <div className="flex space-x-4">
                     <button
                       type="submit"
+                      onClick={() => {
+                        saveSelectionsToSessionStorage();
+                        handleCompleteOrder();
+                        navigate('/summary');
+                      }}
                       className="flex-1 bg-[#059033] text-white py-3 rounded-xl font-medium transition hover:bg-[#047029]"
                     >
                       Submit Address
@@ -1219,9 +1224,9 @@ const MealPlanner = () => {
                     <button
                       type="button"
                       onClick={() => {
+                        saveSelectionsToSessionStorage();
+                        handleCompleteOrder();
                         navigate('/summary');
-                        // saveSelectionsToSessionStorage();
-                        // handleCompleteOrder();
                       }}
                       className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-medium transition hover:bg-gray-300"
                     >

@@ -5,7 +5,6 @@ import { ChevronLeft, ChevronRight, X, Check } from "lucide-react";
 import logo from '../images/logo.png'
 import { useNavigate } from 'react-router-dom';
 import NavigationWithNoUnderlines from "./mealListNavigation";
-
 const ProductSummary = () => {
   const [cartData, setCartData] = useState(null);
   const [expanded, setExpanded] = useState({});
@@ -17,6 +16,7 @@ const ProductSummary = () => {
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(0);
   const [showAddressSelector, setShowAddressSelector] = useState(false);
   const [profileData, setProfileData] = useState(null);
+  const [isNewOrder, setIsNewOrder] = useState(false);
   const navigate = useNavigate();
 
   // Navigation links
@@ -43,7 +43,7 @@ const ProductSummary = () => {
 
         if (response.data && response.data.data) {
           const apiData = response.data.data;
-          console.log(apiData,"The data in the api")
+          console.log(apiData, "The data in the api")
 
           const restructuredData = {
             meals: (apiData.cart?.package?.selectedMeals || []).map(dateItem => ({
@@ -87,7 +87,7 @@ const ProductSummary = () => {
           setCartData(restructuredData);
           // Automatically select all add-ons
           setSelectedAddOns(restructuredData.addons);
-          console.log(restructuredData.addons,"The addon data ")
+          console.log(restructuredData.addons, "The addon data ")
         }
       } catch (error) {
         console.error("Error fetching cart:", error);
@@ -113,6 +113,21 @@ const ProductSummary = () => {
     };
 
     fetchProfileData();
+  }, []);
+
+  useEffect(() => {
+    const fetchFirstOrder = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get('https://api.dailyfit.ae/api/user/is-firstOrder', { withCredentials: true });
+        setIsNewOrder(response.data.data?.isNewOrder || false);
+      } catch (err) {
+        // setError(err);
+        // setLoading(false);
+      }
+    };
+
+    fetchFirstOrder();
   }, []);
 
   const toggleExpand = (index) => {
@@ -167,7 +182,7 @@ const ProductSummary = () => {
   // Get current package to display
   const currentPackage = meals.length > 0 ? meals[currentPackageIndex] : null;
 
-  console.log(currentPackage,"The current package ")
+  console.log(currentPackage, "The current package ")
 
   const handleCompleteOrder = async () => {
     try {
@@ -281,14 +296,14 @@ const ProductSummary = () => {
 
   return (
     <>
-      <NavigationWithNoUnderlines/>
+      <NavigationWithNoUnderlines />
       <div className="max-w-2xl mx-auto p-6 bg-gradient-to-b from-white to-gray-50 shadow-xl rounded-2xl mt-5 border border-gray-100">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center">
             <ShoppingBag className="w-6 h-6 mr-2 text-green-600" />
             Your Meal Package
           </h2>
-         
+
           <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
             {meals.length} {meals.length === 1 ? "package" : "packages"}
           </span>
@@ -451,68 +466,72 @@ const ProductSummary = () => {
               Enhancements
             </h3>
             <div className="bg-white rounded-xl p-2 shadow-md border border-gray-100">
-  {Object.entries(
-    selectedAddOns.reduce((acc, addOn) => {
-      if (!acc[addOn.name]) {
-        acc[addOn.name] = { ...addOn, quantity: 1 };
-      } else {
-        acc[addOn.name].quantity += 1;
-      }
-      return acc;
-    }, {})
-  ).map(([name, addOn], index) => (
-    <div
-      key={index}
-      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg my-2 hover:bg-gray-100 transition-colors"
-    >
-      <div className="flex items-center space-x-3">
-        <div className="w-12 h-12 bg-white rounded-lg shadow-sm overflow-hidden flex-shrink-0">
-          <img
-            src={addOn.image}
-            alt={addOn.name || "Add-on"}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "/api/placeholder/48/48";
-            }}
-          />
-        </div>
-        <div>
-          <span className="text-gray-800 font-medium">{addOn.name}</span>
-          {addOn.quantity > 1 && (
-            <span className="text-gray-500 text-sm block">Quantity: {addOn.quantity}</span>
-          )}
-        </div>
-      </div>
-      <span className="text-gray-900 font-bold bg-green-100 px-3 py-1 rounded-full">
-        AED{formatCurrency(addOn.pricePerDay * addOn.quantity)}
-      </span>
-    </div>
-  ))}
-</div>
+              {Object.entries(
+                selectedAddOns.reduce((acc, addOn) => {
+                  if (!acc[addOn.name]) {
+                    acc[addOn.name] = { ...addOn, quantity: 1 };
+                  } else {
+                    acc[addOn.name].quantity += 1;
+                  }
+                  return acc;
+                }, {})
+              ).map(([name, addOn], index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg my-2 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-white rounded-lg shadow-sm overflow-hidden flex-shrink-0">
+                      <img
+                        src={addOn.image}
+                        alt={addOn.name || "Add-on"}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "/api/placeholder/48/48";
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-gray-800 font-medium">{addOn.name}</span>
+                      {addOn.quantity > 1 && (
+                        <span className="text-gray-500 text-sm block">Quantity: {addOn.quantity}</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-gray-900 font-bold bg-green-100 px-3 py-1 rounded-full">
+                    AED{formatCurrency(addOn.pricePerDay * addOn.quantity)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {/* Cool Bag Option */}
-        <div className="mt-8 bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl shadow-sm border border-blue-100">
-          <div className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              id="coolBag"
-              checked={coolBag}
-              onChange={() => setCoolBag(!coolBag)}
-              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-            <label htmlFor="coolBag" className="flex items-center space-x-3 cursor-pointer flex-1">
-              <div className="w-12 h-12 bg-white rounded-lg shadow-sm overflow-hidden flex-shrink-0">
-                <img src="/api/placeholder/48/48" alt="Cool Bag" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <span className="text-gray-900 font-medium">Add Cool Bag</span>
-                <p className="text-sm text-gray-600">Keep your meals fresh during delivery</p>
-              </div>
-            </label>
+        {!isNewOrder && (
+          <div className="mt-8 bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl shadow-sm border border-blue-100">
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="coolBag"
+                checked={coolBag}
+                onChange={() => setCoolBag(!coolBag)}
+                className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="coolBag" className="flex items-center space-x-3 cursor-pointer flex-1">
+                <div className="w-12 h-12 bg-white rounded-lg shadow-sm overflow-hidden flex-shrink-0">
+                  <img src="/api/placeholder/48/48" alt="Cool Bag" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <span className="text-gray-900 font-medium">Add Cool Bag</span>
+                  <p className="text-sm text-gray-600">Keep your meals fresh during delivery</p>
+                </div>
+              </label>
+            </div>
           </div>
-        </div>
+        )}
+
 
         {/* Address Section - Updated to show multiple addresses */}
         <div className="mt-8">
@@ -591,19 +610,19 @@ const ProductSummary = () => {
         </div>
 
         <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
-  <div className="flex">
-    <div className="flex-shrink-0">
-      <svg className="h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
-      </svg>
-    </div>
-    <div className="ml-3">
-      <p className="text-sm text-blue-700">
-        <span className="font-medium">{meals.length}-day package summary:</span> The amount shown includes your {meals.length}-day total package and selected add-ons price.
-      </p>
-    </div>
-  </div>
-</div>
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-blue-700">
+                <span className="font-medium">{meals.length}-day package summary:</span> The amount shown includes your {meals.length}-day total package and selected add-ons price.
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Summary */}
         <div className="mt-8 bg-white rounded-xl p-4 shadow-md border border-gray-100">
@@ -622,19 +641,19 @@ const ProductSummary = () => {
             <div className="h-px bg-gray-200 my-2"></div>
             <div className="flex justify-between items-center py-3">
 
-            {coolBag === true ? (
-  <>
-    <span className="text-lg font-semibold text-gray-800">Delivery Bag:</span>
-    <span className="font-medium text-gray-800">AED {formatCurrency(100)}</span>
-    <span className="text-lg font-semibold text-gray-800">Grand Total:</span>
-    <span className="font-medium text-gray-800">AED {formatCurrency(fareDetails?.totalFare+100)}</span>
-  </>
-) : (
-  <>
-    <span className="text-lg font-semibold text-gray-800">Grand Total:</span>
-    <span className="font-medium text-gray-800">AED {formatCurrency(fareDetails?.totalFare)}</span>
-  </>
-)}
+              {coolBag === true ? (
+                <>
+                  <span className="text-lg font-semibold text-gray-800">Delivery Bag:</span>
+                  <span className="font-medium text-gray-800">AED {formatCurrency(100)}</span>
+                  <span className="text-lg font-semibold text-gray-800">Grand Total:</span>
+                  <span className="font-medium text-gray-800">AED {formatCurrency(fareDetails?.totalFare + 100)}</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-lg font-semibold text-gray-800">Grand Total:</span>
+                  <span className="font-medium text-gray-800">AED {formatCurrency(fareDetails?.totalFare)}</span>
+                </>
+              )}
 
 
             </div>

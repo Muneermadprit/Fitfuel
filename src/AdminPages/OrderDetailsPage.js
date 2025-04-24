@@ -11,7 +11,9 @@ import {
   Info,
   AlertCircle,
   Coffee,
-  DollarSign
+  DollarSign,
+  MapPin,
+  Phone
 } from 'lucide-react';
 
 const MealDetailModal = ({ isOpen, onClose, orderDetails }) => {
@@ -62,6 +64,31 @@ const MealDetailModal = ({ isOpen, onClose, orderDetails }) => {
         <div className="mb-6 p-3 bg-blue-50 rounded-lg">
           <div className="text-blue-800 font-semibold mb-2">Customer Information</div>
           <div className="text-gray-700">{orderDetails.userEmail}</div>
+
+          {/* Display address information */}
+          {orderDetails.address && (
+            <div className="mt-2">
+              <div className="flex items-center text-gray-700">
+                <MapPin size={14} className="mr-1 text-blue-600" />
+                <span className="text-sm">
+                  {[
+                    orderDetails.address.houseOrFlatNumber,
+                    orderDetails.address.buildingFloor,
+                    orderDetails.address.street,
+                    orderDetails.address.landmark,
+                    orderDetails.address.city,
+                    orderDetails.address.state,
+                    orderDetails.address.postalCode,
+                    orderDetails.address.country
+                  ].filter(Boolean).join(', ')}
+                </span>
+              </div>
+              <div className="flex items-center text-gray-700 mt-1">
+                <Phone size={14} className="mr-1 text-blue-600" />
+                <span className="text-sm">{orderDetails.address.phone}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Package Information */}
@@ -109,22 +136,6 @@ const MealDetailModal = ({ isOpen, onClose, orderDetails }) => {
                       <div className="flex-1">
                         <div className="font-medium text-gray-800">{meal.mealName}</div>
                         <div className="text-sm text-gray-600">{meal.description}</div>
-
-                        {/* Nutritional info */}
-                        {/* <div className="mt-2 grid grid-cols-4 gap-2 text-xs text-gray-500">
-                          <div>Energy: {meal.moreDetails.energy}</div>
-                          <div>Protein: {meal.moreDetails.protein}g</div>
-                          <div>Fat: {meal.moreDetails.fat}g</div>
-                          <div>Carbs: {meal.moreDetails.carbohydrates}g</div>
-                        </div> */}
-
-                        {/* Allergens */}
-                        {/* {meal.moreDetails.allergens?.length > 0 && (
-                          <div className="mt-1 text-xs">
-                            <span className="text-red-500 font-medium">Allergens: </span>
-                            {meal.moreDetails.allergens.join(', ')}
-                          </div>
-                        )} */}
                       </div>
                       <div className="ml-4 text-right">
                         <div className="text-lg font-semibold">AED{meal.fareDetails.totalFare}</div>
@@ -157,22 +168,6 @@ const MealDetailModal = ({ isOpen, onClose, orderDetails }) => {
                   <div className="flex-1">
                     <div className="font-medium text-gray-800">{addon.mealName}</div>
                     <div className="text-sm text-gray-600">{addon.description}</div>
-
-                    {/* Nutritional info */}
-                    {/* <div className="mt-2 grid grid-cols-4 gap-2 text-xs text-gray-500">
-                      <div>Energy: {addon.moreDetails.energy}</div>
-                      <div>Protein: {addon.moreDetails.protein}g</div>
-                      <div>Fat: {addon.moreDetails.fat}g</div>
-                      <div>Carbs: {addon.moreDetails.carbohydrates}g</div>
-                    </div> */}
-
-                    {/* Allergens */}
-                    {/* {addon.moreDetails.allergens?.length > 0 && (
-                      <div className="mt-1 text-xs">
-                        <span className="text-red-500 font-medium">Allergens: </span>
-                        {addon.moreDetails.allergens.join(', ')}
-                      </div>
-                    )} */}
                   </div>
                   <div className="ml-4 text-right">
                     <div className="text-lg font-semibold">AED{addon.fareDetails.totalFare}</div>
@@ -288,11 +283,28 @@ export default function OrderDetailsPage() {
     }
   };
 
+  // Format address to a single line for display in table
+  const formatAddress = (address) => {
+    if (!address) return 'No address';
+
+    const parts = [
+      address.houseOrFlatNumber,
+      address.buildingFloor,
+      address.street,
+      address.city,
+      address.state,
+      address.postalCode
+    ].filter(Boolean);
+
+    return parts.join(', ');
+  };
+
   const filteredOrders = useMemo(() => {
     return orders.filter(order =>
       (searchTerm === '' ||
         order.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.orderID?.toLowerCase().includes(searchTerm.toLowerCase())
+        order.orderID?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.address && order.address.phone && order.address.phone.includes(searchTerm))
       ) &&
       (orderStatus === 'all' ||
         (orderStatus === 'completed' && order.paymentStatus === 2) ||
@@ -315,21 +327,48 @@ export default function OrderDetailsPage() {
       name: 'Order ID',
       selector: row => row.orderID,
       sortable: true,
+      width: '150px',
     },
     {
       name: 'Email',
       selector: row => row.userEmail,
       sortable: true,
+      width: '200px',
+    },
+    {
+      name: 'Address',
+      selector: row => formatAddress(row.address),
+      sortable: false,
+      cell: row => (
+        <div className="flex items-start me-2">
+          {/* <MapPin size={16} className="mr-1 mt-1 text-gray-500 flex-shrink-0" /> */}
+          <span className="truncate max-w-xs">{formatAddress(row.address)}</span>
+        </div>
+      ),
+      width: '300px',
+    },
+    {
+      name: 'Phone',
+      selector: row => row.address?.phone || 'N/A',
+      sortable: true,
+      cell: row => (
+        <div className="flex items-center ms-5">
+          {/* <Phone size={16} className="mr-1 text-gray-500" /> */}
+          {row.address?.phone || 'N/A'}
+        </div>
+      ),
+      width: '200px',
     },
     {
       name: 'Amount',
-      selector: row => `AED${row.amount}`,
+      selector: row => row.amount,
       sortable: true,
       cell: row => (
         <span className="flex items-center">
           AED {row.amount}
         </span>
       ),
+      width: 'px',
     },
     {
       name: 'Status',
@@ -343,6 +382,7 @@ export default function OrderDetailsPage() {
       },
       sortable: true,
       sortFunction: (rowA, rowB) => rowA.paymentStatus - rowB.paymentStatus,
+      width: '120px',
     },
     {
       name: 'Actions',
@@ -363,6 +403,7 @@ export default function OrderDetailsPage() {
           )}
         </button>
       ),
+      width: '150px',
     }
   ];
 
@@ -419,7 +460,7 @@ export default function OrderDetailsPage() {
             <Search className="absolute left-2 top-3 h-5 w-5 text-gray-500" />
             <input
               type="text"
-              placeholder="Search by email or order ID..."
+              placeholder="Search by email, order ID or phone..."
               className="pl-10 pr-4 py-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
