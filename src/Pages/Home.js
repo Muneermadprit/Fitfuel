@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Star, MapPin, Phone, Mail, MessageSquare, ArrowRight, Heart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, MapPin, Phone, Mail, MessageSquare, ArrowRight, Heart  } from 'lucide-react';
 
 import CalorieCalculator from './Homepagesecondsection';
 import { motion } from "framer-motion";
@@ -24,29 +24,14 @@ const DilyfitHomePage = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
 
-  const [visibleProducts, setVisibleProducts] = useState(3);
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
-  useEffect(() => {
-    const handleResize = () => {
-      const screenWidth = window.innerWidth;
-      if (screenWidth < 768) {
-        setVisibleProducts(1); // Mobile view
-      } else {
-        setVisibleProducts(3); // Tablet/Desktop
-      }
-    };
-
-    handleResize(); // Call once on mount
-    window.addEventListener('resize', handleResize);
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const visibleProducts = 3;
 
 
 
 
 
-
+  
 
   useEffect(() => {
     axios.get("https://api.dailyfit.ae/api/user/get-meals", { withCredentials: true })
@@ -73,8 +58,8 @@ const DilyfitHomePage = () => {
   };
 
 
-  // Banner data
-  const banners = [
+   // Banner data
+   const banners = [
     { id: 1, text: "Spring Sale! 25% OFF all equipment", link: "/sale" },
     { id: 2, text: "Free shipping on orders above AED 200", link: "/shipping" },
     { id: 3, text: "New vitamin collections just arrived!", link: "/vitamins" }
@@ -84,19 +69,19 @@ const DilyfitHomePage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const heroSlides = [
     {
-      image: Courosal2,
+      image:Courosal2,
       title: "Transform Your Fitness Journey",
       subtitle: "Premium equipment and nutrition plans tailored for your goals",
       cta: "Shop Equipment"
     },
     {
-      image: Courosal1,
+      image:Courosal1,
       title: "Healthy Meals Delivered",
       subtitle: "Nutritionist-approved meals to fuel your workout routine",
       cta: "Explore Meals"
     },
     {
-      image: Courosal3,
+      image:Courosal3,
       title: "Professional Guidance",
       subtitle: "Connect with certified trainers for personalized fitness plans",
       cta: "Book Consultation"
@@ -123,7 +108,7 @@ const DilyfitHomePage = () => {
     { id: 1, title: 'Premium Quality', description: 'All our products are sourced from top manufacturers ensuring durability and performance', icon: '🏆' },
     { id: 2, title: 'Expert Support', description: 'Our fitness experts are available 24/7 to answer all your questions and provide guidance', icon: '👨‍⚕️' },
     { id: 3, title: 'Fast Delivery', description: 'We ensure quick delivery of all products to help you start your fitness journey without delay', icon: '🚚' },
-    { id: 4, title: 'Custom Plans', description: 'Get personalized workout and diet plans tailored to your fitness goals and lifestyle', icon: '📋' },
+    { id: 4, title: 'Money Back Guarantee', description: 'Not satisfied with your purchase? Get 100% refund within 30 days', icon: '💰' },
   ];
 
 
@@ -242,36 +227,37 @@ Message: ${formData.message}`;
     <div className="min-h-screen bg-gray-50">
 
       {/* Navigation Bar */}
+   
+     {/* Hero Carousel Section */}
+     <div className="relative h-screen lg:max-h-[700px] max-h-[800px]  overflow-hidden">
+     <div  className='grid grid-cols-2'>
 
-      {/* Hero Carousel Section */}
-      <div className="relative h-screen lg:max-h-[700px] max-h-[800px]  overflow-hidden">
-        <div className='grid grid-cols-2'>
-
-          <div className="flex  z-20">
-            <a href="/" className="flex ">
-              <img src={logo} alt="DailyFit Logo" className="h-60 w-80 object-contain " />
-            </a>
-          </div>
-
-
-
-          <div> <NavigationBar /></div>
+     <div className="flex  z-20">
+         <a href="/" className="flex ">
+           <img src={logo} alt="DailyFit Logo" className="h-60 w-80 object-contain " />
+         </a>
+       </div>
 
 
 
-        </div>
+ <div> <NavigationBar/></div>
+
+
+
+</div>
         {heroSlides.map((slide, index) => (
-          <div
+          <div 
             key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ${currentSlide === index ? 'opacity-100' : 'opacity-0'
-              }`}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              currentSlide === index ? 'opacity-100' : 'opacity-0'
+            }`}
           >
-            <img className="absolute  bg-cover bg-center h-full w-full" src={slide.image} />
-            <div className="absolute inset-0 bg-black opacity-60 z-10"></div>
+          <img className="absolute  bg-cover bg-center h-full w-full" src={slide.image} />
+          <div className="absolute inset-0 bg-black opacity-60 z-10"></div>
 
-
+      
             <div className='grid grid-cols-2'>
-
+              
             </div>
             <div className="relative h-full flex items-center z-10 mt-10">
               <div className="container mx-auto px-6 md:px-12">
@@ -286,22 +272,28 @@ Message: ${formData.message}`;
                     {slide.subtitle}
                   </p>
                   <div className="flex space-x-4">
-                    <button
+                    <button 
                       className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 transform hover:scale-105 flex items-center"
                       onClick={handleShopNowClick}
                     >
                       {slide.cta}
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </button>
-
+                    <button className="bg-transparent border-2 border-white text-white font-bold py-3 px-8 rounded-full hover:bg-white hover:text-green-800 transition duration-300">
+                      Learn More
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-
+            
           </div>
-
+          
         ))}
+        </div>
+      {/* Fitness Progress Section */}
+      <div className="  text-gray-900 py-10  rounded-xl  w-full m-10 mx-auto text-center mb-4">
+       <GreenWhiteBanner/>
       </div>
 
       {/* Modal */}
@@ -341,10 +333,10 @@ Message: ${formData.message}`;
                   {products.map((product) => (
                     <div
                       key={product._id}
-                      className="w-full px-2 md:px-4 flex-shrink-0  grid-cols-1"
+                      className="w-full px-2 md:px-4 flex-shrink-0"
                       style={{ width: `${100 / visibleProducts}%` }}
                     >
-                      <div className=" rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition duration-300 h-full grid grid-col-1 ">
+                      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition duration-300 h-full flex flex-col">
                         <div className="aspect-w-16 aspect-h-9 relative">
                           <img
                             src={product.image[0] || "https://t4.ftcdn.net/jpg/03/61/86/91/360_F_361869194_7JGmIOSj2iUNi0AYoVhVyhKvaN6PkOah.jpg"}
@@ -418,72 +410,6 @@ Message: ${formData.message}`;
           )}
         </div>
       </div>
-
-      {/* <div className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Featured Meals</h2>
-          {products.length > 0 ? (
-            <div className="relative">
-              <div className="overflow-hidden">
-                <div
-                  className="flex transition-transform duration-500 ease-in-out"
-                  style={{ transform: `translateX(-${currentProductIndex * (100 / visibleProducts)}%)` }}
-                >
-                  {products.map((product) => (
-                    <div key={product._id} className="w-full md:w-1/3 flex-shrink-0 px-4">
-                      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition duration-300">
-                        <img
-                          src={product.image[0] || "https://t4.ftcdn.net/jpg/03/61/86/91/360_F_361869194_7JGmIOSj2iUNi0AYoVhVyhKvaN6PkOah.jpg"}
-                          alt={product.mealName}
-                          className="w-full h-48 object-cover"
-                        />
-                        <div className="p-6">
-                          <span className="text-sm text-green-600 font-semibold">
-                            {product.category.join(', ')}
-                          </span>
-                          <h3 className="text-xl font-bold mt-1 text-gray-800">{product.mealName}</h3>
-                          <p className="text-gray-600 mt-2 text-sm line-clamp-2">{product.description}</p>
-                          <div className="mt-4 flex items-center justify-between">
-                            <div>
-                              <span className="text-2xl font-bold text-gray-800">AED{product.fareDetails.totalFare}</span>
-                              {product.fareDetails.strikeOff && (
-                                <span className="ml-2 text-sm text-gray-500 line-through">
-                                  AED{product.fareDetails.strikeOff}
-                                </span>
-                              )}
-                            </div>
-                            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
-                              Add to Cart
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={prevProduct}
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none"
-                disabled={currentProductIndex === 0}
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <button
-                onClick={nextProduct}
-                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-lg text-green-600 hover:text-green-800 transition duration-200 focus:outline-none"
-                disabled={currentProductIndex >= products.length - visibleProducts}
-              >
-                <ChevronRight size={24} />
-              </button>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-600">Loading meals...</p>
-            </div>
-          )}
-        </div>
-      </div> */}
       {/* Why Choose Us */}
       <div className="py-16 bg-gray-100">
         <div className="container mx-auto px-4">
@@ -530,20 +456,13 @@ Message: ${formData.message}`;
                     ))}
                     <span className="ml-2 text-gray-600 text-sm">{product.rating}</span>
                   </div>
-                  {/* <div className="mt-4 flex items-center justify-between">
-                    <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
-                      View Details
-                    </button>
-                  </div> */}
+                  <div className="mt-4 flex items-center justify-between">
+                    {/* <span className="text-2xl font-bold text-gray-800">${product.price}</span> */}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-          {/* <div className="text-center mt-10">
-            <a href="/products" className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition duration-200">
-              View All Products
-            </a>
-          </div> */}
         </div>
       </div>
 
