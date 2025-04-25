@@ -342,7 +342,7 @@ const ProductSummary = () => {
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-bold">{currentPackage.packageName || "Meal Package"}</h3>
                   <span className="text-white bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-medium">
-                    ${formatCurrency(currentPackage.fareTotalPerDay)}
+                    AED {formatCurrency(currentPackage.fareTotalPerDay)}
                   </span>
                 </div>
                 <p className="text-green-50 mt-1 text-sm">{currentPackage.description || "Package description"}</p>
@@ -385,7 +385,7 @@ const ProductSummary = () => {
                         </div>
                       </div>
                       <div className="flex items-center">
-                        <span className="text-gray-900 font-bold mr-3">${formatCurrency(meal.fareDetails?.totalFare)}</span>
+                        <span className="text-gray-900 font-bold mr-3">AED {formatCurrency(meal.fareDetails?.totalFare)}</span>
                         {expanded[`${currentPackageIndex}-${mealIndex}`] ? (
                           <Minus className="w-5 h-5 text-gray-500" />
                         ) : (
@@ -438,8 +438,8 @@ const ProductSummary = () => {
 
                             {(meal.fareDetails?.discount || 0) > 0 && (
                               <div className="mt-3 bg-green-50 p-2 rounded-lg inline-block">
-                                <span className="text-gray-900 font-bold mr-3">${formatCurrency(meal.fareDetails?.strikeOff)}</span>
-                                <span className="text-gray-900 font-bold mr-3">${formatCurrency(meal.fareDetails?.discount)}</span>
+                                <span className="text-gray-900 font-bold mr-3">AED {formatCurrency(meal.fareDetails?.strikeOff)}</span>
+                                <span className="text-gray-900 font-bold mr-3">AED {formatCurrency(meal.fareDetails?.discount)}</span>
                               </div>
                             )}
                           </div>

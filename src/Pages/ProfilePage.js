@@ -22,6 +22,12 @@ const AddressModal = ({ isOpen, onClose, onSubmit, initialAddress = null }) => {
         identifier: ''
     });
 
+    useEffect(() => {
+        if (initialAddress) {
+            setAddress(initialAddress);
+        }
+    }, [initialAddress]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setAddress(prev => ({
@@ -153,7 +159,7 @@ const AddressModal = ({ isOpen, onClose, onSubmit, initialAddress = null }) => {
                             type="submit"
                             className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
                         >
-                            Save Address
+                            {initialAddress ? 'Update Address' : 'Save Address'}
                         </button>
                     </div>
                 </form>
@@ -266,14 +272,26 @@ const UserProfile = () => {
         }
     };
 
+
     // Edit existing address
     const handleEditAddress = async (updatedAddress) => {
         try {
-            await axios.post('https://api.dailyfit.ae/api/user/edit-address', {
-                address: updatedAddress
-            }, { withCredentials: true });
+            // Format the request body according to the API requirements
+            const requestBody = {
+                identifier: updatedAddress.identifier,
+                address: {
+                    ...updatedAddress
+                    // Include all address fields that were in the form
+                }
+            };
 
-            // Update profile data
+            // Call the update address API endpoint
+            await axios.patch('https://api.dailyfit.ae/api/user/update-address',
+                requestBody,
+                { withCredentials: true }
+            );
+
+            // Update profile data in state
             setProfileData(prev => ({
                 ...prev,
                 savedAddress: prev.savedAddress.map(addr =>
@@ -281,8 +299,14 @@ const UserProfile = () => {
                 )
             }));
         } catch (err) {
-            console.error('Error editing address', err);
+            console.error('Error updating address', err);
         }
+    };
+
+    // Open edit address modal with the selected address data
+    const openEditAddressModal = (address) => {
+        setEditingAddress(address);
+        setIsAddressModalOpen(true);
     };
 
     // Delete address
@@ -420,6 +444,13 @@ const UserProfile = () => {
         return null;
     }
 
+    const getInitials = (name) => {
+        if (!name) return "";
+        const parts = name.trim().split(" ");
+        if (parts.length === 1) return parts[0][0].toUpperCase();
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    };
+
     return (
         <div className="bg-gradient-to-b from-green-50 to-green-100 min-h-screen pb-12">
             {/* Navigation Header */}
@@ -463,15 +494,12 @@ const UserProfile = () => {
                     <div className="space-y-8">
                         {/* Personal Information Section - Enhanced with card styling */}
                         <div className="bg-white shadow-lg rounded-xl p-8 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
-                            <div className="flex items-center mb-6">
-                                <div className="bg-green-100 p-3 rounded-full mr-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
+                            <div className="flex items-center mb-8">
+                                <div className="flex items-center justify-center h-20 w-20 rounded-full bg-green-200 text-green-800 font-bold text-2xl mr-6 uppercase shadow-md">
+                                    {getInitials(profileData.userName)}
                                 </div>
-                                <h2 className="text-2xl font-bold text-green-800">Personal Information</h2>
+                                <h2 className="text-3xl font-extrabold text-green-800">Personal Information</h2>
                             </div>
-
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="bg-green-50 rounded-lg p-4">
                                     <p className="font-medium text-green-700 mb-1 text-sm">Full Name</p>
@@ -482,17 +510,7 @@ const UserProfile = () => {
                                     <p className="text-gray-900 font-medium text-lg">{profileData.userEmail}</p>
                                 </div>
                             </div>
-
-                            <div className="mt-6 flex justify-end">
-                                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                    </svg>
-                                    Edit Profile
-                                </button>
-                            </div>
                         </div>
-
                         {/* Saved Addresses Section - Enhanced with better card styling */}
                         <div className="bg-white shadow-lg rounded-xl p-8 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex justify-between items-center mb-6">
@@ -523,40 +541,36 @@ const UserProfile = () => {
                                 {profileData.savedAddress.map((address, index) => (
                                     <div
                                         key={index}
-                                        className="bg-green-50 rounded-xl p-5 hover:shadow-md transition-shadow duration-300 relative group border border-green-100"
+                                        className="border-b pb-4 last:border-b-0 flex justify-between items-center hover:bg-green-50 p-3 rounded transition"
                                     >
-                                        <div className="mb-4 pb-3 border-b border-green-200">
-                                            <p className="font-bold text-green-800 text-lg">{address.street}</p>
-                                            <p className="text-gray-700">{address.buildingFloor}, {address.houseOrFlatNumber}</p>
-                                        </div>
-
-                                        <div className="mb-3">
-                                            {address.landmark && (
-                                                <div className="flex items-start mb-2">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                                    </svg>
-                                                    <p className="text-gray-700">{address.landmark}</p>
-                                                </div>
+                                        <div>
+                                            <p className="font-semibold text-green-900">{address.street}</p>
+                                            <p className="text-gray-600">{address.buildingFloor}, {address.houseOrFlatNumber}</p>
+                                            <p className="text-gray-600">{address.landmark}</p>
+                                            <p className="text-gray-600">
+                                                {address.city}, {address.state} {address.postalCode}
+                                            </p>
+                                            <p className="text-gray-600">{address.country}</p>
+                                            <p className="text-gray-600">Phone: {address.phone}</p>
+                                            {address.identifier && (
+                                                <span className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded mt-2 inline-block">
+                                                    {address.identifier}
+                                                </span>
                                             )}
-
-                                            <div className="flex items-start mb-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                </svg>
-                                                <p className="text-gray-700">
-                                                    {address.city}, {address.state} {address.postalCode}<br />
-                                                    {address.country}
-                                                </p>
-                                            </div>
-
-                                            <div className="flex items-start">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                                </svg>
-                                                <p className="text-gray-700">{address.phone}</p>
-                                            </div>
+                                        </div>
+                                        <div className="flex space-x-2">
+                                            <button
+                                                onClick={() => openEditAddressModal(address)}
+                                                className="text-green-500 hover:bg-green-100 p-2 rounded"
+                                            >
+                                                <Edit size={20} />
+                                            </button>
+                                            {/* <button
+                                                onClick={() => handleDeleteAddress(address)}
+                                                className="text-red-500 hover:bg-red-100 p-2 rounded"
+                                            >
+                                                <Trash2 size={20} />
+                                            </button> */}
                                         </div>
                                     </div>
                                 ))}
