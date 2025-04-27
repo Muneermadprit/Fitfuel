@@ -78,6 +78,8 @@ const MealPlanShop = () => {
     );
 
     const handleClick = (plan) => {
+        console.log(plan._id, 'planfoom')
+        sessionStorage.setItem('plan', plan._id);
         navigate('/select-plan', { state: { selectedPlan: plan } });
     };
 
@@ -92,7 +94,7 @@ const MealPlanShop = () => {
         if (categoriesContainerRef.current) {
             const container = categoriesContainerRef.current;
             const scrollAmount = 200; // Adjust scrolling amount as needed
-            
+
             if (direction === 'left') {
                 container.scrollLeft -= scrollAmount;
                 setScrollPosition(container.scrollLeft - scrollAmount);
@@ -106,11 +108,11 @@ const MealPlanShop = () => {
     // Check if scrolling controls should be visible
     const checkScrollVisibility = () => {
         if (!categoriesContainerRef.current) return { showLeft: false, showRight: false };
-        
+
         const container = categoriesContainerRef.current;
         const showLeft = container.scrollLeft > 0;
         const showRight = container.scrollLeft < container.scrollWidth - container.clientWidth - 5; // 5px buffer
-        
+
         return { showLeft, showRight };
     };
 
@@ -119,8 +121,8 @@ const MealPlanShop = () => {
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
             {/* Header with glass effect */}
-            <Navigation/>
-            
+            <Navigation />
+
             {/* Main Content Area */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
                 {/* Page Title */}
@@ -146,7 +148,7 @@ const MealPlanShop = () => {
                                 <X size={24} className="text-red-600" />
                             </div>
                             <p className="text-base md:text-lg text-red-600 font-medium">{error}</p>
-                            <button 
+                            <button
                                 className="mt-3 md:mt-4 px-3 py-1 md:px-4 md:py-2 bg-white text-gray-700 rounded-lg shadow hover:shadow-md border border-gray-200 text-sm md:text-base"
                                 onClick={() => window.location.reload()}
                             >
@@ -159,7 +161,7 @@ const MealPlanShop = () => {
                             <div className="mb-6 md:mb-10 relative">
                                 {/* Left scroll button - show only when there are enough categories to scroll */}
                                 {categories.length > 3 && (
-                                    <button 
+                                    <button
                                         onClick={() => scrollCategories('left')}
                                         className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-1 shadow ${showLeft ? 'visible' : 'invisible'}`}
                                         aria-label="Scroll left"
@@ -169,7 +171,7 @@ const MealPlanShop = () => {
                                 )}
 
                                 {/* Scrollable container */}
-                                <div 
+                                <div
                                     className="overflow-x-auto scrollbar-hide w-full py-1 md:py-2 px-1 md:px-2"
                                     ref={categoriesContainerRef}
                                     onScroll={() => setScrollPosition(categoriesContainerRef.current?.scrollLeft || 0)}
@@ -180,8 +182,8 @@ const MealPlanShop = () => {
                                                 key={index}
                                                 className={`px-4 py-2 md:px-6 md:py-3 rounded-lg font-medium transition-all duration-200 whitespace-nowrap text-sm md:text-base
                                                      ${selectedCategory === category.id
-                                                     ? 'bg-white text-green-600 shadow-lg transform -translate-y-0.5'
-                                                     : 'text-gray-700 hover:bg-gray-100'}`}
+                                                        ? 'bg-white text-green-600 shadow-lg transform -translate-y-0.5'
+                                                        : 'text-gray-700 hover:bg-gray-100'}`}
                                                 onClick={() => setSelectedCategory(category.id)}
                                             >
                                                 {category.name}
@@ -189,10 +191,10 @@ const MealPlanShop = () => {
                                         ))}
                                     </div>
                                 </div>
-                                
+
                                 {/* Right scroll button - show only when there are enough categories to scroll */}
                                 {categories.length > 3 && (
-                                    <button 
+                                    <button
                                         onClick={() => scrollCategories('right')}
                                         className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-1 shadow ${showRight ? 'visible' : 'invisible'}`}
                                         aria-label="Scroll right"
@@ -205,8 +207,8 @@ const MealPlanShop = () => {
                             {/* Meal Plans Grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                                 {filteredMealPlans.map((plan, index) => (
-                                    <div 
-                                        key={index} 
+                                    <div
+                                        key={index}
                                         className="group bg-white rounded-xl md:rounded-2xl shadow-md hover:shadow-xl transform transition-all duration-300 hover:-translate-y-1 md:hover:-translate-y-2 overflow-hidden flex flex-col"
                                     >
                                         <div className="relative overflow-hidden">

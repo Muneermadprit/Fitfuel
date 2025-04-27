@@ -928,13 +928,17 @@ const UserProfile = () => {
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                                                                     </svg>
                                                                 </div>
-                                                                <div className="bg-green-100 text-green-800 rounded-r-lg px-2 py-1 sm:px-3 sm:py-2 text-sm sm:text-base font-bold">
-                                                                    #{order.orderID}
+
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="bg-green-100 text-green-800 rounded-r-lg px-2 py-1 text-xs font-medium">
+                                                                        {order.orderID}
+                                                                    </div>
+                                                                    <span className="inline-block bg-green-600 text-white px-3 py-1 rounded-lg text-xs sm:text-sm font-medium">{order?.selectedMeals?.package?.plan?.mealPlanName}</span>
                                                                 </div>
                                                             </div>
 
                                                             {/* Package Type */}
-                                                            <span className="inline-block bg-green-600 text-white px-3 py-1 rounded-lg text-xs sm:text-sm font-medium">
+                                                            <span className="text-sm font-medium">
                                                                 {order.selectedPackage?.packageName || "Package"}
                                                             </span>
                                                         </div>

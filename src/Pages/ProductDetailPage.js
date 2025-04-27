@@ -450,6 +450,7 @@ const MealPlanner = () => {
     const packageId = sessionStorage.getItem("package");
     const startDate = sessionStorage.getItem("startDate");
     const endDate = sessionStorage.getItem("endDate");
+    const planId = sessionStorage.getItem("plan");
     const selectedMealsFromStorage = sessionStorage.getItem("selectedProducts");
 
     if (!packageId || !startDate || !endDate) {
@@ -472,7 +473,7 @@ const MealPlanner = () => {
     const transformData = (selectedMealsObj) => {
       return Object.values(selectedMealsObj)?.map(mealEntry => ({
         date: mealEntry.date,
-        meals: mealEntry.meals[0]?.map(meal => meal._id)
+        meals: mealEntry.meals[0]?.map(meal => meal._id),
       }));
     };
 
@@ -489,7 +490,8 @@ const MealPlanner = () => {
       package: packageId,
       startDate: startDate,
       endDate: endDate,
-      selectedMeals: transformedData
+      selectedMeals: transformedData,
+      plan: planId
     };
 
     console.log(payload, 'cart payload');
@@ -569,6 +571,21 @@ const MealPlanner = () => {
       console.error('Error updating add-ons:', error.response ? error.response.data : error.message);
     }
   };
+
+
+  const handleSkip = async () => {
+    try {
+      const response = await axios.patch('https://api.dailyfit.ae/api/user/update-addons', {
+        addOns: []
+      }, { withCredentials: true });
+      console.log('API success:', response.data);
+      setActiveStep(4); // move to step 4
+    } catch (error) {
+      console.error('API error:', error);
+      // optional: show error to user
+    }
+  };
+
   // Step indicators component
   const [showNutritionDetails, setShowNutritionDetails] = useState({});
   useEffect(() => {
@@ -1092,7 +1109,7 @@ const MealPlanner = () => {
             )}
             <div className="mt-4 flex justify-center">
               <button
-                onClick={() => setActiveStep(4)}
+                onClick={handleSkip}
                 className="py-3 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-base font-medium transition-all duration-300 shadow-md flex items-center space-x-2"
                 aria-label="Skip add-ons"
               >
