@@ -15,7 +15,7 @@ export default function AddOnPage() {
     const [selectedMealTypes, setSelectedMealTypes] = useState([]);
     const [mealType, setMealType] = useState([]);
     const [categoryPackage, setCategoryPackage] = useState([]);
-    const fetchProducts = async () => {
+    const [loading, setLoading] = useState(false); const fetchProducts = async () => {
         try {
             const response = await axios.get("https://api.dailyfit.ae/api/admin/get-addons", { withCredentials: true });
             setMealPackages(response.data.data);
@@ -80,6 +80,7 @@ export default function AddOnPage() {
 
     const handleSubmit = async (e) => {
         alert("handle ubmit clicked")
+        setLoading(true); //
         e.preventDefault();
         const mealName = selectedPackage.mealName?.trim();
 
@@ -93,42 +94,42 @@ export default function AddOnPage() {
 
         const form = new FormData();
 
-                // Append basic fields
-                form.append('mealName', selectedPackage.mealName);
-                form.append('description', selectedPackage.description);
-                form.append('category', selectedPackage.categoryId);
+        // Append basic fields
+        form.append('mealName', selectedPackage.mealName);
+        form.append('description', selectedPackage.description);
+        form.append('category', selectedPackage.categoryId);
 
-                // Append mealTypes
-                selectedMealTypes.forEach(typeId => {
-                    const foundType = mealType.find(type => type._id === typeId);
-                    if (foundType) {
-                        form.append('mealTypes', foundType.identifier); // Assuming identifier is needed
-                    }
-                });
+        // Append mealTypes
+        selectedMealTypes.forEach(typeId => {
+            const foundType = mealType.find(type => type._id === typeId);
+            if (foundType) {
+                form.append('mealTypes', foundType.identifier); // Assuming identifier is needed
+            }
+        });
 
-                // Append other fields
-                form.append('package', selectedPackage.package);
+        // Append other fields
+        form.append('package', selectedPackage.package);
 
-                form.append('fareDetails[totalFare]', parseFloat(selectedPackage.fareDetails.totalFare) || 0);
-                form.append('fareDetails[strikeOff]', parseFloat(selectedPackage.fareDetails.strikeOff) || 0);
-                form.append('fareDetails[discount]', parseFloat(selectedPackage.fareDetails.discount) || 0);
+        form.append('fareDetails[totalFare]', parseFloat(selectedPackage.fareDetails.totalFare) || 0);
+        form.append('fareDetails[strikeOff]', parseFloat(selectedPackage.fareDetails.strikeOff) || 0);
+        form.append('fareDetails[discount]', parseFloat(selectedPackage.fareDetails.discount) || 0);
 
-                form.append('moreDetails[energy]', parseInt(selectedPackage.moreDetails.energy) || 0);
-                form.append('moreDetails[protein]', parseInt(selectedPackage.moreDetails.protein) || 0);
-                form.append('moreDetails[fat]', parseInt(selectedPackage.moreDetails.fat) || 0);
-                form.append('moreDetails[carbohydrates]', 
-                    parseInt(selectedPackage.moreDetails.carbohydrates) || 0);
-                form.append('moreDetails[allergens]', selectedPackage.moreDetails.allergens);
+        form.append('moreDetails[energy]', parseInt(selectedPackage.moreDetails.energy) || 0);
+        form.append('moreDetails[protein]', parseInt(selectedPackage.moreDetails.protein) || 0);
+        form.append('moreDetails[fat]', parseInt(selectedPackage.moreDetails.fat) || 0);
+        form.append('moreDetails[carbohydrates]',
+            parseInt(selectedPackage.moreDetails.carbohydrates) || 0);
+        form.append('moreDetails[allergens]', selectedPackage.moreDetails.allergens);
 
-                // Append multiple image files
-                for (let i = 0; i < selectedPackage.files.length; i++) {
-                    form.append('files', selectedPackage.files[i]); // input field should have name="files" and multiple
-                }
-
-               
+        // Append multiple image files
+        for (let i = 0; i < selectedPackage.files.length; i++) {
+            form.append('files', selectedPackage.files[i]); // input field should have name="files" and multiple
+        }
 
 
-        console.log(selectedPackage,"The package selected")
+
+
+        console.log(selectedPackage, "The package selected")
         // Make sure all nested objects exist
         const mealData = {
             mealName: selectedPackage.mealName,
@@ -157,12 +158,12 @@ export default function AddOnPage() {
                     identifier: selectedPackage.identifier,
                     ...mealData
                 };
-             
+
                 await axios.patch(`https://api.dailyfit.ae/api/admin/update-addon`, updatedMealData, { withCredentials: true });
                 toast.success("Add-on updated successfully!");
             } else {
-                console.log(mealData,"The data inside meals addon")
-                await axios.post(`https://api.dailyfit.ae/api/admin/create-addon`,form, {
+                console.log(mealData, "The data inside meals addon")
+                await axios.post(`https://api.dailyfit.ae/api/admin/create-addon`, form, {
                     withCredentials: true,
                     headers: {
                         'Content-Type': 'multipart/form-data',
@@ -177,6 +178,8 @@ export default function AddOnPage() {
         } catch (error) {
             console.error('Failed to save add-on:', error);
             toast.error("Failed to save add-on. Please try again.");
+        }finally {
+            setLoading(false); // Stop loader
         }
     };
 
@@ -235,15 +238,15 @@ export default function AddOnPage() {
     const handleImageUpload = (e) => {
         const files = e.target.files;
         if (files.length === 0) return;
-    
+
         const imageArray = [...(selectedPackage.image || [])];
-    
+
         Array.from(files).forEach(file => {
             if (!file.type.match('image.*')) {
                 toast.error('Please select image files only');
                 return;
             }
-    
+
             // Prevent duplicates (based on name + size)
             const isDuplicate = imageArray.some(f => f.name === file.name && f.size === file.size);
             if (!isDuplicate) {
@@ -252,7 +255,7 @@ export default function AddOnPage() {
                     size: file.size,
                     type: file.type
                 };
-    
+
                 const newImageArray = [...imageArray, fileData];
                 setSelectedPackage(prev => ({
                     ...prev,
@@ -261,7 +264,7 @@ export default function AddOnPage() {
             }
         });
     };
-    
+
     // Remove an image from the array
     const removeImage = (index) => {
         const newImageArray = [...selectedPackage.image];
@@ -311,6 +314,11 @@ export default function AddOnPage() {
 
     return (
         <div className="p-4">
+            {loading && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+                    <div className="text-white text-xl font-semibold">Loading...</div>
+                </div>
+            )}
             <div className="flex justify-end mb-4">
                 <button
                     onClick={handleAdd}
@@ -617,7 +625,7 @@ export default function AddOnPage() {
                                         type="file"
                                         accept="image/*"
                                         multiple
-                                        onChange={(e) => setSelectedPackage({ ...selectedPackage, files: e.target.files })}
+                                        onChange={(e) => setSelectedPackage({ ...selectedPackage, files: e.target.files })}
                                         className="mb-2"
                                     />
                                     <p className="text-xs text-gray-500 mb-2">

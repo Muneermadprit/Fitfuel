@@ -22,6 +22,7 @@ export default function MealPackage() {
     const [packageGroup, setPackageGroup] = useState("");
     const [copySourceDate, setCopySourceDate] = useState(null);
     const [showCopyModal, setShowCopyModal] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         fetchMealPackages();
@@ -147,31 +148,31 @@ export default function MealPackage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true); // START loader
+
         const formData = new FormData(e.target);
         const errors = validateForm(formData);
 
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
+            setLoading(false); // STOP loader on error
             return;
         }
 
         const startDate = new Date(formData.get("startDate"));
         const endDate = new Date(formData.get("endDate"));
 
-        // Convert selectedMeals to the required format for API
         const mealsArray = [];
         let dayCounter = 1;
         const currentDate = new Date(startDate);
 
         while (currentDate <= endDate) {
             const dateStr = currentDate.toISOString().split('T')[0];
-            // Format the date as YYYY-MM-DD without time component
-            const formattedDate = dateStr;
 
             mealsArray.push({
                 [`day${dayCounter}`]: {
                     meals: selectedMeals[dateStr] || [],
-                    date: formattedDate,  // Changed from ISO format to simple YYYY-MM-DD
+                    date: dateStr,
                 },
             });
 
@@ -179,7 +180,6 @@ export default function MealPackage() {
             dayCounter++;
         }
 
-        // Generate identifier only if it's a new package
         const packageIdentifier = selectedPackage?.identifier ||
             formData.get("packageName").toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
 
@@ -189,31 +189,110 @@ export default function MealPackage() {
             packageGroup: packageGroup,
             startDate: formData.get("startDate"),
             endDate: formData.get("endDate"),
-            identifier: packageIdentifier, // Ensuring identifier is always included
+            identifier: packageIdentifier,
             meals: mealsArray,
             isDeleted: false,
             isPermanent: false,
             repeatTillEnd: true
         };
 
-        console.log("Package Data being submitted:", packageData);
-
         try {
+            let response;
             if (isEditable && selectedPackage) {
-                await axios.patch("https://api.dailyfit.ae/api/admin/update-package", packageData, { withCredentials: true });
-                toast.success("Package updated successfully!");
+                response = await axios.patch(
+                    "https://api.dailyfit.ae/api/admin/update-package",
+                    packageData,
+                    { withCredentials: true }
+                );
             } else {
-                await axios.post("https://api.dailyfit.ae/api/admin/add-package", packageData, { withCredentials: true });
-                toast.success("Package added successfully!");
+                response = await axios.post(
+                    "https://api.dailyfit.ae/api/admin/add-package",
+                    packageData,
+                    { withCredentials: true }
+                );
             }
 
+            toast.success(response?.data?.message || "Package saved successfully!");
             fetchMealPackages();
             setIsCanvasOpen(false);
         } catch (error) {
             console.error("Error saving meal package:", error);
-            toast.error("Failed to save the meal package. Please try again.");
+            toast.error(error?.response?.data?.message || "Failed to save the meal package.");
+        } finally {
+            setLoading(false); // STOP loader
         }
     };
+
+
+    // const handleSubmit = async (e) => {
+    //     e.preventDefault();
+    //     const formData = new FormData(e.target);
+    //     const errors = validateForm(formData);
+
+    //     if (Object.keys(errors).length > 0) {
+    //         setFormErrors(errors);
+    //         return;
+    //     }
+
+    //     const startDate = new Date(formData.get("startDate"));
+    //     const endDate = new Date(formData.get("endDate"));
+
+    //     // Convert selectedMeals to the required format for API
+    //     const mealsArray = [];
+    //     let dayCounter = 1;
+    //     const currentDate = new Date(startDate);
+
+    //     while (currentDate <= endDate) {
+    //         const dateStr = currentDate.toISOString().split('T')[0];
+    //         // Format the date as YYYY-MM-DD without time component
+    //         const formattedDate = dateStr;
+
+    //         mealsArray.push({
+    //             [`day${dayCounter}`]: {
+    //                 meals: selectedMeals[dateStr] || [],
+    //                 date: formattedDate,  // Changed from ISO format to simple YYYY-MM-DD
+    //             },
+    //         });
+
+    //         currentDate.setDate(currentDate.getDate() + 1);
+    //         dayCounter++;
+    //     }
+
+    //     // Generate identifier only if it's a new package
+    //     const packageIdentifier = selectedPackage?.identifier ||
+    //         formData.get("packageName").toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+
+    //     const packageData = {
+    //         packageName: formData.get("packageName"),
+    //         description: formData.get("description"),
+    //         packageGroup: packageGroup,
+    //         startDate: formData.get("startDate"),
+    //         endDate: formData.get("endDate"),
+    //         identifier: packageIdentifier, // Ensuring identifier is always included
+    //         meals: mealsArray,
+    //         isDeleted: false,
+    //         isPermanent: false,
+    //         repeatTillEnd: true
+    //     };
+
+    //     console.log("Package Data being submitted:", packageData);
+
+    //     try {
+    //         if (isEditable && selectedPackage) {
+    //             await axios.patch("https://api.dailyfit.ae/api/admin/update-package", packageData, { withCredentials: true });
+    //             toast.success("Package updated successfully!");
+    //         } else {
+    //             await axios.post("https://api.dailyfit.ae/api/admin/add-package", packageData, { withCredentials: true });
+    //             toast.success("Package added successfully!");
+    //         }
+
+    //         fetchMealPackages();
+    //         setIsCanvasOpen(false);
+    //     } catch (error) {
+    //         console.error("Error saving meal package:", error);
+    //         toast.error("Failed to save the meal package. Please try again.");
+    //     }
+    // };
 
     const handleDelete = async (id) => {
         try {
@@ -354,6 +433,11 @@ export default function MealPackage() {
 
     return (
         <div className="p-4">
+            {loading && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+                    <div className="text-white text-xl font-semibold">Loading...</div>
+                </div>
+            )}
             <div className="flex justify-end mb-4">
                 <button onClick={handleAdd} className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
                     <Plus size={16} />

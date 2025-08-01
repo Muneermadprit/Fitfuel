@@ -12,7 +12,7 @@ export default function CategoryPage() {
     const [selectedPackage, setSelectedPackage] = useState(null);
     const [formErrors, setFormErrors] = useState({ name: '' });
     const [isEditing, setIsEditing] = useState(false);
-
+    const [loading, setLoading] = useState(false);
     const fetchProducts = async () => {
         try {
             const response = await axios.get("https://api.dailyfit.ae/api/admin/get-categories", { withCredentials: true });
@@ -39,24 +39,29 @@ export default function CategoryPage() {
     };
 
     const handleDelete = async (id) => {
-        console.log(id, 'iii')
+        setLoading(true); // Start loader
+        let response;
+
         try {
-            await axios.delete(`https://api.dailyfit.ae/api/admin/delete`, {
+            response = await axios.delete(`https://api.dailyfit.ae/api/admin/delete`, {
                 data: { identifier: id },
                 withCredentials: true,
             });
-            fetchProducts();
-            // setMealPackages(mealPackages.filter(pkg => pkg.id !== id));
-            toast.success("Category deleted successfully!");
+
+            toast.success(response?.data?.message || "Category deleted successfully!");
+            fetchProducts(); // Refresh list
         } catch (error) {
             console.error("Error deleting category:", error);
-            toast.error("Failed to delete category. Please try again.");
+            toast.error(error?.response?.data?.message || "Failed to delete category. Please try again.");
+        } finally {
+            setLoading(false); // Stop loader
         }
     };
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true); // Start loader
+
         const categoryName = selectedPackage.categoryName.trim();
 
         if (!categoryName) {
@@ -64,29 +69,45 @@ export default function CategoryPage() {
                 ...prevErrors,
                 name: "Category name is required",
             }));
+            setLoading(false); // Stop loader
             return;
         }
 
+        let response; // Declare outside to avoid 'no-undef'
+
         try {
             if (isEditing) {
-                // Include the ID in the request for updating
+                // Edit category
                 const categoryData = {
                     identifier: selectedPackage.identifier,
                     categoryName: categoryName
                 };
-                await axios.patch(`https://api.dailyfit.ae/api/admin/updateCategory`, categoryData, { withCredentials: true });
-                toast.success("Category updated successfully!");
+                response = await axios.patch(
+                    `https://api.dailyfit.ae/api/admin/updateCategory`,
+                    categoryData,
+                    { withCredentials: true }
+                );
             } else {
+                // Add new category
                 const categoryData = { categoryName };
-                await axios.post(`https://api.dailyfit.ae/api/admin/add-categories`, categoryData, { withCredentials: true });
-                toast.success("Category added successfully!");
+                response = await axios.post(
+                    `https://api.dailyfit.ae/api/admin/add-categories`,
+                    categoryData,
+                    { withCredentials: true }
+                );
             }
+
+            toast.success(response?.data?.message || "Category saved successfully!");
+
             setIsCanvasOpen(false);
             setIsEditing(false);
             setSelectedPackage(null);
-            fetchProducts(); // Refresh the list after operation
+            fetchProducts(); // Refresh category list
         } catch (error) {
             console.error('Failed to save category:', error);
+            toast.error(error?.response?.data?.message || "Failed to save category");
+        } finally {
+            setLoading(false); // Stop loader
         }
     };
 
@@ -126,6 +147,11 @@ export default function CategoryPage() {
 
     return (
         <div className="p-4">
+            {loading && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+                    <div className="text-white text-xl font-semibold">Loading...</div>
+                </div>
+            )}
             <div className="flex justify-end mb-4">
                 <button
                     onClick={handleAdd}
@@ -165,6 +191,7 @@ export default function CategoryPage() {
 
             {isCanvasOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-end z-50">
+                    <ToastContainer position="top-right" />
                     <div className="bg-white w-1/3 p-6 h-full overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold">

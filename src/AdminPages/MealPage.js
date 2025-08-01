@@ -39,15 +39,28 @@ export default function MealPage() {
     const [imageFiles, setImageFiles] = useState([]);
     const [imagePreviewUrls, setImagePreviewUrls] = useState([]); // For preview only
     const [selectedMealTypes, setSelectedMealTypes] = useState([]);
-
+    const [loading, setLoading] = useState(false);
     const fetchMeals = async () => {
+        setLoading(true);
         try {
             const response = await axios.get("https://api.dailyfit.ae/api/admin/get-meals", { withCredentials: true });
             setMealPackages(response.data.data);
+            toast.success(response.data.message || "Meals fetched successfully");
         } catch (error) {
-            console.error("Error fetching meals:", error);
+            toast.error(error?.response?.data?.message || "Error fetching meals");
+        } finally {
+            setLoading(false);
         }
     };
+
+    // const fetchMeals = async () => {
+    //     try {
+    //         const response = await axios.get("https://api.dailyfit.ae/api/admin/get-meals", { withCredentials: true });
+    //         setMealPackages(response.data.data);
+    //     } catch (error) {
+    //         console.error("Error fetching meals:", error);
+    //     }
+    // };
 
     const fetchCategories = async () => {
         try {
@@ -284,14 +297,19 @@ export default function MealPage() {
             toast.error("Failed to delete category. Please try again.");
         }
     };
+
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true); // Show loader
         const token = sessionStorage.getItem("token");
+
+        let response; // Declare it here to avoid 'no-undef'
 
         try {
             if (selectedMealId) {
                 // Update existing meal
-                await axios.patch('https://api.dailyfit.ae/api/admin/update-meal', {
+                response = await axios.patch('https://api.dailyfit.ae/api/admin/update-meal', {
                     id: selectedMealId,
                     identifier: formData.identifier,
                     mealName: formData.mealName,
@@ -300,8 +318,7 @@ export default function MealPage() {
                     mealType: selectedMealTypes.map(typeId => {
                         const foundType = mealType.find(type => type._id === typeId);
                         return foundType ? foundType.identifier : '';
-                    }).filter(identifier => identifier !== '')
-                    ,
+                    }).filter(identifier => identifier !== ''),
                     package: formData.package,
                     fareDetails: {
                         totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
@@ -317,10 +334,9 @@ export default function MealPage() {
                     },
                     images: imageFiles.map((file) => file)
                 }, { withCredentials: true });
-
             } else {
                 // Add new meal
-                await axios.post('https://api.dailyfit.ae/api/admin/add-meal', {
+                response = await axios.post('https://api.dailyfit.ae/api/admin/add-meal', {
                     mealName: formData.mealName,
                     description: formData.description,
                     category: formData.categoryId,
@@ -345,6 +361,10 @@ export default function MealPage() {
                 }, { withCredentials: true });
             }
 
+            // ✅ Show success toast from response message
+            toast.success(response?.data?.message || "Meal saved successfully");
+
+            // ✅ Reset form
             await fetchMeals();
             setIsCanvasOpen(false);
             setFormData(initialFormData);
@@ -355,8 +375,88 @@ export default function MealPage() {
 
         } catch (error) {
             console.error('Error saving meal:', error);
+            toast.error(error?.response?.data?.message || "Failed to save meal");
+        } finally {
+            setLoading(false); // Hide loader
         }
     };
+
+    // const handleSubmit = async (e) => {
+    //     setLoading(true);
+    //     e.preventDefault();
+    //     const token = sessionStorage.getItem("token");
+
+    //     try {
+    //         if (selectedMealId) {
+    //             // Update existing meal
+    //             await axios.patch('https://api.dailyfit.ae/api/admin/update-meal', {
+    //                 id: selectedMealId,
+    //                 identifier: formData.identifier,
+    //                 mealName: formData.mealName,
+    //                 description: formData.description,
+    //                 category: formData.categoryId,
+    //                 mealType: selectedMealTypes.map(typeId => {
+    //                     const foundType = mealType.find(type => type._id === typeId);
+    //                     return foundType ? foundType.identifier : '';
+    //                 }).filter(identifier => identifier !== '')
+    //                 ,
+    //                 package: formData.package,
+    //                 fareDetails: {
+    //                     totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
+    //                     strikeOff: parseFloat(formData.fareDetails.strikeOff) || 0,
+    //                     discount: parseFloat(formData.fareDetails.discount) || 0
+    //                 },
+    //                 moreDetails: {
+    //                     energy: parseInt(formData.moreDetails.energy) || 0,
+    //                     protein: parseInt(formData.moreDetails.protein) || 0,
+    //                     fat: parseInt(formData.moreDetails.fat) || 0,
+    //                     carbohydrates: parseInt(formData.moreDetails.carbohydrates) || 0,
+    //                     allergens: formData.moreDetails.allergens
+    //                 },
+    //                 images: imageFiles.map((file) => file)
+    //             }, { withCredentials: true });
+
+    //         } else {
+    //             // Add new meal
+    //             await axios.post('https://api.dailyfit.ae/api/admin/add-meal', {
+    //                 mealName: formData.mealName,
+    //                 description: formData.description,
+    //                 category: formData.categoryId,
+    //                 mealType: selectedMealTypes.map(typeId => {
+    //                     const foundType = mealType.find(type => type._id === typeId);
+    //                     return foundType ? foundType.identifier : '';
+    //                 }).filter(identifier => identifier !== ''),
+    //                 package: formData.package,
+    //                 fareDetails: {
+    //                     totalFare: parseFloat(formData.fareDetails.totalFare) || 0,
+    //                     strikeOff: parseFloat(formData.fareDetails.strikeOff) || 0,
+    //                     discount: parseFloat(formData.fareDetails.discount) || 0
+    //                 },
+    //                 moreDetails: {
+    //                     energy: parseInt(formData.moreDetails.energy) || 0,
+    //                     protein: parseInt(formData.moreDetails.protein) || 0,
+    //                     fat: parseInt(formData.moreDetails.fat) || 0,
+    //                     carbohydrates: parseInt(formData.moreDetails.carbohydrates) || 0,
+    //                     allergens: formData.moreDetails.allergens
+    //                 },
+    //                 image: imageBase64
+    //             }, { withCredentials: true });
+    //         }
+    //         toast.success(response?.data?.message || "Meal saved successfully");
+    //         await fetchMeals();
+    //         setIsCanvasOpen(false);
+    //         setFormData(initialFormData);
+    //         setImageFiles([]);
+    //         setImagePreviewUrls([]);
+    //         setSelectedMealId(null);
+    //         setSelectedMealTypes([]);
+
+    //     } catch (error) {
+    //         console.error('Error saving meal:', error);
+    //     } finally {
+    //         setLoading(false); // Hide loader
+    //     }
+    // };
     const columns = [
         { name: 'Name', selector: row => row.mealName, sortable: true },
         { name: 'Description', selector: row => row.description, sortable: true },
@@ -422,6 +522,12 @@ export default function MealPage() {
 
     return (
         <div className="p-4">
+            {loading && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+                    <div className="text-white text-xl font-semibold">Loading...</div>
+                </div>
+            )}
+
             <div className="flex justify-end mb-4">
                 <button onClick={handleAdd} className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
                     <Plus size={16} />

@@ -11,7 +11,7 @@ export default function MealTypePage() {
     const [selectedPackage, setSelectedPackage] = useState(null);
     const [formErrors, setFormErrors] = useState({});
     const [isEditing, setIsEditing] = useState(false);
-
+    const [loading, setLoading] = useState(false);
     const fetchMealTypes = async () => {
         try {
             const token = sessionStorage.getItem("token");
@@ -64,6 +64,7 @@ export default function MealTypePage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
         const mealType = e.target.name.value.trim();
 
         const errors = validateForm(mealType);
@@ -76,15 +77,17 @@ export default function MealTypePage() {
         try {
             if (isEditing && selectedPackage) {
                 // Update existing meal type
-                await axios.patch('https://api.dailyfit.ae/api/admin/update-mealtype',  {
+                await axios.patch('https://api.dailyfit.ae/api/admin/update-mealtype', {
                     identifier: selectedPackage.identifier, // <-- Added identifier
                     mealType
                 }, { withCredentials: true });
+                toast.success("Meal type updated successfully!");
             } else {
                 // Add new meal type
                 await axios.post('https://api.dailyfit.ae/api/admin/add-mealtype', {
                     mealType
                 }, { withCredentials: true });
+                toast.success("Meal type added successfully!");
             }
 
             await fetchMealTypes();
@@ -94,6 +97,8 @@ export default function MealTypePage() {
         } catch (error) {
             console.error('Failed to handle meal type:', error);
             setFormErrors({ submit: 'Failed to process your request. Please try again.' });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -133,6 +138,11 @@ export default function MealTypePage() {
 
     return (
         <div className="p-4">
+            {loading && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+                    <div className="text-white text-xl font-semibold">Loading...</div>
+                </div>
+            )}
             <div className="flex justify-end mb-4">
                 <button
                     onClick={handleAdd}
